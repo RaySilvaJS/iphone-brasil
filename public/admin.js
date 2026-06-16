@@ -2,8 +2,6 @@ const adminList = document.getElementById('admin-product-list');
 const feedback = document.getElementById('admin-feedback');
 const addButton = document.getElementById('product-add');
 
-const scrapeSwappieButton = document.getElementById('scrape-swappie');
-const scrapeWortenButton = document.getElementById('scrape-worten');
 const getInput = (id) => document.getElementById(id).value.trim();
 
 let editingId = null;
@@ -219,42 +217,3 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadPaymentProofs();
 });
 
-scrapeWortenButton.addEventListener('click', async () => {
-  feedback.textContent = 'Iniciando importação de produtos da Worten...';
-  try {
-    const response = await fetch('/api/admin/scrape-worten', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const result = await response.json();
-    if (result.success) {
-      feedback.textContent = result.message;
-      loadAdminProducts(); // Recarrega a lista de produtos no admin
-    } else {
-      feedback.textContent = result.error || 'Erro desconhecido ao importar da Worten.';
-    }
-  } catch (error) {
-    feedback.textContent = 'Erro de rede ao tentar importar da Worten.';
-    console.error('Erro ao importar da Worten:', error);
-  }
-});
-
-scrapeSwappieButton.addEventListener('click', async () => {
-  feedback.textContent = 'Iniciando importação de produtos da Swappie...';
-  try {
-    const response = await fetch('/api/admin/scrape-swappie', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const result = await response.json();
-    if (result.success) {
-      feedback.textContent = result.message;
-      loadAdminProducts(); // Recarrega a lista de produtos no admin
-    } else {
-      feedback.textContent = result.error || 'Erro desconhecido ao importar da Swappie.';
-    }
-  } catch (error) {
-    feedback.textContent = 'Erro de rede ao tentar importar da Swappie.';
-    console.error('Erro ao importar da Swappie:', error);
-  }
-});
