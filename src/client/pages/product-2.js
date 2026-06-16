@@ -133,6 +133,10 @@
   };
 
   window.buyNow = async (productId) => {
+    if (window.Auth && !window.Auth.isLoggedIn()) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('product.html?id=' + productId);
+      return;
+    }
     await window.addToCart(productId);
     if (typeof window._showTypingMessage === 'function') {
       window._showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {
@@ -807,7 +811,7 @@
     try {
       const [catalogRes, configRes] = await Promise.all([
         fetch(`/api/catalog/product/${PRODUCT_ID}`),
-        fetch('/api/config').catch(() => null)
+        fetch('/config.json').catch(() => null)
       ]);
       if (!catalogRes.ok) throw new Error('Produto não encontrado');
       const { product, siblings, related } = await catalogRes.json();
