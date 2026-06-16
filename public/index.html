@@ -1,0 +1,1913 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>jessi.iphones — iPhones Premium com Garantia para Todo o Brasil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.444.0/dist/umd/lucide.min.js"></script>
+
+<style>
+/* ===== VARIÁVEIS MARKETPLACE ===== */
+:root {
+  --blue:       #2563EB;
+  --blue-dark:  #1D4ED8;
+  --blue-light: #EFF6FF;
+  --yellow:     #F59E0B;
+  --yellow-dark:#D97706;
+  --green:      #16A34A;
+  --red:        #DC2626;
+  --bg:         #F1F5F9;
+  --card:       #FFFFFF;
+  --text:       #0F172A;
+  --text-2:     #475569;
+  --muted:      #94A3B8;
+  --border:     #E2E8F0;
+  --shadow:     0 1px 3px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.04);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.10);
+  --radius:     10px;
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { overflow-x: hidden; width: 100%; max-width: 100%; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0; padding: 0;
+  overflow-x: hidden; width: 100%; max-width: 100%;
+  line-height: 1.5;
+}
+a { text-decoration: none; color: inherit; }
+button, input, select { font: inherit; }
+
+/* ===== ANNOUNCEMENT BAR ===== */
+.announcement-bar {
+  background: #0F172A;
+  color: #CBD5E1;
+  font-size: 12px;
+  padding: 7px 20px;
+  text-align: center;
+  letter-spacing: .01em;
+}
+.announcement-bar strong { color: var(--yellow); }
+
+/* ===== HEADER ===== */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  background: var(--blue);
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* LOGO */
+.logo {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+  letter-spacing: -.01em;
+}
+.logo span { color: var(--yellow); }
+
+/* SEARCH */
+.search-wrapper {
+  flex: 1;
+  max-width: 680px;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color .2s;
+}
+.search-wrapper:focus-within { border-color: var(--yellow); }
+
+.input {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+}
+.input::placeholder { color: var(--muted); }
+
+.search__icon {
+  width: 46px;
+  height: 42px;
+  border: none;
+  background: var(--yellow);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .2s;
+}
+.search__icon:hover { background: var(--yellow-dark); }
+.search__icon svg path, .search__icon circle { stroke: #fff; fill: none; }
+
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: none;
+  animation: spinnerRotate .85s linear infinite;
+}
+.search__icon.loading .spinner { display: inline-block; }
+@keyframes spinnerRotate { to { transform: rotate(360deg); } }
+
+/* HEADER ACTIONS */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.header-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 12px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background .2s;
+  text-decoration: none;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.header-btn:hover { background: rgba(255,255,255,.15); }
+.header-btn .hb-icon { font-size: 18px; line-height: 1; }
+.header-btn strong { font-size: 12px; font-weight: 700; }
+
+.cart-btn-wrap { position: relative; }
+
+.cart-count {
+  position: absolute;
+  top: 1px; right: 6px;
+  min-width: 17px; height: 17px;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+  border: 2px solid var(--blue);
+}
+
+/* ===== TRUST STRIP ===== */
+.trust-strip {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.trust-strip-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.trust-strip-inner::-webkit-scrollbar { display: none; }
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 600;
+  padding: 9px 18px 9px 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.trust-item:not(:first-child) {
+  border-left: 1px solid var(--border);
+  padding-left: 18px;
+}
+.trust-item .ti-icon { font-size: 15px; }
+
+/* ===== CATEGORIES (ICON STRIP) ===== */
+.categories-bar {
+  background: #fff;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.categories-bar::-webkit-scrollbar { display: none; }
+
+.categories {
+  display: flex;
+  align-items: flex-start;
+  padding: 14px 20px;
+  gap: 4px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: max-content;
+  min-width: 100%;
+}
+
+.cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 12px;
+  transition: background .15s;
+  user-select: none;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+.cat-item:hover { background: #f0f4ff; }
+.cat-item:hover .cat-item__icon { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.13); }
+.cat-item.active .cat-item__icon {
+  box-shadow: 0 0 0 2.5px var(--blue), 0 4px 12px rgba(37,99,235,.25);
+}
+.cat-item.active .cat-item__name { color: var(--blue); font-weight: 700; }
+
+.cat-item__icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s, box-shadow .15s;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.cat-item__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: center;
+  white-space: nowrap;
+  transition: color .15s;
+  line-height: 1.2;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ===== SECTION TITLE ===== */
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 26px 0 14px;
+}
+.section-title h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title h2::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 19px;
+  background: var(--blue);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.section-title a, .section-title span {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.section-title a:hover, .section-title span:hover { text-decoration: underline; }
+
+/* ===== RESULTS SECTION ===== */
+.results-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+  animation: fadeInUp .35s ease-out;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.results-count {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.results-count__label  { font-size: 13px; color: var(--text-2); }
+.results-count__number { font-size: 22px; font-weight: 800; color: var(--blue); }
+.results-count__suffix { font-size: 13px; color: var(--text); font-weight: 600; }
+
+.sort-container { display: flex; align-items: center; gap: 8px; }
+.sort-label { font-size: 13px; color: var(--text-2); white-space: nowrap; }
+
+.sort-dropdown { position: relative; min-width: 190px; }
+
+.sort-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+  width: 100%;
+}
+.sort-dropdown__trigger:hover,
+.sort-dropdown__trigger.active {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+}
+.sort-dropdown__trigger-text { flex: 1; text-align: left; }
+.sort-dropdown__trigger-icon {
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-2);
+  transition: transform .2s;
+}
+.sort-dropdown__trigger.active .sort-dropdown__trigger-icon { transform: rotate(180deg); }
+
+.sort-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0; right: 0;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  z-index: 100;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: all .18s;
+  pointer-events: none;
+}
+.sort-dropdown__menu.active {
+  opacity: 1; visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.sort-dropdown__option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  border: none; background: none;
+  width: 100%; text-align: left;
+  font-size: 13px; color: var(--text);
+  cursor: pointer;
+  transition: background .12s;
+}
+.sort-dropdown__option:hover { background: var(--blue-light); }
+.sort-dropdown__option.selected { background: var(--blue-light); color: var(--blue); font-weight: 600; }
+.sort-dropdown__option-icon { width: 16px; opacity: 0; flex-shrink: 0; }
+.sort-dropdown__option.selected .sort-dropdown__option-icon { opacity: 1; }
+
+.results-divider { height: 1px; background: var(--border); }
+.results-filters-info {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text-2);
+}
+
+/* ===== PRODUCTS LIST ===== */
+/* [FIX - LAYOUT CARD] Grid 3 colunas no desktop, lista no mobile */
+.products {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-bottom: 36px;
+}
+
+/* ===== CARD PRODUTO — MARKETPLACE STYLE ===== */
+.olx-adcard {
+  display: flex;
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: box-shadow .2s, border-color .2s;
+  position: relative;
+  cursor: default;
+}
+.olx-adcard:hover {
+  box-shadow: var(--shadow-md);
+  border-color: #CBD5E1;
+}
+
+/* IMAGEM */
+.olx-adcard__media {
+  width: 180px;
+  min-width: 180px;
+  height: 180px;
+  position: relative;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.olx-adcard__media img {
+  display: block;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.olx-adcard__favorite {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 30px; height: 30px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  z-index: 5;
+  transition: all .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.olx-adcard__favorite:hover { border-color: #e53e3e; color: #e53e3e; transform: scale(1.1); }
+
+/* CONTEÚDO */
+.olx-adcard__content {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
+.olx-adcard__link { text-decoration: none; color: inherit; }
+
+.olx-adcard__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  margin: 0;
+  transition: color .15s;
+}
+.olx-adcard__link:hover .olx-adcard__title { color: var(--blue); }
+
+/* BADGES */
+.olx-adcard__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.olx-core-badge {
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.olx-core-badge:nth-child(1) { background: #DCFCE7; color: #15803D; }
+.olx-core-badge:nth-child(2) { background: #DBEAFE; color: #1D4ED8; }
+.olx-core-badge:nth-child(3) { background: #F0FDF4; color: #166534; }
+.olx-core-badge:nth-child(4) { background: #FEF3C7; color: #92400E; }
+.olx-core-badge:nth-child(n+5) { background: #EDE9FE; color: #5B21B6; }
+
+/* SELLER */
+.olx-adcard__seller-info {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+}
+.seller-name { color: var(--text-2); font-weight: 500; }
+.rating { color: #F59E0B; font-weight: 600; font-size: 12px; }
+
+/* PREÇO */
+.olx-adcard__price {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 2px 0 0;
+  line-height: 1.1;
+}
+.olx-adcard__old-price {
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.olx-adcard__price-info {
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 500;
+}
+.font-bold { font-weight: 700; color: var(--text); }
+
+/* LOCALIZAÇÃO */
+.olx-adcard__location-date {
+  display: flex; align-items: center; gap: 12px;
+}
+.olx-adcard__location, .olx-adcard__date {
+  font-size: 11px; color: var(--text-2);
+  margin: 0;
+  display: flex; align-items: center; gap: 3px;
+}
+
+/* BOTÕES */
+/* [FIX - ACTION BUTTONS] nowrap para manter lado a lado */
+.olx-adcard__actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  margin-top: auto;
+  padding-top: 4px;
+}
+/* [FIX - ACTION BUTTONS] flex:1 sem min-width fixo para caber lado a lado */
+.olx-adcard__actions .button {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.olx-adcard__actions .button:hover { transform: translateY(-1px); }
+
+/* [FIX - ACTION BUTTONS] Comprar #E37B00 / Carrinho #3483FA */
+.olx-adcard__actions .button-primary {
+  background: #E37B00;
+  color: #fff;
+  font-size: 13px;
+}
+.olx-adcard__actions .button-primary:hover { background: #c96d00; }
+
+.olx-adcard__actions .button-secondary {
+  background: #3483FA;
+  color: #fff;
+  font-size: 13px;
+}
+.olx-adcard__actions .button-secondary:hover { background: #2b6fd4; }
+
+/* BOTÕES GERAIS */
+.button {
+  border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 7px;
+  padding: 11px 18px;
+  font-weight: 700; font-size: 13px;
+  transition: transform .15s, background .2s;
+}
+.button:hover { transform: translateY(-1px); }
+.button-primary  { background: var(--yellow); color: #1a1a2e; }
+.button-secondary{ background: var(--blue);   color: #fff; }
+.button-tertiary { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); }
+
+/* ===== NOTIFICAÇÃO ===== */
+.notification {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--green);
+  color: white;
+  padding: 13px 20px;
+  border-radius: 8px;
+  z-index: 10001;
+  box-shadow: 0 6px 20px rgba(22,163,74,.3);
+  animation: slideIn .3s ease-out;
+  max-width: calc(100vw - 32px);
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ===== LOAD MORE ===== */
+.load-more-container {
+  display: flex; justify-content: center;
+  padding: 24px 0 36px;
+}
+.load-more-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 32px;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+  min-width: 200px;
+}
+.load-more-btn:hover { background: var(--blue-dark); transform: translateY(-2px); }
+.load-more-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.load-more-btn__icon { width: 18px; height: 18px; flex-shrink: 0; }
+.load-more-btn.loading .load-more-btn__icon { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.load-more-btn.completed { background: var(--green); }
+.load-more-info {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 10px; font-size: 12px; color: var(--text-2);
+}
+.load-more-info__icon { width: 14px; height: 14px; opacity: .6; }
+
+/* ===== TRUST SECTION (MEIO DA PÁGINA) ===== */
+.trust-section {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 30px;
+  margin: 8px 0 28px;
+}
+.trust-section h3 {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 20px;
+}
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+.trust-card {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 14px 8px;
+  border-radius: 8px;
+  background: #F8FAFC;
+  text-align: center;
+  transition: background .2s;
+}
+.trust-card:hover { background: var(--blue-light); }
+.trust-card .tc-icon { font-size: 26px; line-height: 1; }
+.trust-card strong { font-size: 12px; font-weight: 700; color: var(--text); display: block; line-height: 1.3; }
+.trust-card span { font-size: 10px; color: var(--text-2); line-height: 1.3; }
+
+/* ===== FOOTER ===== */
+.footer {
+  background: #0F172A;
+  color: #fff;
+  padding: 48px 24px 100px;
+}
+.footer-inner { max-width: 1400px; margin: 0 auto; }
+
+.benefits {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 40px;
+}
+.benefit {
+  text-align: center;
+  font-size: 13px;
+  color: #94A3B8;
+  padding: 14px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 0.8fr;
+  gap: 36px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  margin-bottom: 28px;
+}
+.footer-brand h2 { font-size: 24px; font-weight: 800; margin: 0 0 12px; color: #fff; }
+.footer-brand h2 span { color: var(--yellow); }
+.footer-brand p { color: #64748B; line-height: 1.7; font-size: 13px; max-width: 300px; }
+
+.footer-social { display: flex; gap: 8px; margin-top: 18px; }
+.footer-social a {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: #fff; text-decoration: none;
+  font-size: 16px;
+  transition: background .2s, transform .2s;
+}
+.footer-social a:hover { background: var(--blue); transform: translateY(-2px); }
+
+.footer-links h3 { font-size: 14px; font-weight: 700; margin: 0 0 14px; color: #fff; }
+.footer-links a {
+  display: block;
+  color: #64748B; text-decoration: none;
+  margin-bottom: 9px; font-size: 13px;
+  transition: color .2s;
+}
+.footer-links a:hover { color: #fff; }
+
+.payments { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.pay {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.12);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 12px; font-weight: 600;
+}
+.security { margin-top: 14px; color: #64748B; font-size: 12px; line-height: 1.6; }
+
+.footer-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.footer-bottom p { color: #475569; font-size: 12px; margin: 0; }
+
+/* ===== RESPONSIVO ===== */
+@media (max-width: 1024px) {
+  .olx-adcard__media { width: 150px; min-width: 150px; height: 150px; }
+}
+
+@media (max-width: 768px) {
+  .header-main { flex-wrap: wrap; gap: 8px; padding: 8px 16px; }
+  .search-wrapper { order: 3; flex: 0 0 100%; max-width: 100%; }
+  .header-btn strong { display: none; }
+  .header-btn .hb-icon { font-size: 20px; }
+
+  .products { grid-template-columns: 1fr; }
+  .olx-adcard__media { width: 130px; min-width: 130px; height: 130px; }
+  .olx-adcard__content { padding: 10px 12px; gap: 4px; }
+  .olx-adcard__title { font-size: 14px; }
+  .olx-adcard__price { font-size: 18px; }
+  .olx-adcard__actions .button { padding: 8px 10px; min-width: 0; }
+
+  .footer-top { grid-template-columns: 1fr 1fr; }
+  .benefits { grid-template-columns: 1fr 1fr; }
+  .trust-grid { grid-template-columns: repeat(3, 1fr); }
+
+  .main-content { padding: 0 16px; }
+  .trust-strip { padding: 0 16px; }
+  .categories { padding: 0 16px; }
+}
+
+@media (max-width: 600px) {
+  .announcement-bar { display: none; }
+  .trust-strip-inner { gap: 0; }
+
+  .olx-adcard__media { width: 120px; min-width: 120px; height: 120px; }
+  .olx-adcard__content { padding: 8px 10px; gap: 3px; }
+  .olx-adcard__title { font-size: 13px; margin-bottom: 4px; }
+  .olx-adcard__badges { display: none; }
+  .olx-adcard__price { font-size: 16px; }
+  .olx-adcard__price-info { font-size: 11px; }
+  .olx-adcard__location-date { display: none; }
+  .olx-adcard__actions { gap: 5px; }
+  .olx-adcard__actions .button { font-size: 12px; padding: 7px 6px; flex: 1; min-width: 0; }
+
+  .footer-top { grid-template-columns: 1fr; gap: 24px; }
+  .benefits { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .trust-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .sort-label { display: none; }
+  .sort-dropdown { min-width: 0; width: 100%; }
+  .results-header { flex-direction: column; align-items: flex-start; }
+  .sort-container { width: 100%; }
+  .results-section { gap: 10px; }
+}
+
+@media (max-width: 420px) {
+  .olx-adcard__media { width: 100px; min-width: 100px; height: 100px; }
+  .olx-adcard__price { font-size: 15px; }
+  .olx-adcard__seller-info { display: none; }
+  .header-btn { padding: 6px 8px; }
+}
+
+/* AUTH BUTTON */
+#auth-nav-btn {
+  color: #fff !important;
+  text-decoration: none;
+}
+
+/* ===== [LOJA OFICIAL] Elementos novos dos cards ===== */
+/* [FIX - BADGE OVERFLOW] top/left:0, max-width:100% para não vazar da imagem */
+.loja-oficial-badge {
+  position: absolute;
+  top: 0; left: 0;
+  max-width: 100%;
+  background: #fff;
+  border: 1.5px solid #000;
+  border-radius: 0 0 4px 0;
+  padding: 2px 6px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #000;
+  z-index: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 1.4;
+}
+.desconto-hoje-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #FFF3CD;
+  border: 1px solid #F59E0B;
+  color: #92400E;
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.preco-original-wrap { line-height: 1; margin-bottom: 2px; }
+.brinde-line {
+  color: #16A34A;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.entrega-full-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+}
+.entrega-full-wrap svg {
+  flex-shrink: 0;
+  color: #00a650;
+  stroke: #00a650;
+}
+.entrega-full-text {
+  font-size: 12px;
+  color: #00a650;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.entrega-full-pill {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  background: #00a650;
+  border-radius: 3px;
+  padding: 2px 5px;
+  letter-spacing: 0.6px;
+  flex-shrink: 0;
+}
+.frete-gratis-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.polylabel-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.polylabel-fw-semibold { font-weight: 600; }
+.polylabel-icon { vertical-align: middle; flex-shrink: 0; }
+
+/* ===== LUCIDE ICON SIZING ===== */
+.menu-btn svg { width: 22px; height: 22px; stroke: #fff; }
+.hb-icon svg  { width: 20px; height: 20px; }
+.ti-icon svg  { width: 15px; height: 15px; }
+.tc-icon svg  { width: 26px; height: 26px; }
+.benefit svg  { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; }
+.footer-social a svg { width: 16px; height: 16px; }
+.security svg { width: 11px; height: 11px; vertical-align: -1px; }
+.drawer-link svg, .drawer-link [data-lucide] { width: 18px; height: 18px; flex-shrink: 0; }
+.drawer-auth-feature svg { width: 14px; height: 14px; vertical-align: -2px; }
+.drawer-close svg { width: 18px; height: 18px; stroke: #fff; }
+.drawer-user-icon svg { width: 36px; height: 36px; stroke: rgba(255,255,255,.9); }
+.olx-adcard__favorite svg { pointer-events: none; }
+
+/* ===== HAMBURGER BUTTON ===== */
+.menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: background .2s;
+  padding: 0;
+}
+.menu-btn:hover { background: rgba(255,255,255,.15); }
+
+/* ===== DRAWER OVERLAY ===== */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.52);
+  z-index: 1100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .28s, visibility .28s;
+}
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+
+/* ===== SIDE DRAWER ===== */
+.side-drawer {
+  position: fixed;
+  top: 0; left: 0;
+  width: min(340px, 92vw);
+  height: 100%;
+  background: #fff;
+  z-index: 1200;
+  transform: translateX(-100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 32px rgba(0,0,0,.18);
+}
+.side-drawer.open { transform: translateX(0); }
+
+.drawer-header {
+  background: var(--blue);
+  padding: 20px 18px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.drawer-welcome { flex: 1; }
+.drawer-user-icon { margin-bottom: 8px; opacity: .9; }
+.drawer-welcome-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+.drawer-welcome-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.75);
+  margin-top: 3px;
+}
+.drawer-close {
+  border: none;
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .2s;
+  margin-top: 2px;
+  padding: 0;
+}
+.drawer-close:hover { background: rgba(255,255,255,.3); }
+
+.drawer-auth {
+  padding: 14px 18px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.drawer-auth p { font-size: 13px; color: var(--text-2); margin: 0 0 10px; }
+.drawer-auth-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.drawer-auth-feature {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-2);
+  background: var(--bg);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.drawer-btn {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  margin-bottom: 8px;
+  text-decoration: none;
+  transition: background .2s, transform .15s;
+  font-family: inherit;
+}
+.drawer-btn:last-child { margin-bottom: 0; }
+.drawer-btn:hover { transform: translateY(-1px); }
+.drawer-btn-primary { background: var(--blue); color: #fff; }
+.drawer-btn-primary:hover { background: var(--blue-dark); }
+.drawer-btn-secondary { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); }
+.drawer-btn-secondary:hover { background: var(--blue-light); }
+
+.drawer-section { border-bottom: 1px solid var(--border); }
+.drawer-section-title {
+  padding: 12px 18px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s, color .15s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.drawer-link:hover { background: var(--blue-light); color: var(--blue); }
+.drawer-link:hover svg { stroke: var(--blue); }
+.drawer-link svg { stroke: var(--text-2); transition: stroke .15s; }
+
+/* ===== SUPPORT WIDGET ===== */
+.support-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.support-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(37,99,235,.4);
+  transition: transform .2s, box-shadow .2s;
+}
+.support-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(37,99,235,.5); }
+.support-menu {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.16);
+  overflow: hidden;
+  width: 230px;
+  animation: suSlideUp .2s ease;
+}
+@keyframes suSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.support-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  transition: background .15s;
+}
+.support-option:last-child { border-bottom: none; }
+.support-option:hover { background: var(--bg); }
+.su-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.su-icon.green { background: #dcfce7; color: #16a34a; }
+.su-icon.blue  { background: var(--blue-light); color: var(--blue); }
+.support-option strong { font-size: 13px; font-weight: 700; display: block; line-height: 1.3; }
+.support-option span { font-size: 11px; color: var(--muted); }
+@media (max-width: 480px) {
+  .support-widget { bottom: 16px; right: 16px; }
+  .support-btn { width: 50px; height: 50px; }
+}
+
+/* ===== SKELETON LOADER ===== */
+#skeleton-loader { display: none; }
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-bottom: 20px;
+}
+.skeleton-card {
+  display: flex;
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  height: 180px;
+}
+.skeleton-media {
+  width: 180px;
+  min-width: 180px;
+  background: #eef2f7;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.skeleton-content {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+.skeleton-line {
+  background: #eef2f7;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-line::after,
+.skeleton-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.75) 50%, transparent 100%);
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+  transform: translateX(-100%);
+}
+@keyframes sk-shimmer {
+  to { transform: translateX(100%); }
+}
+@media (max-width: 768px) {
+  .skeleton-grid { grid-template-columns: 1fr; }
+  .skeleton-card { height: 130px; }
+  .skeleton-media { width: 130px; min-width: 130px; }
+}
+@media (max-width: 600px) {
+  .skeleton-card { height: 120px; }
+  .skeleton-media { width: 120px; min-width: 120px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ===== DRAWER OVERLAY ===== -->
+<div id="drawer-overlay" class="drawer-overlay" aria-hidden="true"></div>
+
+<!-- ===== MENU LATERAL ESTILO MERCADO LIVRE ===== -->
+<aside id="side-drawer" class="side-drawer" role="complementary" aria-label="Menu de navegação">
+
+  <!-- Cabeçalho do drawer -->
+  <div class="drawer-header">
+    <div class="drawer-welcome">
+      <div class="drawer-user-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="drawer-welcome-name" id="drawer-user-name">Bem-vindo</div>
+      <div class="drawer-welcome-sub" id="drawer-user-sub">Entre para acessar sua conta</div>
+    </div>
+    <button id="drawer-close-btn" class="drawer-close" aria-label="Fechar menu">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Seção de autenticação (exibida quando não logado) -->
+  <div class="drawer-auth" id="drawer-auth-section">
+    <p>Entre na sua conta para acessar:</p>
+    <div class="drawer-auth-features">
+      <span class="drawer-auth-feature">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Compras
+      </span>
+      <span class="drawer-auth-feature">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Favoritos
+      </span>
+      <span class="drawer-auth-feature">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Pedidos
+      </span>
+      <span class="drawer-auth-feature">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Cupons
+      </span>
+    </div>
+    <a href="login.html" class="drawer-btn drawer-btn-primary">Entrar</a>
+    <a href="cadastro.html" class="drawer-btn drawer-btn-secondary">Criar Conta</a>
+  </div>
+
+  <!-- Categorias -->
+  <div class="drawer-section">
+    <div class="drawer-section-title">Categorias</div>
+    <a href="#" class="drawer-link" data-catalog="iphones">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      iPhones
+    </a>
+    <a href="#" class="drawer-link" data-catalog="android">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 16V8a7 7 0 0 1 14 0v8"/><rect x="3" y="16" width="18" height="5" rx="2"/><line x1="8" y1="2" x2="6" y2="5"/><line x1="16" y1="2" x2="18" y2="5"/></svg>
+      Android
+    </a>
+    <a href="#" class="drawer-link" data-catalog="consoles">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="3"/><path d="M7 12v-2M6 11h2"/><circle cx="15" cy="11" r="1" fill="currentColor"/><circle cx="17" cy="13" r="1" fill="currentColor"/></svg>
+      Consoles
+    </a>
+    <a href="#" class="drawer-link" data-catalog="smartwatches">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="5" width="10" height="14" rx="3"/><path d="M9 5V3.5A1.5 1.5 0 0 1 10.5 2h3A1.5 1.5 0 0 1 15 3.5V5"/><path d="M9 19v1.5A1.5 1.5 0 0 0 10.5 22h3a1.5 1.5 0 0 0 1.5-1.5V19"/><polyline points="12 9 12 12 14 13"/></svg>
+      Smartwatches
+    </a>
+    <a href="#" class="drawer-link" data-catalog="acessorios">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      Acessórios
+    </a>
+    <a href="#" class="drawer-link" data-catalog="informatica">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Informática
+    </a>
+  </div>
+
+  <!-- Minha Conta -->
+  <div class="drawer-section">
+    <div class="drawer-section-title">Minha Conta</div>
+    <a href="meus-pedidos.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Meus Pedidos
+    </a>
+    <a href="minha-conta.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Favoritos
+    </a>
+    <a href="cart.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      Carrinho
+    </a>
+    <a href="minha-conta.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Endereços
+    </a>
+    <a href="atendimento.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.66 3.38 2 2 0 0 1 3.64 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.85A16 16 0 0 0 13 14l.93-.93a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 15.36"/></svg>
+      Suporte
+    </a>
+  </div>
+
+  <!-- Ajuda -->
+  <div class="drawer-section">
+    <div class="drawer-section-title">Ajuda</div>
+    <a href="atendimento.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.66 3.38 2 2 0 0 1 3.64 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.85A16 16 0 0 0 13 14l.93-.93a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 15.36"/></svg>
+      Atendimento
+    </a>
+    <a href="faq.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Perguntas Frequentes
+    </a>
+    <a href="trocas.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      Política de Trocas
+    </a>
+    <a href="termos.html" class="drawer-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Termos de Uso
+    </a>
+  </div>
+
+</aside>
+
+<!-- [LOJA OFICIAL] SVG sprite para badge FULL (frete grátis Mercado Livre style) -->
+<svg style="display:none" aria-hidden="true">
+  <defs>
+    <symbol id="poly_full" viewBox="0 0 41 13">
+      <rect width="41" height="13" rx="2" fill="#00A650"/>
+      <text x="5" y="10" font-size="8.5" font-weight="800" fill="#fff" font-family="Arial,sans-serif" letter-spacing=".5">FULL</text>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- Announcement Bar -->
+<div class="announcement-bar">
+  <strong>Frete Grátis</strong> para todo o Brasil em iPhones selecionados · Parcele em até <strong>12x sem juros</strong> · <strong>Garantia de 90 dias</strong>
+</div>
+
+<!-- HEADER PRINCIPAL -->
+<header>
+  <div class="header-main">
+
+    <button id="menu-btn" class="menu-btn" type="button" aria-label="Abrir menu de navegação">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <a href="index.html" class="logo">jessi.<span>iphones</span></a>
+
+    <div class="search-wrapper">
+      <input id="filter-model" class="input" type="text" placeholder="Buscar iPhone por modelo, cor ou capacidade..." autocomplete="off"/>
+      <button id="search-btn" class="search__icon" type="button" aria-label="Buscar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M21 21l-4.35-4.35" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="11" cy="11" r="6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <div class="header-actions">
+      <a href="minha-conta.html" class="header-btn" id="auth-nav-btn">
+        <span class="hb-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </span>
+        <strong>Minha Conta</strong>
+      </a>
+      <div class="cart-btn-wrap">
+        <button class="header-btn" type="button" id="cart-button" onclick="window.location.href='cart.html'">
+          <span class="hb-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          </span>
+          <strong>Carrinho</strong>
+        </button>
+        <span id="cart-count" class="cart-count">0</span>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+<!-- TRUST STRIP -->
+<div class="trust-strip">
+  <div class="trust-strip-inner">
+    <div class="trust-item"><span class="ti-icon"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Compra 100% Segura</div>
+    <div class="trust-item"><span class="ti-icon"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span> Frete para Todo o Brasil</div>
+    <div class="trust-item"><span class="ti-icon"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg></span> Envio Rápido</div>
+    <div class="trust-item"><span class="ti-icon"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Garantia 90 dias</div>
+    <div class="trust-item"><span class="ti-icon"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Suporte WhatsApp</div>
+    <div class="trust-item"><span class="ti-icon"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Produto Original</div>
+  </div>
+</div>
+
+<!-- CATEGORIAS -->
+<div class="categories-bar">
+  <div class="categories">
+
+    <div class="cat-item active" data-catalog="iphones">
+      <div class="cat-item__icon" style="background:#dbeafe;padding:0;">
+        <img src="assets/categories/iphone.png" alt="iPhones" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" loading="eager" onerror="this.style.opacity=0">
+      </div>
+      <span class="cat-item__name">iPhones</span>
+    </div>
+
+    <div class="cat-item" data-catalog="android">
+      <div class="cat-item__icon" style="background:#dcfce7;padding:0;">
+        <img src="assets/categories/android.png" alt="Android" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" loading="lazy" onerror="this.style.opacity=0">
+      </div>
+      <span class="cat-item__name">Android</span>
+    </div>
+
+    <div class="cat-item" data-catalog="consoles">
+      <div class="cat-item__icon" style="background:#ede9fe;padding:0;">
+        <img src="assets/categories/console.png" alt="Consoles" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" loading="lazy" onerror="this.style.opacity=0">
+      </div>
+      <span class="cat-item__name">Consoles</span>
+    </div>
+
+    <div class="cat-item" data-catalog="smartwatches">
+      <div class="cat-item__icon" style="background:#ffedd5;padding:0;">
+        <img src="assets/categories/smartwatch.png" alt="Smartwatches" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" loading="lazy" onerror="this.style.opacity=0">
+      </div>
+      <span class="cat-item__name">Smartwatches</span>
+    </div>
+
+    <div class="cat-item" data-catalog="acessorios">
+      <div class="cat-item__icon" style="background:#fce7f3;padding:0;">
+        <img src="assets/categories/airpods.png" alt="Acessórios" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" loading="lazy" onerror="this.style.opacity=0">
+      </div>
+      <span class="cat-item__name">Acessórios</span>
+    </div>
+
+    <div class="cat-item" data-catalog="informatica">
+      <div class="cat-item__icon" style="background:#cffafe;padding:0;">
+        <img src="assets/categories/notebook.png" alt="Informática" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" loading="lazy" onerror="this.style.opacity=0">
+      </div>
+      <span class="cat-item__name">Informática</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONTEÚDO PRINCIPAL -->
+<div class="main-content">
+
+  <!-- SECTION TITLE -->
+  <div class="section-title">
+    <h2 id="section-title-text">iPhones</h2>
+    <span id="view-all-btn" onclick="document.getElementById('reset-filter').click()" style="cursor:pointer">Ver todos</span>
+  </div>
+
+  <!-- SEÇÃO DE RESULTADOS -->
+  <div class="results-section" id="results-section" style="display:none;">
+    <div class="results-header">
+      <div class="results-count">
+        <span class="results-count__label">Exibindo</span>
+        <span class="results-count__number" id="product-count">0</span>
+        <span class="results-count__suffix">produtos</span>
+      </div>
+      <div class="sort-container">
+        <span class="sort-label">Ordenar por:</span>
+        <div class="sort-dropdown" id="sort-dropdown">
+          <button class="sort-dropdown__trigger" id="sort-trigger">
+            <span class="sort-dropdown__trigger-text" id="sort-selected">Popularidade</span>
+            <span class="sort-dropdown__trigger-icon">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </button>
+          <div class="sort-dropdown__menu" id="sort-menu">
+            <button class="sort-dropdown__option selected" data-sort="popularity">
+              <span class="sort-dropdown__option-icon">✓</span><span>Popularidade</span>
+            </button>
+            <button class="sort-dropdown__option" data-sort="price-low">
+              <span class="sort-dropdown__option-icon">✓</span><span>Menor Preço</span>
+            </button>
+            <button class="sort-dropdown__option" data-sort="price-high">
+              <span class="sort-dropdown__option-icon">✓</span><span>Maior Preço</span>
+            </button>
+            <button class="sort-dropdown__option" data-sort="newest">
+              <span class="sort-dropdown__option-icon">✓</span><span>Mais Recentes</span>
+            </button>
+            <button class="sort-dropdown__option" data-sort="alphabetical">
+              <span class="sort-dropdown__option-icon">✓</span><span>Ordem Alfabética</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="results-divider"></div>
+    <div class="results-filters-info" id="filters-info">
+      <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 6V10L13 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="filters-text">Mostrando resultados relevantes</span>
+    </div>
+  </div>
+
+  <!-- SKELETON LOADER — visível apenas durante fetch de catálogo não cacheado -->
+  <div id="skeleton-loader">
+    <div class="skeleton-grid">
+      <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-content"><div class="skeleton-line" style="height:15px;width:75%"></div><div class="skeleton-line" style="height:13px;width:55%"></div><div class="skeleton-line" style="height:26px;width:48%;margin-top:4px"></div><div class="skeleton-line" style="height:11px;width:38%"></div><div class="skeleton-line" style="height:34px;width:100%;margin-top:auto"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-content"><div class="skeleton-line" style="height:15px;width:82%"></div><div class="skeleton-line" style="height:13px;width:50%"></div><div class="skeleton-line" style="height:26px;width:52%;margin-top:4px"></div><div class="skeleton-line" style="height:11px;width:42%"></div><div class="skeleton-line" style="height:34px;width:100%;margin-top:auto"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-content"><div class="skeleton-line" style="height:15px;width:68%"></div><div class="skeleton-line" style="height:13px;width:60%"></div><div class="skeleton-line" style="height:26px;width:44%;margin-top:4px"></div><div class="skeleton-line" style="height:11px;width:35%"></div><div class="skeleton-line" style="height:34px;width:100%;margin-top:auto"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-content"><div class="skeleton-line" style="height:15px;width:78%"></div><div class="skeleton-line" style="height:13px;width:48%"></div><div class="skeleton-line" style="height:26px;width:50%;margin-top:4px"></div><div class="skeleton-line" style="height:11px;width:40%"></div><div class="skeleton-line" style="height:34px;width:100%;margin-top:auto"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-content"><div class="skeleton-line" style="height:15px;width:71%"></div><div class="skeleton-line" style="height:13px;width:57%"></div><div class="skeleton-line" style="height:26px;width:46%;margin-top:4px"></div><div class="skeleton-line" style="height:11px;width:36%"></div><div class="skeleton-line" style="height:34px;width:100%;margin-top:auto"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-content"><div class="skeleton-line" style="height:15px;width:85%"></div><div class="skeleton-line" style="height:13px;width:52%"></div><div class="skeleton-line" style="height:26px;width:54%;margin-top:4px"></div><div class="skeleton-line" style="height:11px;width:44%"></div><div class="skeleton-line" style="height:34px;width:100%;margin-top:auto"></div></div></div>
+    </div>
+  </div>
+
+  <!-- GRADE DE PRODUTOS -->
+  <div class="products" id="products-grid">
+    <p style="padding:40px;text-align:center;opacity:.5;color:var(--text-2);">Buscando iPhones disponíveis...</p>
+  </div>
+
+  <!-- SENTINEL para IntersectionObserver (auto-load ao rolar) -->
+  <div id="load-more-sentinel" style="height:1px;pointer-events:none;" aria-hidden="true"></div>
+
+  <!-- VER MAIS -->
+  <div id="load-more-wrapper" style="display:none;">
+    <div class="load-more-container">
+      <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+        <button id="load-more-btn" class="load-more-btn" type="button">
+          <span class="load-more-btn__icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;">
+              <path d="M10 5V15M5 10H15"/>
+            </svg>
+          </span>
+          <span id="load-more-text">Ver Mais Produtos</span>
+        </button>
+        <div class="load-more-info">
+          <svg class="load-more-info__icon" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10 6V10L13 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span id="load-more-info-text">Clique para carregar mais produtos</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO DE CONFIANÇA -->
+  <div class="trust-section">
+    <h3>Por que comprar na jessi.iphones?</h3>
+    <div class="trust-grid">
+      <div class="trust-card">
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <strong>Compra Segura</strong>
+        <span>Ambiente 100% protegido e criptografado</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+        <strong>Todo o Brasil</strong>
+        <span>Enviamos para todos os estados</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg></div>
+        <strong>Envio Imediato</strong>
+        <span>Produtos prontos para envio no mesmo dia</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <strong>Garantia 90 dias</strong>
+        <span>Garantia de qualidade em todos os produtos</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <strong>Suporte WhatsApp</strong>
+        <span>Atendimento rápido via WhatsApp</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <strong>Produto Original</strong>
+        <span>iPhones originais Apple verificados</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-content -->
+
+<!-- Elementos ocultos exigidos pelo app.js -->
+<div style="display:none">
+  <select id="filter-condition"><option value=""></option></select>
+  <select id="filter-color"><option value=""></option></select>
+  <input id="filter-max-price" type="number">
+  <button id="apply-filter"></button>
+  <button id="reset-filter"></button>
+</div>
+
+<!-- Cart drawer -->
+<div id="cart-drawer" style="display:none;position:fixed;right:0;top:0;width:min(350px,100vw);height:100%;background:#fff;z-index:10000;box-shadow:-8px 0 24px rgba(0,0,0,.12);padding:20px;overflow-y:auto;box-sizing:border-box;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h3 style="margin:0;font-size:18px;">Carrinho</h3>
+    <button onclick="closeCart()" style="border:none;background:none;cursor:pointer;color:#666;display:flex;align-items:center;padding:4px;" aria-label="Fechar carrinho"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="drawer-content"></div>
+</div>
+
+<div id="chat-widget" style="display:none"><button id="chat-close"></button><div class="chat-option"></div></div>
+
+<script src="js/auth.js"></script>
+<script src="cart.js"></script>
+<script src="compare.js"></script>
+<script src="js/loja-oficial.js"></script>
+<script src="app.js"></script>
+
+<script>
+class ResultsManager {
+  constructor() {
+    this.sortDropdown = document.getElementById('sort-dropdown');
+    this.sortTrigger  = document.getElementById('sort-trigger');
+    this.sortMenu     = document.getElementById('sort-menu');
+    this.productCountEl = document.getElementById('product-count');
+    this.resultsSection = document.getElementById('results-section');
+    this.filtersText    = document.getElementById('filters-text');
+    this.sortOptions    = document.querySelectorAll('.sort-dropdown__option');
+    this.currentSort    = 'popularity';
+    this.initEvents();
+  }
+  initEvents() {
+    this.sortTrigger.addEventListener('click', e => { e.stopPropagation(); this.toggle(); });
+    document.addEventListener('click', e => { if (!this.sortDropdown.contains(e.target)) this.close(); });
+    this.sortOptions.forEach(opt => opt.addEventListener('click', e => { e.preventDefault(); this.select(opt); }));
+    this.observe();
+  }
+  toggle() { this.sortMenu.classList.contains('active') ? this.close() : this.open(); }
+  open()   { this.sortMenu.classList.add('active');    this.sortTrigger.classList.add('active'); }
+  close()  { this.sortMenu.classList.remove('active'); this.sortTrigger.classList.remove('active'); }
+  select(opt) {
+    this.sortOptions.forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    document.getElementById('sort-selected').textContent = opt.textContent.trim();
+    this.currentSort = opt.getAttribute('data-sort');
+    this.sortProducts();
+    setTimeout(() => this.close(), 120);
+    this.filtersText.textContent = `Ordenado por ${opt.textContent.trim().toLowerCase()}`;
+  }
+  sortProducts() {
+    const cards = Array.from(document.querySelectorAll('.olx-adcard'));
+    const getPrice = c => { const t = c.querySelector('.olx-adcard__price')?.textContent; return t ? parseFloat(t.replace(/[^\d,.]/g,'').replace('.','').replace(',','.')) : 0; };
+    const getName  = c => c.querySelector('.olx-adcard__title')?.textContent || '';
+    const getRating= c => { const t = c.querySelector('.rating')?.textContent; return t ? parseFloat(t) : 0; };
+    cards.sort((a,b) => {
+      switch(this.currentSort) {
+        case 'price-low':    return getPrice(a) - getPrice(b);
+        case 'price-high':   return getPrice(b) - getPrice(a);
+        case 'alphabetical': return getName(a).localeCompare(getName(b),'pt-BR');
+        case 'newest':       return 0;
+        default:             return getRating(b) - getRating(a);
+      }
+    });
+    const grid = document.getElementById('products-grid');
+    cards.forEach(c => grid.appendChild(c));
+  }
+  updateCount() {
+    const n = document.querySelectorAll('.olx-adcard:not([style*="display: none"])').length;
+    this.productCountEl.textContent = n > 1000 ? '1000+' : n;
+    this.filtersText.textContent = `${n} ${n===1?'produto':'produtos'} encontrado(s)`;
+    this.resultsSection.style.display = n > 0 ? 'flex' : 'none';
+  }
+  observe() {
+    const grid = document.getElementById('products-grid');
+    let _debounce = null;
+    new MutationObserver(() => {
+      clearTimeout(_debounce);
+      _debounce = setTimeout(() => this.updateCount(), 60);
+    }).observe(grid, { childList: true });
+    this.updateCount();
+  }
+}
+
+document.readyState === 'loading'
+  ? document.addEventListener('DOMContentLoaded', () => window.resultsManager = new ResultsManager())
+  : (window.resultsManager = new ResultsManager());
+
+function updateProductsCount() { window.resultsManager?.updateCount(); }
+</script>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+
+    <div class="benefits">
+      <div class="benefit"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Frete Grátis Selecionados</div>
+      <div class="benefit"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Compra 100% Segura</div>
+      <div class="benefit"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Produtos Originais Apple</div>
+      <div class="benefit"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Até 12x Sem Juros</div>
+    </div>
+
+    <div class="footer-top">
+      <div class="footer-brand">
+        <h2>jessi.<span>iphones</span></h2>
+        <p>iPhones premium com garantia e entrega rápida para todo o Brasil. Sua loja de confiança.</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="#" aria-label="WhatsApp">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </a>
+          <a href="#" aria-label="TikTok">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </a>
+          <a href="#" aria-label="YouTube">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <h3>Institucional</h3>
+        <a href="#">Sobre Nós</a>
+        <a href="atendimento.html">Atendimento</a>
+        <a href="faq.html">FAQ</a>
+        <a href="trocas.html">Trocas e Devoluções</a>
+        <a href="termos.html">Termos de Uso</a>
+      </div>
+      <div class="footer-links">
+        <h3>Atendimento</h3>
+        <a href="atendimento.html">Central de Ajuda</a>
+        <a href="https://wa.me/5511999999999" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="mailto:contato@jessi.iphones">E-mail</a>
+        <a href="atendimento.html">Horário de Atendimento</a>
+      </div>
+      <div class="footer-links">
+        <h3>Minha Conta</h3>
+        <a href="login.html">Entrar</a>
+        <a href="cadastro.html">Cadastrar</a>
+        <a href="meus-pedidos.html">Meus Pedidos</a>
+        <a href="minha-conta.html">Meus Endereços</a>
+      </div>
+      <div class="footer-links">
+        <h3>Pagamentos</h3>
+        <div class="payments">
+          <div class="pay">PIX</div>
+          <div class="pay">Visa</div>
+          <div class="pay">Master</div>
+          <div class="pay">Elo</div>
+        </div>
+        <div class="security"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Ambiente 100% seguro<br>Dados criptografados SSL</div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 jessi.iphones LTDA — Todos os direitos reservados</p>
+      <p>CNPJ: 00.000.000/0001-00</p>
+    </div>
+
+  </div>
+</footer>
+
+
+<script>
+/* ===== MENU LATERAL — DRAWER ===== */
+(function () {
+  const menuBtn      = document.getElementById('menu-btn');
+  const sideDrawer   = document.getElementById('side-drawer');
+  const overlay      = document.getElementById('drawer-overlay');
+  const closeBtn     = document.getElementById('drawer-close-btn');
+
+  function openDrawer() {
+    sideDrawer.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    menuBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeDrawer() {
+    sideDrawer.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    menuBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  menuBtn.addEventListener('click', openDrawer);
+  closeBtn.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
+
+  /* Links de categoria no drawer acionam filtro */
+  document.querySelectorAll('.drawer-link[data-catalog]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      closeDrawer();
+      const catalog = this.getAttribute('data-catalog');
+      document.querySelectorAll('.categories .cat-item').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.catalog === catalog);
+      });
+      const fm = document.getElementById('filter-model');
+      if (fm) fm.value = '';
+      if (window.fetchProducts) window.fetchProducts();
+    });
+  });
+
+  /* Atualiza o drawer com dados do utilizador logado */
+  try {
+    const session = JSON.parse(localStorage.getItem('user-session') || 'null');
+    if (session && session.nome) {
+      const nameEl = document.getElementById('drawer-user-name');
+      const subEl  = document.getElementById('drawer-user-sub');
+      const authEl = document.getElementById('drawer-auth-section');
+      if (nameEl) nameEl.textContent = 'Olá, ' + session.nome.split(' ')[0];
+      if (subEl)  subEl.textContent  = session.email || '';
+      if (authEl) authEl.style.display = 'none';
+    }
+  } catch(e) {}
+})();
+</script>
+
+<!-- SUPPORT WIDGET -->
+<div class="support-widget" id="support-widget">
+  <div class="support-menu" id="support-menu" style="display:none;">
+    <a href="https://wa.me/5511999999999" target="_blank" rel="noopener" class="support-option">
+      <div class="su-icon green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div>
+        <strong>WhatsApp</strong>
+        <span>Resposta imediata</span>
+      </div>
+    </a>
+    <a href="atendimento.html" class="support-option">
+      <div class="su-icon blue">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.66 3.38 2 2 0 0 1 3.64 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.85A16 16 0 0 0 13 14l.93-.93a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 15.36"/></svg>
+      </div>
+      <div>
+        <strong>Atendimento</strong>
+        <span>Central de atendimento</span>
+      </div>
+    </a>
+    <a href="faq.html" class="support-option">
+      <div class="su-icon blue">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <strong>Central de Ajuda</strong>
+        <span>Perguntas frequentes</span>
+      </div>
+    </a>
+  </div>
+  <button class="support-btn" onclick="toggleSupport()" aria-label="Suporte ao cliente" title="Suporte">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="su-icon-open"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="su-icon-close" style="display:none;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</div>
+
+<script>
+function toggleSupport() {
+  const menu = document.getElementById('support-menu');
+  const open = document.getElementById('su-icon-open');
+  const close = document.getElementById('su-icon-close');
+  const visible = menu.style.display !== 'none';
+  menu.style.display = visible ? 'none' : 'block';
+  open.style.display  = visible ? '' : 'none';
+  close.style.display = visible ? 'none' : '';
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#support-widget')) {
+    const menu = document.getElementById('support-menu');
+    if (menu && menu.style.display !== 'none') {
+      menu.style.display = 'none';
+      document.getElementById('su-icon-open').style.display = '';
+      document.getElementById('su-icon-close').style.display = 'none';
+    }
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,511 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento PIX — jessi.iphones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue:      #2563EB;
+      --blue-dark: #1D4ED8;
+      --blue-light:#EFF6FF;
+      --yellow:    #F59E0B;
+      --green:     #16A34A;
+      --green-bg:  #F0FDF4;
+      --green-border:#BBF7D0;
+      --bg:        #F1F5F9;
+      --card:      #FFFFFF;
+      --text:      #0F172A;
+      --text-2:    #475569;
+      --muted:     #94A3B8;
+      --border:    #E2E8F0;
+      --shadow:    0 1px 3px rgba(0,0,0,.07), 0 4px 20px rgba(0,0,0,.07);
+      --radius:    14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+
+    /* ===== HEADER ===== */
+    .site-header {
+      background: var(--blue);
+      padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .site-logo { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+    .site-logo span { color: var(--yellow); }
+    .hdr-back {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 14px;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 7px;
+      font-size: 13px; font-weight: 600;
+      color: #fff; cursor: pointer;
+    }
+    .hdr-back:hover { background: rgba(255,255,255,.25); }
+    .hdr-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    /* ===== STEPS ===== */
+    .steps-bar {
+      background: #fff; border-bottom: 1px solid var(--border); padding: 14px 24px;
+    }
+    .steps { max-width: 600px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+    .step { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .step.done   { color: var(--green); }
+    .step.active { color: var(--blue); }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      background: var(--border); color: var(--muted); flex-shrink: 0;
+    }
+    .step.done   .step-num { background: var(--green); color: #fff; }
+    .step.active .step-num { background: var(--blue);  color: #fff; }
+    .step-connector { flex: 1; height: 2px; background: var(--border); margin: 0 10px; min-width: 32px; }
+    .step-connector.done { background: var(--green); }
+
+    /* ===== SHELL ===== */
+    .page-shell {
+      width: min(720px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 60px;
+    }
+
+    .page-nav { margin-bottom: 18px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--blue); font-size: 13px; font-weight: 600;
+    }
+    .back-link:hover { text-decoration: underline; }
+
+    /* PAGE HEADER */
+    .page-header { text-align: center; margin-bottom: 28px; }
+    .brand-mark {
+      width: 60px; height: 60px;
+      border-radius: 18px;
+      display: inline-grid; place-items: center;
+      background: var(--blue);
+      color: white; font-weight: 800; font-size: 1.1rem;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(37,99,235,.3);
+    }
+    .brand-copy h1 {
+      margin: 0; font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+      font-weight: 800; letter-spacing: -.02em; color: var(--text);
+    }
+    .brand-copy p {
+      margin: 10px auto 0; max-width: 480px;
+      color: var(--text-2); font-size: .95rem; line-height: 1.7;
+    }
+
+    /* ===== CARDS ===== */
+    .main-card { display: grid; gap: 16px; }
+
+    .summary-card, .qr-section {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px 26px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      margin: 0 0 18px;
+      font-size: 1.05rem; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px; height: 18px;
+      background: var(--blue);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* FINANCE LIST */
+    .finance-list { display: grid; gap: 10px; }
+    .finance-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text); font-size: .95rem;
+      border: 1px solid var(--border);
+    }
+    .finance-row strong { font-weight: 700; }
+    .total-row {
+      background: var(--green-bg);
+      border-color: var(--green-border);
+      font-size: 1.05rem;
+    }
+    .total-row strong { color: var(--green); font-size: 1.2rem; }
+
+    /* QR SECTION */
+    .card-title-row { display: grid; gap: 10px; margin-bottom: 18px; }
+    .note-text { margin: 0; color: var(--text-2); line-height: 1.7; font-size: .9rem; }
+
+    .loading-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px;
+      text-align: center;
+      color: var(--text-2);
+      font-size: .95rem; font-weight: 500;
+    }
+
+    .qr-card {
+      display: grid; gap: 18px;
+      padding: 22px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      text-align: center;
+    }
+    .qr-card h2 { margin: 0; font-size: 1.05rem; color: var(--text); }
+
+    .qr-code-frame {
+      width: 100%; max-width: 280px;
+      margin: 0 auto;
+      border-radius: 16px;
+      border: 3px solid var(--border);
+      background: white;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    }
+    .qr-code-frame img { width: 100%; display: block; background: #fff; }
+
+    /* COPY GROUP */
+    .copy-group { display: grid; gap: 10px; }
+
+    .copy-field {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: white;
+      color: var(--text);
+      font-size: 14px;
+      letter-spacing: .01em;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .copy-field:focus { border-color: var(--blue); }
+
+    .copy-button {
+      border: none;
+      background: var(--blue);
+      color: white;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: .95rem; font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      width: 100%;
+    }
+    .copy-button:hover { background: var(--blue-dark); transform: translateY(-1px); }
+
+    /* TIMER */
+    .timer-banner {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: var(--blue-light);
+      border: 1px solid #BFDBFE;
+      color: var(--blue);
+      font-weight: 700; font-size: .9rem;
+      margin: 0 auto;
+    }
+
+    /* PAYMENT STATUS */
+    .payment-status {
+      display: inline-flex;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: #FEF3C7;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+      font-weight: 700; font-size: .875rem;
+      margin: 0 auto;
+      width: fit-content;
+    }
+
+    /* SUCCESS */
+    .success-panel {
+      display: none;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .success-panel h2 { margin: 0 0 10px; color: var(--green); font-size: 1.3rem; }
+    .success-panel p  { margin: 0 0 16px; color: var(--text-2); }
+    .success-panel a {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: var(--blue); color: white;
+      padding: 13px 22px;
+      border-radius: 10px;
+      font-weight: 700; font-size: .9rem;
+      transition: background .2s;
+    }
+    .success-panel a:hover { background: var(--blue-dark); }
+
+    /* PROOF UPLOAD */
+    .proof-button {
+      width: 100%; max-width: 280px; margin: 0 auto;
+      border: none;
+      background: var(--green);
+      color: white;
+      border-radius: 10px;
+      padding: 13px;
+      font-size: .9rem; font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .proof-button:hover { background: #15803D; }
+    .proof-feedback { margin: 6px 0 0; color: var(--blue); font-size: .875rem; text-align: center; }
+
+    /* TRUST SECTION */
+    .payment-trust {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      margin-top: 16px;
+    }
+    .pt-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 10px 12px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      color: var(--green);
+    }
+
+    /* PROOF MODAL */
+    .proof-modal {
+      position: fixed; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+      background: rgba(15,23,42,.55);
+      z-index: 50;
+    }
+    .proof-modal.active { display: flex; }
+    .proof-modal-card {
+      width: min(520px, 100%);
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(15,23,42,.2);
+      display: grid; gap: 14px;
+    }
+    .proof-modal-card h3 { margin: 0; font-size: 1.15rem; }
+    .proof-field {
+      width: 100%; padding: 13px 14px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border);
+      font-size: 15px; color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .proof-field:focus { border-color: var(--blue); }
+    .proof-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .proof-actions button { flex: 1 1 auto; border-radius: 8px; padding: 12px 16px; border: none; cursor: pointer; font-weight: 700; font-size: .9rem; transition: background .2s; }
+    .proof-cancel { background: var(--border); color: var(--text); }
+    .proof-cancel:hover { background: #CBD5E1; }
+    .proof-submit { background: var(--blue); color: white; }
+    .proof-submit:hover { background: var(--blue-dark); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 640px) {
+      .page-shell { width: calc(100% - 24px); padding: 20px 0 40px; }
+      .summary-card, .qr-section { padding: 18px; }
+      .steps-bar { padding: 10px 16px; }
+      .step span { display: none; }
+      .payment-trust { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <a href="index.html" class="site-logo">jessi.<span>iphones</span></a>
+    <a href="javascript:history.back()" class="hdr-back" style="white-space:nowrap;">← Voltar</a>
+    <div class="hdr-actions"></div>
+  </header>
+
+  <!-- STEPS -->
+  <div class="steps-bar">
+    <div class="steps">
+      <div class="step done">
+        <span class="step-num">✓</span>
+        <span>Carrinho</span>
+      </div>
+      <div class="step-connector done"></div>
+      <div class="step done">
+        <span class="step-num">✓</span>
+        <span>Frete</span>
+      </div>
+      <div class="step-connector done"></div>
+      <div class="step active">
+        <span class="step-num">3</span>
+        <span>Pagamento</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-shell">
+    <nav class="page-nav">
+      <a href="javascript:history.back()" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar
+      </a>
+    </nav>
+
+    <header class="page-header">
+      <div class="brand-mark">PIX</div>
+      <div class="brand-copy">
+        <h1>Pagamento via PIX</h1>
+        <p>Finalize seu pedido com segurança e rapidez. O PIX é processado em segundos.</p>
+      </div>
+    </header>
+
+    <main class="main-card">
+      <!-- RESUMO FINANCEIRO -->
+      <section class="summary-card">
+        <h2 class="card-title">Resumo Financeiro</h2>
+        <div class="finance-list">
+          <div class="finance-row">
+            <span>Subtotal</span>
+            <strong id="financial-subtotal">R$ 0,00</strong>
+          </div>
+          <div class="finance-row">
+            <span style="display:inline-flex;align-items:center;gap:5px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Frete</span>
+            <strong id="financial-frete">R$ 0,00</strong>
+          </div>
+          <div class="finance-row total-row">
+            <span>Total a pagar</span>
+            <strong id="payment-total">R$ 0,00</strong>
+          </div>
+        </div>
+
+        <div class="payment-trust">
+          <div class="pt-item"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pagamento Seguro</div>
+          <div class="pt-item"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Produto Original</div>
+          <div class="pt-item"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Garantia 90 dias</div>
+          <div class="pt-item"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Frete para o Brasil</div>
+        </div>
+      </section>
+
+      <!-- QR CODE -->
+      <section class="qr-section">
+        <div class="card-title-row">
+          <h2 class="card-title">QR Code PIX</h2>
+          <p class="note-text">
+            Aguarde o QR Code ser gerado. Após escanear, o pedido será confirmado automaticamente.
+            Você também pode copiar o código PIX e colar no seu banco.
+          </p>
+        </div>
+
+        <div id="loading" class="loading-card">
+          <div style="margin-bottom:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <p id="loading-text" style="margin:0;">Gerando pagamento PIX...</p>
+        </div>
+
+        <div id="payment-details" class="qr-card" style="display:none;">
+          <h2 style="display:flex;align-items:center;justify-content:center;gap:7px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Escaneie o QR Code abaixo</h2>
+          <p style="margin:0;color:var(--text-2);font-size:.875rem;">
+            ID: <strong id="payment-id">—</strong> ·
+            Valor: <strong id="payment-amount">R$ 0,00</strong>
+          </p>
+
+          <div class="qr-code-frame">
+            <img id="qr-code-image" src="" alt="QR Code PIX"/>
+          </div>
+
+          <div class="copy-group">
+            <input id="pix-code" class="copy-field" type="text" readonly placeholder="Código PIX será exibido aqui"/>
+            <button class="copy-button" onclick="copyPixCode()" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar Código PIX</button>
+          </div>
+
+          <div id="timer" class="timer-banner">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Tempo restante: <span id="time">30:00</span>
+          </div>
+
+          <div id="payment-status" class="payment-status pending" style="display:inline-flex;align-items:center;gap:6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Aguardando confirmação do pagamento...
+          </div>
+
+          <button id="proof-button" class="proof-button" type="button" style="display:none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            Enviar Comprovante de Pagamento
+          </button>
+          <input id="proof-file" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display:none;"/>
+          <p id="proof-feedback" style="display:none;" class="proof-feedback"></p>
+        </div>
+      </section>
+    </main>
+
+    <!-- SUCCESS -->
+    <div id="success-message" class="success-panel" style="display:none;">
+      <div style="margin-bottom:12px;"><svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <h2>Pagamento Confirmado!</h2>
+      <p>Obrigado pela sua compra. Seu pedido foi confirmado com sucesso e será enviado em breve.</p>
+      <a href="/"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Voltar à loja</a>
+    </div>
+  </div>
+
+  <!-- PROOF MODAL -->
+  <div id="proof-modal" class="proof-modal" role="dialog" aria-modal="true">
+    <div class="proof-modal-card">
+      <h3 style="display:flex;align-items:center;gap:7px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> Enviar Comprovante de Pagamento</h3>
+      <p style="margin:0;color:var(--text-2);font-size:.875rem;">Informe seus dados para vincular o comprovante ao seu pedido.</p>
+      <input id="proof-name"  class="proof-field" type="text" placeholder="Nome completo"/>
+      <input id="proof-phone" class="proof-field" type="tel"  placeholder="Telefone com DDD (ex: 11 9 1234-5678)"/>
+      <p style="margin:0;color:var(--muted);font-size:.8rem;">Após confirmar, escolha o arquivo de comprovante.</p>
+      <div class="proof-actions">
+        <button id="proof-cancel" class="proof-cancel" type="button">Cancelar</button>
+        <button id="proof-submit" class="proof-submit" type="button">Confirmar e Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/payment.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const checkoutSummary = JSON.parse(localStorage.getItem('checkout-summary') || 'null');
+      const shipping        = JSON.parse(localStorage.getItem('shipping')          || 'null');
+      const total = (checkoutSummary && checkoutSummary.total_final) || (shipping && shipping.total) || 0;
+
+      if (!checkoutSummary || !shipping) return;
+
+      document.getElementById('financial-subtotal').textContent = formatBRL(checkoutSummary.subtotal || 0);
+      document.getElementById('financial-frete').textContent    = formatBRL(shipping.frete || 0);
+      document.getElementById('payment-total').textContent      = formatBRL(total);
+      document.getElementById('payment-amount').textContent     = formatBRL(total);
+    });
+
+    function formatBRL(value) {
+      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+  </script>
+</body>
+</html>

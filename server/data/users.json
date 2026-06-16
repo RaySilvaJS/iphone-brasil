@@ -1,0 +1,32 @@
+[
+  {
+    "id": "934a4e9e-43c9-4ffe-bca2-902403051995",
+    "nome": "GABRIELLE FREITAS",
+    "cpf": "05590712211",
+    "whatsapp": "55949910646",
+    "email": "rs2508018@gmail.com",
+    "senha": "uyj32e5hjH5EuEK",
+    "token": null,
+    "createdAt": "2026-06-08T17:53:17.218Z"
+  },
+  {
+    "id": "f979367a-4a2e-491a-95e0-ab894138da85",
+    "nome": "Luana Jesus Da Silva",
+    "cpf": "50605569487",
+    "whatsapp": "55119164606",
+    "email": "crown.contats@gmail.com",
+    "senha": "dRCyNhTUpu3a6qF",
+    "token": "24fa34ec-5f71-4695-a043-03c7366ccec7",
+    "createdAt": "2026-06-09T12:02:06.773Z"
+  },
+  {
+    "id": "b063054e-94ab-4d05-9089-a95e6bfeb82e",
+    "nome": "João da silva",
+    "cpf": "05590712211",
+    "whatsapp": "94991445211",
+    "email": "tobi@gmail.com",
+    "senha": "vetci0-nosqyk-witPag",
+    "token": "8de45be7-a0d2-479f-8265-63cfc7a4ea89",
+    "createdAt": "2026-06-13T09:50:22.168Z"
+  }
+]

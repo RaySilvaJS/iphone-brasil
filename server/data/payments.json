@@ -1,0 +1,362 @@
+[
+  {
+    "id": "5dc83f5e-afa4-4466-9be2-1ed51e7d6e95",
+    "productId": "iphone-11",
+    "amount": "1720.77",
+    "status": "pending",
+    "createdAt": "2026-05-30T12:28:39.990Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/a488af9b97f545648a83b7bb4576b5915204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***6304EB00",
+    "clientId": "::ffff:192.168.18.76"
+  },
+  {
+    "id": "98fbd607-b45c-4efe-ac6e-d38e9bbf4744",
+    "productId": "11928794",
+    "amount": "1105.77",
+    "status": "pending",
+    "createdAt": "2026-05-30T22:01:32.986Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/a488af9b97f545648a83b7bb4576b5915204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***6304EB00",
+    "clientId": "::1"
+  },
+  {
+    "id": "d36b4e31-f2c8-41f4-a8ec-9a3c26aae749",
+    "productId": "11928775",
+    "amount": "1554.72",
+    "status": "pending",
+    "createdAt": "2026-05-31T04:34:53.478Z",
+    "qrCode": null,
+    "clientId": "::ffff:192.168.18.76"
+  },
+  {
+    "id": "573518e5-9ae4-44c8-878d-d3eacdaa1afb",
+    "productId": "MLB1027172667",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-07T15:00:43.087Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/c0e648dec8584bfba0c670eac7892f2a5204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***63047D00",
+    "clientId": "::ffff:10.0.0.103"
+  },
+  {
+    "id": "8904529d-47eb-4ee8-97e7-e15720ec55b0",
+    "productId": "MLB1027172667",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-07T15:10:45.410Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/c0e648dec8584bfba0c670eac7892f2a5204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***63047D00",
+    "clientId": "::ffff:10.0.0.103"
+  },
+  {
+    "id": "87c44b1c-9739-4632-b6c6-ddc587227487",
+    "productId": "MLB1027172667",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-07T15:15:08.127Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.103"
+  },
+  {
+    "id": "2b9f8e1d-3585-4e1e-98f2-e4e0d72814e3",
+    "productId": "MLB1027172667",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-07T15:17:53.185Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/c0e648dec8584bfba0c670eac7892f2a5204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***63047D00",
+    "clientId": "::ffff:10.0.0.110"
+  },
+  {
+    "id": "484eb673-fae2-41c7-b9e9-f2cead8ae4c2",
+    "productId": "MLB1027172667",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-07T15:23:46.814Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/c0e648dec8584bfba0c670eac7892f2a5204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***63047D00",
+    "clientId": "::ffff:10.0.0.103"
+  },
+  {
+    "id": "778fc63d-22fc-4634-9ca7-86a215aaf2e2",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 4179,
+    "status": "awaiting_validation",
+    "createdAt": "2026-06-07T15:32:26.260Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/c0e648dec8584bfba0c670eac7892f2a5204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***63047D00",
+    "clientId": "::ffff:10.0.0.103",
+    "proofs": [
+      {
+        "id": "5c33acde-9d81-4c15-8dc7-7b036d02d76d",
+        "fileName": "Screenshot_20260607_120145_Chrome.jpg",
+        "storedFileName": "778fc63d-22fc-4634-9ca7-86a215aaf2e2_1780846381799_Screenshot_20260607_120145_Chrome.jpg",
+        "mimeType": "image/jpeg",
+        "uploadedAt": "2026-06-07T15:33:01.800Z",
+        "customerName": "Oi",
+        "customerPhone": "94991445211"
+      }
+    ]
+  },
+  {
+    "id": "cf52b37c-b830-44bf-b0c4-1681dc629885",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-07T15:34:05.243Z",
+    "qrCode": "00020101021226790014br.gov.bcb.pix2557qrcode.mwbank.com.br/cob/c0e648dec8584bfba0c670eac7892f2a5204000053039865802BR5925MOREIRA INTERMEDIACOES LT6009SAO PAULO62070503***63047D00",
+    "clientId": "::ffff:10.0.0.103",
+    "proofs": []
+  },
+  {
+    "id": "a8dd75e1-7642-4cec-b230-427290f1b9fe",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-08T17:53:42.791Z",
+    "qrCode": "00020101021226940014br.gov.bcb.pix2572qrcode.hyperwalletip.com.br/dynamic/ab388112-b83b-4ed8-a4a8-3455a0eae5c85204000053039865802BR5911UNIPAY LTDA6009Sao Paulo62070503***6304FD7B",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "934a4e9e-43c9-4ffe-bca2-902403051995",
+    "proofs": []
+  },
+  {
+    "id": "bcadfb35-fe93-48db-85ad-29f48e8d9fbe",
+    "productId": "MLB2000126298",
+    "productName": "iPhone 8 64 GB cinza-espacial - Aceitável (Recondicionado)",
+    "amount": 519.73,
+    "status": "pending",
+    "createdAt": "2026-06-08T18:17:24.283Z",
+    "qrCode": "00020101021226940014br.gov.bcb.pix2572qrcode.hyperwalletip.com.br/dynamic/ab388112-b83b-4ed8-a4a8-3455a0eae5c85204000053039865802BR5911UNIPAY LTDA6009Sao Paulo62070503***6304FD7B",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "934a4e9e-43c9-4ffe-bca2-902403051995",
+    "proofs": []
+  },
+  {
+    "id": "d52b2d6d-25a6-4335-9851-eecfef68782e",
+    "productId": "MLB1055308721",
+    "productName": "iPhone 17 Pro Max 2TB - Prateado - Distribuidor Autorizado",
+    "amount": 14439,
+    "status": "pending",
+    "createdAt": "2026-06-08T20:38:39.076Z",
+    "qrCode": "00020101021226940014br.gov.bcb.pix2572qrcode.hyperwalletip.com.br/dynamic/ab388112-b83b-4ed8-a4a8-3455a0eae5c85204000053039865802BR5911UNIPAY LTDA6009Sao Paulo62070503***6304FD7B",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "934a4e9e-43c9-4ffe-bca2-902403051995",
+    "proofs": []
+  },
+  {
+    "id": "48cb8b8d-521b-4e1b-9eba-8e6bbfa2ec0a",
+    "productId": "MLB1055308721",
+    "productName": "iPhone 17 Pro Max 2TB - Prateado - Distribuidor Autorizado",
+    "amount": 14439,
+    "status": "pending",
+    "createdAt": "2026-06-09T11:56:25.718Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "934a4e9e-43c9-4ffe-bca2-902403051995",
+    "proofs": []
+  },
+  {
+    "id": "ff16a90c-5935-4921-a59f-5532207d42c6",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 4179,
+    "status": "pending",
+    "createdAt": "2026-06-09T12:02:24.482Z",
+    "qrCode": "00020101021226940014br.gov.bcb.pix2572qrcode.hyperwalletip.com.br/dynamic/ab388112-b83b-4ed8-a4a8-3455a0eae5c85204000053039865802BR5911UNIPAY LTDA6009Sao Paulo62070503***6304FD7B",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "f979367a-4a2e-491a-95e0-ab894138da85",
+    "proofs": []
+  },
+  {
+    "id": "88966185-faf2-4651-ab5b-17a11c2710dc",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 3311.2800000000007,
+    "status": "pending",
+    "createdAt": "2026-06-09T12:47:34.847Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "f979367a-4a2e-491a-95e0-ab894138da85",
+    "proofs": []
+  },
+  {
+    "id": "a9d8bc5b-485d-4da3-a45b-90149fb6531e",
+    "productId": "MLB1055308605",
+    "productName": "iPhone 17 Pro Max 256GB - Prateado - Distribuidor Autorizado",
+    "amount": 7592.0025000000005,
+    "status": "awaiting_validation",
+    "createdAt": "2026-06-09T13:49:02.244Z",
+    "qrCode": "00020101021226940014br.gov.bcb.pix2572qrcode.hyperwalletip.com.br/dynamic/ab388112-b83b-4ed8-a4a8-3455a0eae5c85204000053039865802BR5911UNIPAY LTDA6009Sao Paulo62070503***6304FD7B",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "f979367a-4a2e-491a-95e0-ab894138da85",
+    "proofs": [
+      {
+        "id": "eeb57ded-adcb-4ddd-8b3a-e8e2ee6a722d",
+        "fileName": "Screenshot_20260609_102513_Chrome.jpg",
+        "storedFileName": "a9d8bc5b-485d-4da3-a45b-90149fb6531e_1781012961663_Screenshot_20260609_102513_Chrome.jpg",
+        "mimeType": "image/jpeg",
+        "uploadedAt": "2026-06-09T13:49:21.666Z",
+        "customerName": "Oi",
+        "customerPhone": "94991445211"
+      }
+    ]
+  },
+  {
+    "id": "ec3fccd3-540b-4af2-a7a3-13a1cc23ec4c",
+    "productId": "MLB2000126298",
+    "productName": "iPhone 8 64 GB cinza-espacial - Aceitável (Recondicionado)",
+    "amount": 423.764,
+    "status": "awaiting_validation",
+    "createdAt": "2026-06-09T22:21:01.448Z",
+    "qrCode": "00020101021226940014br.gov.bcb.pix2572qrcode.hyperwalletip.com.br/dynamic/ab388112-b83b-4ed8-a4a8-3455a0eae5c85204000053039865802BR5911UNIPAY LTDA6009Sao Paulo62070503***6304FD7B",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "f979367a-4a2e-491a-95e0-ab894138da85",
+    "proofs": [
+      {
+        "id": "3e532720-fddb-4390-958c-993671abd662",
+        "fileName": "Screenshot_20260609_184522_WhatsApp.jpg",
+        "storedFileName": "ec3fccd3-540b-4af2-a7a3-13a1cc23ec4c_1781043700474_Screenshot_20260609_184522_WhatsApp.jpg",
+        "mimeType": "image/jpeg",
+        "uploadedAt": "2026-06-09T22:21:40.615Z",
+        "customerName": "Oi",
+        "customerPhone": "94991445211"
+      }
+    ]
+  },
+  {
+    "id": "f43e13b9-50fd-4960-a6c1-592154639248",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 2897.37,
+    "status": "pending",
+    "createdAt": "2026-06-13T09:45:23.086Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.119",
+    "userId": null,
+    "proofs": []
+  },
+  {
+    "id": "9ed075d0-3d22-47fe-8e48-7dec1b77fdbc",
+    "productId": "iph-005",
+    "productName": "Apple iPhone 15 Pro (128 GB) - Titânio Preto",
+    "amount": 5009.199999999999,
+    "status": "pending",
+    "createdAt": "2026-06-13T11:38:57.877Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.119",
+    "userId": "b063054e-94ab-4d05-9089-a95e6bfeb82e",
+    "proofs": []
+  },
+  {
+    "id": "dd4ce2df-018a-4d2b-812c-efe9eeefe1b3",
+    "productId": "MLB1046215784",
+    "productName": "iPhone 16e (128 GB) - Preto - Distribuidor Autorizado",
+    "amount": 2689.335,
+    "status": "pending",
+    "createdAt": "2026-06-13T16:50:34.381Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.119",
+    "userId": "b063054e-94ab-4d05-9089-a95e6bfeb82e",
+    "proofs": []
+  },
+  {
+    "id": "afcb4912-84c7-4482-9e40-eaad2e1c4aa0",
+    "productId": "MLB1046215784",
+    "productName": "iPhone 16e (128 GB) - Preto - Distribuidor Autorizado",
+    "amount": 2699.28,
+    "status": "pending",
+    "createdAt": "2026-06-14T12:20:43.563Z",
+    "qrCode": "00020101021226640014br.gov.bcb.pix2542pix.magenpay.io/cob/M53RrJcORJmPqNojc7BH5w5204000053039865802BR5911NELION LTDA6009SAO PAULO62070503***63041F29",
+    "clientId": "::1",
+    "userId": null,
+    "proofs": []
+  },
+  {
+    "id": "7caf8b78-c759-4f70-95c6-07458b48e794",
+    "productId": "MLB2000126298, MLB1046215784",
+    "productName": "iPhone 8 64 GB cinza-espacial - Aceitável (Recondicionado), iPhone 16e (128 GB) - Preto - Distribuidor Autorizado",
+    "amount": 2896.5699999999997,
+    "status": "awaiting_validation",
+    "createdAt": "2026-06-14T13:50:06.037Z",
+    "qrCode": "00020101021226640014br.gov.bcb.pix2542pix.magenpay.io/cob/M53RrJcORJmPqNojc7BH5w5204000053039865802BR5911NELION",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "f979367a-4a2e-491a-95e0-ab894138da85",
+    "proofs": [
+      {
+        "id": "cb43582b-d5b2-4205-9010-f1d7b106c99a",
+        "fileName": "IMG-20260614-WA0053.jpg",
+        "storedFileName": "7caf8b78-c759-4f70-95c6-07458b48e794_1781445057379_IMG-20260614-WA0053.jpg",
+        "mimeType": "image/jpeg",
+        "uploadedAt": "2026-06-14T13:50:57.382Z",
+        "customerName": "Oi",
+        "customerPhone": "94991445211"
+      }
+    ]
+  },
+  {
+    "id": "f365bf3a-6326-49cc-a462-7ec297164c6c",
+    "productId": "MLB47115842",
+    "productName": "Smartphone Samsung Galaxy A36 5g 128gb 6gb Ram Câmera Tripla De Até 50mp Selfie De 12mp Ip67 Super Amoled 6.7'' Nfc Recursos Ai Android E Segurança Snapdragon - Preto",
+    "amount": 1048.275,
+    "status": "awaiting_validation",
+    "createdAt": "2026-06-14T13:55:50.669Z",
+    "qrCode": "00020101021226640014br.gov.bcb.pix2542pix.magenpay.io/cob/M53RrJcORJmPqNojc7BH5w5204000053039865802BR5911NELION LTDA6009SAO PAULO62070503***63041F29",
+    "clientId": "::ffff:10.0.0.103",
+    "userId": "f979367a-4a2e-491a-95e0-ab894138da85",
+    "proofs": [
+      {
+        "id": "97ed4c8a-e68c-4ac3-ae84-e86744ba1ad4",
+        "fileName": "IMG-20260614-WA0057.jpg",
+        "storedFileName": "f365bf3a-6326-49cc-a462-7ec297164c6c_1781445425865_IMG-20260614-WA0057.jpg",
+        "mimeType": "image/jpeg",
+        "uploadedAt": "2026-06-14T13:57:05.868Z",
+        "customerName": "Oi",
+        "customerPhone": "94991445211"
+      }
+    ]
+  },
+  {
+    "id": "22ebdba9-45c0-427e-99dc-89813e339dcc",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 2865.7999999999997,
+    "status": "pending",
+    "createdAt": "2026-06-14T18:25:15.568Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.119",
+    "userId": "b063054e-94ab-4d05-9089-a95e6bfeb82e",
+    "proofs": []
+  },
+  {
+    "id": "3aa52da5-827f-40ab-80a1-45071ee6d162",
+    "productId": "MLB1027172667",
+    "productName": "Apple iPhone 15 (128 GB) - Azul - Distribuidor Autorizado",
+    "amount": 2897.37,
+    "status": "pending",
+    "createdAt": "2026-06-14T18:35:21.288Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.119",
+    "userId": "b063054e-94ab-4d05-9089-a95e6bfeb82e",
+    "proofs": []
+  },
+  {
+    "id": "b6bb902b-6454-40b4-97be-7923fb2b998c",
+    "productId": "MLB2000031491",
+    "productName": "Apple iPhone 16 Pro Max (256 GB) - Titânio-preto - Excelente (Recondicionado)",
+    "amount": 5119.58,
+    "status": "pending",
+    "createdAt": "2026-06-14T21:56:28.311Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.119",
+    "userId": "b063054e-94ab-4d05-9089-a95e6bfeb82e",
+    "proofs": []
+  },
+  {
+    "id": "8563a3a4-5b45-4cdd-a683-b8fb9af66d2c",
+    "productId": "MLB2000042585",
+    "productName": "Apple iPhone 14 (128 GB) - (PRODUCT)RED - Excelente (Recondicionado)",
+    "amount": 1836.75,
+    "status": "pending",
+    "createdAt": "2026-06-15T14:48:00.886Z",
+    "qrCode": null,
+    "clientId": "::ffff:10.0.0.119",
+    "userId": "b063054e-94ab-4d05-9089-a95e6bfeb82e",
+    "proofs": []
+  }
+]

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .payment-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--purple, #6d4aff);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .qr-code {
+            max-width: 250px;
+            margin: 0 auto;
+        }
+
+        .copy-code {
+            width: 100%;
+            padding: 0.5rem;
+            margin: 1rem 0;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .payment-status {
+            text-align: center;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .pending { background: #fff3cd; color: #856404; }
+        .paid { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        <h1>Processando Pagamento</h1>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loading-text">Gerando pagamento...</p>
+        </div>
+        
+        <div id="payment-details" style="display: none;">
+            <h2>Pagamento via PIX</h2>
+            <p>ID: <span id="payment-id"></span></p>
+            <p>Valor: <span id="payment-amount"></span></p>
+            
+            <div class="qr-code-container">
+                <img id="qr-code-image" class="qr-code" src="" alt="QR Code PIX">
+                <input type="text" id="pix-code" class="copy-code" readonly>
+                <button onclick="copyPixCode()">Copiar Código PIX</button>
+            </div>
+            
+            <div class="payment-status pending" id="payment-status">
+                Aguardando confirmação de pagamento...
+            </div>
+            
+            <div id="timer">Tempo restante: <span id="time">30:00</span></div>
+        </div>
+        
+        <div id="success-message" style="display: none;">
+            <h2>Pagamento confirmado!</h2>
+            <p>Obrigado pela sua compra.</p>
+            <a href="/">Voltar à loja</a>
+        </div>
+    </div>
+
+    <script src="/js/payment.js"></script>
+</body>
+</html>

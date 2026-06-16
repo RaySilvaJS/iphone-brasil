@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Finalizar Compra — jessi.iphones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #F8FAFC;
+      color: #111827;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    img { max-width: 100%; display: block; }
+
+    /* HEADER */
+    .hdr {
+      background: #fff;
+      border-bottom: 1px solid #E5E7EB;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hdr-logo { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: -.02em; }
+    .hdr-logo span { color: #2563EB; }
+    .hdr-lock {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600; color: #6B7280;
+    }
+
+    /* STEPS */
+    .steps {
+      background: #fff;
+      border-bottom: 1px solid #E5E7EB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 0 24px;
+      height: 48px;
+    }
+    .step {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: #9CA3AF;
+    }
+    .step.done  { color: #16A34A; }
+    .step.active { color: #2563EB; }
+    .step-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #F3F4F6; border: 2px solid #E5E7EB;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #9CA3AF; flex-shrink: 0;
+    }
+    .step.done  .step-dot { background: #16A34A; border-color: #16A34A; color: #fff; }
+    .step.active .step-dot { background: #2563EB; border-color: #2563EB; color: #fff; }
+    .step-sep { width: 40px; height: 1px; background: #E5E7EB; margin: 0 8px; flex-shrink: 0; }
+    .step-sep.done { background: #16A34A; }
+
+    /* LAYOUT */
+    .shell {
+      max-width: 860px; margin: 0 auto;
+      padding: 24px 16px 60px;
+      display: flex; gap: 20px; align-items: flex-start;
+    }
+    .col-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+    .col-side { flex: 0 0 272px; max-width: 272px; position: sticky; top: 16px; }
+
+    /* CARD */
+    .card {
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .card-title {
+      padding: 14px 18px;
+      border-bottom: 1px solid #F3F4F6;
+      font-size: 13px; font-weight: 700; color: #374151;
+    }
+    .card-body { padding: 16px 18px; }
+
+    /* ORDER ITEMS (injetado pelo checkout.js) */
+    .order-item {
+      display: flex; gap: 12px; align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .order-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .order-item:first-child { padding-top: 0; }
+    .order-item img {
+      width: 60px; height: 60px; border-radius: 8px;
+      border: 1px solid #E5E7EB; object-fit: contain;
+      padding: 4px; background: #FAFAFA; flex-shrink: 0;
+    }
+    .order-item-details { flex: 1; min-width: 0; }
+    .order-item-details strong { display: block; font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 2px; }
+    .order-item-details p { margin: 2px 0; font-size: 12px; color: #6B7280; }
+
+    /* CEP */
+    .cep-row { display: flex; gap: 8px; align-items: flex-end; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+    input[type=text] {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid #D1D5DB; border-radius: 8px;
+      background: #fff; color: #111827; font-size: 14px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input[type=text]:focus {
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+    input::placeholder { color: #D1D5DB; }
+    .btn-calc {
+      padding: 10px 16px;
+      background: #2563EB; color: #fff;
+      border: none; border-radius: 8px; cursor: pointer;
+      font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+      transition: background .15s;
+    }
+    .btn-calc:hover { background: #1D4ED8; }
+    /* nunca empilha o botão calcular */
+    @media (max-width: 480px) {
+      .cep-row { flex-direction: row; }
+      .btn-calc { width: auto; }
+    }
+
+    /* FRETE (injetado pelo checkout.js) */
+    .muted { font-size: 13px; color: #6B7280; }
+    .shipping-option {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      border: 1.5px solid #E5E7EB; border-radius: 8px;
+      background: #fff; cursor: pointer; margin-bottom: 8px;
+      transition: border-color .15s;
+    }
+    .shipping-option:last-child { margin-bottom: 0; }
+    .shipping-option.selected { border-color: #2563EB; background: #EFF6FF; }
+    .price { font-size: 15px; font-weight: 700; color: #111827; }
+
+    /* RESUMO SIDEBAR */
+    .sum-rows { display: flex; flex-direction: column; gap: 0; }
+    .sum-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0; font-size: 13px; color: #6B7280;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-row.total-row {
+      padding-top: 12px; margin-top: 4px;
+      border-top: 1.5px solid #E5E7EB; border-bottom: none;
+      font-size: 15px; font-weight: 700; color: #111827;
+    }
+    .sum-row.total-row .val { font-size: 18px; font-weight: 800; color: #16A34A; }
+    .val { font-weight: 600; color: #111827; }
+    .val.green { color: #16A34A; }
+
+    /* CTA */
+    .btn-cta {
+      display: block; width: 100%;
+      padding: 14px;
+      background: #F59E0B; color: #1a1a1a;
+      border: none; border-radius: 8px; cursor: pointer;
+      font-size: 14px; font-weight: 700; margin-top: 14px;
+      transition: background .15s, opacity .15s;
+    }
+    .btn-cta:hover:not([disabled]) { background: #D97706; }
+    .btn-cta[disabled] { opacity: .4; cursor: not-allowed; }
+
+    /* Segurança */
+    .secure-line {
+      margin-top: 12px; text-align: center;
+      font-size: 11.5px; color: #9CA3AF;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+    }
+
+    /* link cep */
+    .cep-link {
+      display: inline-block; margin-top: 6px;
+      font-size: 12px; color: #2563EB; cursor: pointer;
+    }
+    .cep-link:hover { text-decoration: underline; }
+
+    /* empty */
+    .text-muted { font-size: 13px; color: #6B7280; margin: 0; }
+
+    /* RESPONSIVE */
+    @media (max-width: 720px) {
+      .shell { flex-direction: column; padding: 14px 14px 60px; gap: 14px; }
+      .col-side { flex: 1 1 100%; max-width: 100%; position: static; }
+      .step span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <a href="index.html" class="hdr-logo">jessi.<span>iphones</span></a>
+  <div class="hdr-lock">
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Compra segura
+  </div>
+</header>
+
+<!-- STEPS -->
+<div class="steps">
+  <div class="step done">
+    <span class="step-dot">✓</span>
+    <span>Carrinho</span>
+  </div>
+  <div class="step-sep done"></div>
+  <div class="step active">
+    <span class="step-dot">2</span>
+    <span>Entrega</span>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step">
+    <span class="step-dot">3</span>
+    <span>Pagamento</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="shell">
+
+  <div class="col-main">
+
+    <!-- Itens -->
+    <div class="card">
+      <div class="card-title">Itens do pedido</div>
+      <div class="card-body">
+        <div id="order-items"></div>
+        <p id="order-empty" class="text-muted">Carrinho vazio. <a href="index.html" style="color:#2563EB;">Voltar à loja →</a></p>
+      </div>
+    </div>
+
+    <!-- CEP -->
+    <div class="card">
+      <div class="card-title">Calcular frete</div>
+      <div class="card-body" style="max-width:420px;margin:0 auto;">
+        <label for="cep">CEP de entrega</label>
+        <div class="cep-row">
+          <input id="cep" type="text" placeholder="00000-000" autocomplete="postal-code" maxlength="9" style="flex:1"/>
+          <button id="calcBtn" class="btn-calc" type="button">Calcular</button>
+        </div>
+        <a class="cep-link" href="https://buscacepinter.correios.com.br/app/endereco/index.php" target="_blank" rel="noopener">Não sei meu CEP</a>
+        <p id="cepMsg" style="margin:6px 0 0;font-size:12px;color:#6B7280;"></p>
+      </div>
+    </div>
+
+    <!-- Frete -->
+    <div id="results" class="card" style="padding:16px 18px;">
+      <p class="muted" style="margin:0;">Informe o CEP acima para ver as opções de frete.</p>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="col-side">
+    <div class="card">
+      <div class="card-title">Resumo</div>
+      <div class="card-body">
+        <div class="sum-rows">
+          <div class="sum-row">
+            <span>Subtotal</span>
+            <span class="val" id="subtotal">R$ 0,00</span>
+          </div>
+          <div class="sum-row">
+            <span>Frete</span>
+            <span class="val green" id="shippingValue">A calcular</span>
+          </div>
+          <div class="sum-row total-row">
+            <span>Total</span>
+            <span class="val" id="total">R$ 0,00</span>
+          </div>
+        </div>
+        <button id="continueBtn" class="btn-cta" disabled>Ir para pagamento</button>
+        <div class="secure-line">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Pagamento 100% seguro · SSL
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/cart.js"></script>
+<script src="/js/checkout.js"></script>
+</body>
+</html>

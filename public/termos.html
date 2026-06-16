@@ -1,0 +1,388 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Termos de Uso - jessi.iphones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #2563EB;
+  --blue-dark: #1D4ED8;
+  --blue-light: #EFF6FF;
+  --yellow: #F59E0B;
+  --bg: #F1F5F9;
+  --card: #fff;
+  --text: #0F172A;
+  --text-2: #475569;
+  --muted: #94A3B8;
+  --border: #E2E8F0;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { overflow-x: hidden; width: 100%; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+a { text-decoration: none; color: inherit; }
+
+/* HEADER */
+.site-header { background: var(--blue); padding: 0 24px; position: sticky; top: 0; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.logo { font-size: 20px; font-weight: 800; color: #fff; }
+.logo span { color: var(--yellow); }
+.btn-back { background: rgba(255,255,255,.15); padding: 7px 16px; border-radius: 8px; color: #fff; font-weight: 600; font-size: 13px; transition: background .2s; }
+.btn-back:hover { background: rgba(255,255,255,.25); }
+
+/* HERO */
+.hero { background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #fff; padding: 60px 24px; text-align: center; }
+.hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 12px; }
+.hero p { font-size: 15px; color: #94A3B8; max-width: 520px; margin: 0 auto 12px; }
+.hero-date { font-size: 13px; color: #64748B; }
+
+/* LAYOUT */
+.main-wrap { max-width: 1000px; margin: 0 auto; padding: 48px 24px 80px; display: grid; grid-template-columns: 240px 1fr; gap: 32px; align-items: start; }
+
+/* SIDEBAR NAV */
+.terms-nav {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  border: 1px solid var(--border);
+  position: sticky;
+  top: 80px;
+}
+.terms-nav h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+.terms-nav a {
+  display: block;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  border-radius: 8px;
+  transition: background .15s, color .15s;
+  margin-bottom: 2px;
+}
+.terms-nav a:hover { background: var(--blue-light); color: var(--blue); }
+
+/* CONTENT */
+.terms-content {}
+.terms-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  scroll-margin-top: 80px;
+}
+.terms-section h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--blue-light);
+  color: var(--text);
+}
+.terms-section h2 .sec-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.terms-section p { font-size: 14px; color: var(--text-2); margin-bottom: 12px; }
+.terms-section p:last-child { margin-bottom: 0; }
+.terms-section h3 { font-size: 15px; font-weight: 700; color: var(--text); margin: 16px 0 8px; }
+.terms-section ul { margin: 0 0 12px 20px; }
+.terms-section ul li { font-size: 14px; color: var(--text-2); margin-bottom: 6px; }
+.terms-section a { color: var(--blue); font-weight: 600; }
+
+/* HIGHLIGHT */
+.highlight-box {
+  background: var(--blue-light);
+  border-left: 4px solid var(--blue);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  margin: 12px 0;
+  font-size: 14px;
+  color: #1e40af;
+}
+
+/* ACCEPTANCE BOX */
+.acceptance-box {
+  background: linear-gradient(135deg, #0F172A, #1E293B);
+  border-radius: var(--radius);
+  padding: 36px 32px;
+  text-align: center;
+  color: #fff;
+  margin-top: 32px;
+}
+.acceptance-box h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+.acceptance-box p { font-size: 14px; color: #94A3B8; margin-bottom: 24px; }
+.acceptance-box .btn-accept {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: background .2s;
+}
+.acceptance-box .btn-accept:hover { background: var(--blue-dark); }
+.acceptance-box .terms-date { font-size: 12px; color: #64748B; margin-top: 16px; }
+
+/* FOOTER */
+.site-footer { background: #0F172A; color: #64748B; padding: 24px; text-align: center; font-size: 13px; }
+.site-footer a { color: #94A3B8; margin: 0 8px; }
+.site-footer a:hover { color: #fff; }
+
+@media (max-width: 768px) {
+  .main-wrap { grid-template-columns: 1fr; }
+  .terms-nav { position: static; }
+  .hero h1 { font-size: 26px; }
+}
+@media (max-width: 480px) {
+  .main-wrap { padding: 24px 16px 60px; }
+  .terms-section { padding: 22px 18px; }
+  .acceptance-box { padding: 24px 18px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo" href="index.html">jessi.<span>iphones</span></a>
+    <a href="index.html" class="btn-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar à Loja
+    </a>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Termos de Uso</h1>
+  <p>Leia atentamente os termos que regem o uso do nosso site e a realização de compras na jessi.iphones.</p>
+  <p class="hero-date">Última atualização: 13 de junho de 2026</p>
+</section>
+
+<div class="main-wrap">
+
+  <!-- SIDEBAR -->
+  <nav class="terms-nav">
+    <h4>Navegação</h4>
+    <a href="#aceitacao">1. Aceitação dos Termos</a>
+    <a href="#cadastro">2. Cadastro de Usuários</a>
+    <a href="#compras">3. Compras</a>
+    <a href="#pagamentos">4. Pagamentos</a>
+    <a href="#entregas">5. Entregas</a>
+    <a href="#garantias">6. Garantias</a>
+    <a href="#privacidade">7. Privacidade</a>
+    <a href="#responsabilidades">8. Responsabilidades</a>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="terms-content">
+
+    <!-- 1. Aceitação -->
+    <div class="terms-section" id="aceitacao">
+      <h2><span class="sec-num">1</span>Aceitação dos Termos</h2>
+      <p>Bem-vindo à <strong>jessi.iphones</strong>. Ao acessar e utilizar este site, você concorda com os presentes Termos de Uso e com todas as leis e regulamentações aplicáveis.</p>
+      <p>Se você não concordar com qualquer parte destes termos, não está autorizado a utilizar este site ou realizar compras nesta plataforma.</p>
+      <div class="highlight-box">
+        O uso continuado do site após a publicação de alterações nos Termos de Uso constitui aceite das mudanças realizadas.
+      </div>
+      <p>Estes Termos de Uso se aplicam a todos os visitantes, usuários e outras pessoas que acessem ou utilizem o serviço.</p>
+    </div>
+
+    <!-- 2. Cadastro -->
+    <div class="terms-section" id="cadastro">
+      <h2><span class="sec-num">2</span>Cadastro de Usuários</h2>
+      <p>Para realizar compras no site, é necessário criar uma conta de usuário, fornecendo informações verdadeiras, precisas, atuais e completas.</p>
+      <h3>Requisitos de Cadastro</h3>
+      <ul>
+        <li>Ser pessoa física com CPF válido</li>
+        <li>Ter 18 anos ou mais (menores devem ter autorização dos responsáveis)</li>
+        <li>Fornecer e-mail válido e ativo</li>
+        <li>Criar senha com no mínimo 6 caracteres</li>
+        <li>Informar número de WhatsApp válido</li>
+      </ul>
+      <h3>Responsabilidades do Usuário</h3>
+      <ul>
+        <li>Manter a confidencialidade de sua senha</li>
+        <li>Notificar imediatamente sobre qualquer uso não autorizado de sua conta</li>
+        <li>Não compartilhar credenciais de acesso</li>
+        <li>Manter os dados cadastrais atualizados</li>
+      </ul>
+      <p>A jessi.iphones reserva-se o direito de cancelar ou suspender contas que violem estes termos, contenham informações falsas ou realizem atividades fraudulentas.</p>
+    </div>
+
+    <!-- 3. Compras -->
+    <div class="terms-section" id="compras">
+      <h2><span class="sec-num">3</span>Compras</h2>
+      <p>Ao realizar uma compra, você declara que as informações fornecidas são verídicas e que possui autorização para usar os meios de pagamento informados.</p>
+      <h3>Processo de Compra</h3>
+      <ul>
+        <li>A compra é efetivada somente após a confirmação de pagamento</li>
+        <li>O contrato de compra e venda é estabelecido na data de confirmação do pedido</li>
+        <li>Preços e disponibilidade de produtos podem ser alterados sem aviso prévio</li>
+        <li>Pedidos com suspeita de fraude serão cancelados e reportados às autoridades competentes</li>
+      </ul>
+      <h3>Disponibilidade de Produtos</h3>
+      <p>Todos os produtos estão sujeitos à disponibilidade de estoque. Em casos de indisponibilidade após a compra, o cliente será notificado e poderá optar por produto similar ou reembolso integral.</p>
+      <h3>Preços</h3>
+      <p>Os preços exibidos são em Reais (BRL) e incluem os impostos aplicáveis. O frete é calculado separadamente no checkout com base no endereço de entrega e peso do produto.</p>
+    </div>
+
+    <!-- 4. Pagamentos -->
+    <div class="terms-section" id="pagamentos">
+      <h2><span class="sec-num">4</span>Pagamentos</h2>
+      <p>A jessi.iphones aceita os seguintes métodos de pagamento: PIX, cartão de crédito (Visa, Mastercard, Elo), cartão de débito e boleto bancário.</p>
+      <h3>Segurança nos Pagamentos</h3>
+      <p>Todas as transações são processadas em ambiente seguro com criptografia SSL. Dados de cartão nunca são armazenados em nossos servidores.</p>
+      <h3>Parcelamento</h3>
+      <ul>
+        <li>Parcelamento em até 12x sem juros para compras acima de R$ 500,00 no cartão de crédito</li>
+        <li>Juros de parcelamento para compras menores conforme tabela da operadora</li>
+      </ul>
+      <h3>Cancelamento de Pedido</h3>
+      <p>Pedidos podem ser cancelados antes da confirmação do pagamento. Após o pagamento confirmado, o cancelamento segue a política de devoluções.</p>
+      <div class="highlight-box">
+        Em caso de cobrança indevida ou duplicada, entre em contato imediatamente pelo nosso canal de atendimento para resolução em até 24 horas.
+      </div>
+    </div>
+
+    <!-- 5. Entregas -->
+    <div class="terms-section" id="entregas">
+      <h2><span class="sec-num">5</span>Entregas</h2>
+      <p>Realizamos entregas para todo o território nacional. O prazo de entrega varia conforme a modalidade de frete escolhida e o destino.</p>
+      <h3>Responsabilidade na Entrega</h3>
+      <ul>
+        <li>O cliente é responsável por informar endereço correto e completo</li>
+        <li>Endereços incorretos podem gerar custos adicionais de reenvio</li>
+        <li>Em caso de ausência na entrega, o produto pode ser devolvido ao remetente após 3 tentativas</li>
+        <li>O prazo começa a contar após confirmação do pagamento</li>
+      </ul>
+      <h3>Acompanhamento de Pedido</h3>
+      <p>Um código de rastreamento será enviado por e-mail e WhatsApp após o despacho. O acompanhamento pode ser feito diretamente no site da transportadora ou em "Meus Pedidos".</p>
+      <h3>Avaria e Extravio</h3>
+      <p>Em casos de avaria durante o transporte, o cliente deve informar em até 48 horas do recebimento. Extravios serão investigados e, se confirmados, o produto será reenviado ou o valor reembolsado.</p>
+    </div>
+
+    <!-- 6. Garantias -->
+    <div class="terms-section" id="garantias">
+      <h2><span class="sec-num">6</span>Garantias</h2>
+      <p>Todos os produtos comercializados na jessi.iphones possuem garantia contra defeitos de fabricação.</p>
+      <h3>Prazos de Garantia</h3>
+      <ul>
+        <li><strong>Produtos Novos:</strong> 12 meses (90 dias com a jessi.iphones + restante com o fabricante)</li>
+        <li><strong>Produtos Seminovos:</strong> 90 dias com a jessi.iphones</li>
+      </ul>
+      <h3>O que a Garantia Cobre</h3>
+      <ul>
+        <li>Defeitos de fabricação não causados pelo usuário</li>
+        <li>Falhas técnicas em condições normais de uso</li>
+        <li>Problemas de hardware confirmados pela análise técnica</li>
+      </ul>
+      <h3>O que a Garantia NÃO Cobre</h3>
+      <ul>
+        <li>Danos físicos por queda, impacto ou pressão</li>
+        <li>Danos por contato com líquidos</li>
+        <li>Desgaste natural pelo uso</li>
+        <li>Reparos ou modificações realizados por terceiros não autorizados</li>
+        <li>Danos causados por carregadores não originais</li>
+      </ul>
+    </div>
+
+    <!-- 7. Privacidade -->
+    <div class="terms-section" id="privacidade">
+      <h2><span class="sec-num">7</span>Privacidade e Proteção de Dados</h2>
+      <p>A jessi.iphones está comprometida com a proteção dos seus dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).</p>
+      <h3>Dados Coletados</h3>
+      <ul>
+        <li>Dados de cadastro: nome, CPF, e-mail, telefone</li>
+        <li>Dados de endereço para entrega</li>
+        <li>Histórico de pedidos e interações com o site</li>
+        <li>Dados de navegação e cookies técnicos</li>
+      </ul>
+      <h3>Uso dos Dados</h3>
+      <ul>
+        <li>Processamento e entrega de pedidos</li>
+        <li>Comunicação sobre status de compras</li>
+        <li>Prevenção de fraudes e segurança</li>
+        <li>Melhoria contínua dos serviços (dados anonimizados)</li>
+      </ul>
+      <h3>Seus Direitos</h3>
+      <p>Você tem direito a acessar, corrigir, excluir e exportar seus dados pessoais a qualquer momento, através da área "Minha Conta" ou pelo nosso <a href="atendimento.html">canal de atendimento</a>.</p>
+      <div class="highlight-box">
+        Seus dados nunca são vendidos ou compartilhados com terceiros para fins de marketing sem seu consentimento explícito.
+      </div>
+    </div>
+
+    <!-- 8. Responsabilidades -->
+    <div class="terms-section" id="responsabilidades">
+      <h2><span class="sec-num">8</span>Responsabilidades</h2>
+      <h3>Responsabilidades da jessi.iphones</h3>
+      <ul>
+        <li>Garantir a autenticidade e qualidade dos produtos anunciados</li>
+        <li>Processar pedidos e pagamentos com segurança</li>
+        <li>Cumprir os prazos de entrega informados no checkout</li>
+        <li>Responder solicitações de suporte nos prazos estipulados</li>
+        <li>Proteger os dados pessoais dos usuários</li>
+      </ul>
+      <h3>Responsabilidades do Usuário</h3>
+      <ul>
+        <li>Fornecer informações verdadeiras no cadastro e na compra</li>
+        <li>Informar endereço de entrega correto e completo</li>
+        <li>Manter a confidencialidade das credenciais de acesso</li>
+        <li>Utilizar o site de forma ética e legal</li>
+        <li>Não realizar atividades que prejudiquem o funcionamento da plataforma</li>
+      </ul>
+      <h3>Limitação de Responsabilidade</h3>
+      <p>A jessi.iphones não se responsabiliza por danos indiretos, incidentais ou consequenciais decorrentes do uso ou impossibilidade de uso do site, exceto nos casos previstos pelo Código de Defesa do Consumidor.</p>
+      <h3>Lei Aplicável e Foro</h3>
+      <p>Estes Termos de Uso são regidos pelas leis da República Federativa do Brasil. Qualquer disputa será resolvida no foro da comarca de São Paulo — SP, com exceção dos casos em que a legislação consumerista disponha de forma diversa.</p>
+      <h3>Contato</h3>
+      <p>Para dúvidas sobre estes Termos de Uso, entre em contato pelo nosso <a href="atendimento.html">canal de atendimento</a> ou pelo e-mail <a href="mailto:juridico@jessi.iphones">juridico@jessi.iphones</a>.</p>
+    </div>
+
+    <!-- ACCEPTANCE -->
+    <div class="acceptance-box">
+      <h3>Ao utilizar nosso site, você aceita estes termos.</h3>
+      <p>Se tiver dúvidas sobre qualquer ponto, nossa equipe está pronta para ajudar antes de você prosseguir.</p>
+      <a href="atendimento.html" class="btn-accept">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Falar com Atendimento
+      </a>
+      <p class="terms-date">Versão 1.0 — 13 de junho de 2026</p>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p style="margin-bottom:10px;">
+    <a href="index.html">Loja</a>
+    <a href="atendimento.html">Atendimento</a>
+    <a href="faq.html">FAQ</a>
+    <a href="trocas.html">Trocas e Devoluções</a>
+  </p>
+  <p>© 2026 jessi.iphones LTDA — Todos os direitos reservados</p>
+</footer>
+
+</body>
+</html>

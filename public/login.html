@@ -1,0 +1,309 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Entrar — jessi.iphones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:      #2563EB;
+  --blue-dark: #1D4ED8;
+  --yellow:    #F59E0B;
+  --green:     #16A34A;
+  --bg:        #F1F5F9;
+  --card:      #FFFFFF;
+  --text:      #0F172A;
+  --text-2:    #475569;
+  --muted:     #94A3B8;
+  --border:    #E2E8F0;
+  --shadow:    0 4px 24px rgba(0,0,0,.08);
+  --radius:    14px;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { width:100%; max-width:100%; overflow-x:hidden; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+header {
+  background: var(--blue);
+  padding: 12px 20px;
+  position: sticky; top: 0; z-index: 99;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 480px; margin: 0 auto;
+}
+.logo { font-size: 20px; font-weight: 800; text-decoration: none; color: #fff; letter-spacing: -.01em; }
+.logo span { color: var(--yellow); }
+.back-link {
+  font-size: 13px; color: rgba(255,255,255,.85);
+  text-decoration: none; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+}
+.back-link:hover { color: #fff; }
+
+/* MAIN */
+main {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 20px;
+}
+
+/* CARD */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 36px 32px;
+  width: 100%; max-width: 420px;
+}
+
+.card-brand {
+  text-align: center; margin-bottom: 24px;
+}
+.card-brand-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: var(--blue);
+  color: #fff;
+  display: inline-grid; place-items: center;
+  font-size: 22px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 20px rgba(37,99,235,.25);
+}
+
+.card-title { font-size: 24px; font-weight: 800; margin-bottom: 4px; text-align: center; }
+.card-subtitle { color: var(--text-2); font-size: 14px; margin-bottom: 28px; text-align: center; }
+
+/* FORM */
+.form-group { margin-bottom: 16px; }
+label {
+  display: block;
+  font-size: 13px; font-weight: 600;
+  margin-bottom: 6px; color: var(--text);
+}
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  font-size: 15px; font-family: inherit;
+  color: var(--text);
+  background: #FAFAFA;
+  transition: border-color .2s, box-shadow .2s;
+  outline: none;
+}
+input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  background: #fff;
+}
+input.error-input { border-color: #DC2626 !important; }
+
+.password-wrapper { position: relative; }
+.password-wrapper input { padding-right: 46px; }
+.toggle-pw {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); padding: 0;
+  display: flex; align-items: center;
+}
+.toggle-pw:hover { color: var(--blue); }
+
+/* BUTTON */
+.btn-primary {
+  width: 100%; padding: 13px;
+  background: var(--blue);
+  color: #fff;
+  border: none; border-radius: 9px;
+  font-size: 15px; font-weight: 700; font-family: inherit;
+  cursor: pointer;
+  transition: background .2s, transform .15s, box-shadow .2s;
+  margin-top: 8px;
+}
+.btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* MESSAGES */
+.error-msg {
+  background: #FEF2F2; border: 1px solid #FECACA;
+  color: #DC2626; padding: 11px 14px;
+  border-radius: 8px; font-size: 13px;
+  margin-bottom: 16px; display: none;
+}
+
+/* DIVIDER */
+.divider {
+  text-align: center; color: var(--muted);
+  font-size: 12px; margin: 20px 0;
+  position: relative;
+}
+.divider::before, .divider::after {
+  content: ''; position: absolute; top: 50%;
+  width: 44%; height: 1px; background: var(--border);
+}
+.divider::before { left: 0; }
+.divider::after  { right: 0; }
+
+/* LINK ROW */
+.link-row { text-align: center; font-size: 14px; color: var(--text-2); }
+.link-row a { color: var(--blue); font-weight: 600; text-decoration: none; }
+.link-row a:hover { text-decoration: underline; }
+
+/* SPINNER */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle; margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* TRUST */
+.trust-row {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  margin-top: 20px; padding-top: 20px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.trust-row span { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+@media (max-width: 480px) {
+  .card { padding: 28px 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="logo" href="index.html">jessi.<span>iphones</span></a>
+    <a class="back-link" href="index.html">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar à loja
+    </a>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="card-brand">
+      <div class="card-brand-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+    </div>
+
+    <h1 class="card-title">Bem-vindo de volta</h1>
+    <p class="card-subtitle">Entre na sua conta para continuar comprando</p>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" placeholder="seuemail@exemplo.com" autocomplete="email" required/>
+      </div>
+
+      <div class="form-group">
+        <label for="senha">Senha</label>
+        <div class="password-wrapper">
+          <input type="password" id="senha" name="senha" placeholder="Mínimo 6 caracteres" autocomplete="current-password" required/>
+          <button type="button" class="toggle-pw" id="toggle-pw" aria-label="Mostrar senha">
+            <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary" id="submit-btn">Entrar na minha conta</button>
+    </form>
+
+    <div class="divider">ou</div>
+
+    <div class="link-row">
+      Não tem conta? <a href="cadastro.html">Criar conta grátis</a>
+    </div>
+
+    <div class="trust-row">
+      <span style="display:inline-flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Acesso seguro</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Dados protegidos</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Privacidade garantida</span>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  const AUTH_KEY = 'user-session';
+  try {
+    const s = JSON.parse(localStorage.getItem(AUTH_KEY));
+    if (s && s.token) {
+      const params = new URLSearchParams(window.location.search);
+      window.location.href = params.get('redirect') || 'index.html';
+    }
+  } catch (e) {}
+
+  const form      = document.getElementById('login-form');
+  const errorMsg  = document.getElementById('error-msg');
+  const submitBtn = document.getElementById('submit-btn');
+  const togglePw  = document.getElementById('toggle-pw');
+  const senhaInput= document.getElementById('senha');
+
+  togglePw.addEventListener('click', function () {
+    const isText = senhaInput.type === 'text';
+    senhaInput.type = isText ? 'password' : 'text';
+    document.getElementById('eye-icon').innerHTML = isText
+      ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+      : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  });
+
+  function showError(msg) { errorMsg.textContent = msg; errorMsg.style.display = 'block'; }
+  function hideError()    { errorMsg.style.display = 'none'; }
+  function setLoading(loading) {
+    submitBtn.disabled  = loading;
+    submitBtn.innerHTML = loading ? '<span class="spinner"></span>Entrando...' : 'Entrar na minha conta';
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideError();
+    const email = document.getElementById('email').value.trim();
+    const senha = senhaInput.value;
+    if (!email || !senha) { showError('Preencha todos os campos.'); return; }
+    setLoading(true);
+    try {
+      const r = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
+      });
+      const data = await r.json();
+      if (!r.ok || !data.success) { showError(data.error || 'Erro ao fazer login.'); setLoading(false); return; }
+      localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, ...data.user }));
+      const params = new URLSearchParams(window.location.search);
+      window.location.href = params.get('redirect') || 'index.html';
+    } catch (err) {
+      showError('Erro de conexão. Tente novamente.');
+      setLoading(false);
+    }
+  });
+})();
+</script>
+</body>
+</html>

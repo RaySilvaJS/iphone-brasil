@@ -1,0 +1,1154 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Minha Conta - jessi.iphones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --text: #111111;
+  --muted: #777;
+  --purple: #6d4aff;
+  --green: #16a34a;
+  --red: #c53030;
+  --shadow: 0 10px 30px rgba(0,0,0,.08);
+  --radius: 22px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { width:100%; max-width:100%; overflow-x:hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  padding: 16px 20px;
+  background: rgba(245,245,247,.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,.05);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.logo { font-size: 22px; font-weight: 800; text-decoration: none; color: var(--text); }
+.logo span { color: var(--purple); }
+.back-link {
+  font-size: 13px;
+  color: var(--purple);
+  text-decoration: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.back-link:hover { text-decoration: underline; }
+main {
+  flex: 1;
+  padding: 40px 20px 80px;
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+.page-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  margin-bottom: 20px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(109,74,255,.12), rgba(109,74,255,.06));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--purple);
+  flex-shrink: 0;
+}
+.card-header-text h2 { font-size: 17px; font-weight: 700; }
+.card-header-text p { font-size: 13px; color: var(--muted); margin-top: 1px; }
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.info-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  display: block;
+  margin-bottom: 5px;
+}
+.info-field .value { font-size: 15px; font-weight: 500; color: var(--text); }
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"] {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafafa;
+  transition: border-color .2s, box-shadow .2s;
+  outline: none;
+}
+input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(109,74,255,.12);
+  background: #fff;
+}
+input[disabled] {
+  background: #f3f3f3;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.btn-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.btn-primary {
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(109,74,255,.35); }
+.btn-primary:disabled { opacity:.65; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-secondary {
+  padding: 12px 22px;
+  background: #fff;
+  color: #3b00b9;
+  border: 1.5px solid rgba(125,98,255,.25);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+}
+.btn-secondary:hover { border-color: var(--purple); box-shadow: 0 4px 12px rgba(109,74,255,.12); }
+.btn-danger {
+  padding: 12px 22px;
+  background: #fff;
+  color: var(--red);
+  border: 1.5px solid #fed7d7;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.btn-danger:hover { background: #fff5f5; border-color: #fc8181; }
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  margin-bottom: 12px;
+  transition: transform .2s, box-shadow .2s;
+  border: 1px solid transparent;
+}
+.action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.1);
+  border-color: rgba(109,74,255,.12);
+}
+.action-card-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.action-card-icon.purple { background: linear-gradient(135deg, rgba(109,74,255,.12), rgba(109,74,255,.05)); color: var(--purple); }
+.action-card-icon.green { background: rgba(22,163,74,.08); color: var(--green); }
+.action-card-icon.red { background: rgba(229,62,62,.08); color: var(--red); }
+.action-card-text { flex: 1; }
+.action-card-text strong { font-size: 15px; display: block; }
+.action-card-text span { font-size: 13px; color: var(--muted); }
+.action-card-arrow { color: var(--muted); }
+.feedback-msg {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: none;
+}
+.feedback-msg.success { background: #f0fff4; border: 1px solid #c6f6d5; color: #276749; }
+.feedback-msg.error { background: #fff5f5; border: 1px solid #fed7d7; color: var(--red); }
+.section-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #f0f0f0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.section-tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  position: relative;
+  bottom: -2px;
+  border-bottom: 2px solid transparent;
+  transition: color .2s;
+  white-space: nowrap;
+}
+.tab-btn.active { color: var(--purple); border-bottom-color: var(--purple); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.user-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 32px;
+}
+.user-hero-text h1 { font-size: 22px; font-weight: 800; }
+.user-hero-text p { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== ADDRESS ===== */
+.addr-card {
+  background: var(--card);
+  border: 1.5px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.addr-card:hover { border-color: rgba(109,74,255,.2); box-shadow: 0 4px 16px rgba(109,74,255,.06); }
+.addr-card.is-principal { border-color: rgba(109,74,255,.3); background: rgba(109,74,255,.02); }
+.addr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: .02em;
+}
+.addr-name { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.addr-line { font-size: 13px; color: #444; line-height: 1.7; }
+.addr-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f0f0f0;
+}
+.addr-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1.5px solid #e5e5e5;
+  background: #fff;
+  color: #444;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.addr-btn:hover { border-color: var(--purple); color: var(--purple); background: rgba(109,74,255,.04); }
+.addr-btn.is-star { color: #d97706; border-color: #fde68a; background: #fffbeb; }
+.addr-btn.is-star:hover { background: #fef3c7; }
+.addr-btn.is-del { color: var(--red); border-color: #fed7d7; background: #fff5f5; }
+.addr-btn.is-del:hover { background: #fed7d7; border-color: #f87171; }
+.addr-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--muted);
+}
+.addr-empty svg { display: block; margin: 0 auto 14px; color: #cbd5e1; }
+.addr-empty p { font-size: 15px; font-weight: 600; color: #475569; margin: 0 0 6px; }
+.addr-empty small { font-size: 13px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.num-col { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; }
+.city-col { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.check-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--purple);
+}
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.section-head h2 { font-size: 18px; font-weight: 700; }
+.section-head p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* Support Widget */
+.support-widget {
+  position: fixed; bottom: 24px; right: 24px; z-index: 1500;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+.support-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  color: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(109,74,255,.4);
+  transition: transform .2s, box-shadow .2s;
+}
+.support-btn:hover { transform: scale(1.08); }
+.support-menu-acc {
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15); overflow: hidden; width: 220px;
+  animation: suUp .2s ease;
+}
+@keyframes suUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.support-opt {
+  display: flex; align-items: center; gap: 12px; padding: 13px 16px;
+  text-decoration: none; color: var(--text); border-bottom: 1px solid #f0f0f0;
+  transition: background .15s; font-size: 13px;
+}
+.support-opt:last-child { border-bottom: none; }
+.support-opt:hover { background: var(--bg); }
+.su-i { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.su-i.g { background: #dcfce7; color: #16a34a; }
+.su-i.p { background: rgba(109,74,255,.1); color: var(--purple); }
+.support-opt strong { font-weight: 700; display: block; font-size: 13px; }
+.support-opt span { font-size: 11px; color: var(--muted); }
+
+@media (max-width: 520px) {
+  .card { padding: 22px 18px; }
+  .info-grid { grid-template-columns: 1fr; gap: 14px; }
+  .btn-row { flex-direction: column; }
+  .tab-btn { padding: 10px 12px; font-size: 12px; }
+  .user-hero { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .action-card { padding: 14px 16px; gap: 12px; }
+  .two-col, .num-col, .city-col { grid-template-columns: 1fr; }
+  .support-widget { bottom: 16px; right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="logo" href="index.html">jessi.<span>iphones</span></a>
+    <a class="back-link" href="index.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar à loja
+    </a>
+  </div>
+</header>
+
+<main>
+  <div id="loading-state" style="text-align:center;padding:60px 20px;color:var(--muted);">
+    Carregando sua conta...
+  </div>
+
+  <div id="account-content" style="display:none;">
+    <div class="user-hero">
+      <div class="avatar" id="avatar-initials">?</div>
+      <div class="user-hero-text">
+        <h1 id="user-name-title">Olá!</h1>
+        <p id="user-email-sub"></p>
+      </div>
+    </div>
+
+    <div class="section-tabs">
+      <button class="tab-btn active" data-tab="dados">Meus Dados</button>
+      <button class="tab-btn" data-tab="enderecos">Endereços</button>
+      <button class="tab-btn" data-tab="editar">Editar Perfil</button>
+      <button class="tab-btn" data-tab="senha">Alterar Senha</button>
+    </div>
+
+    <!-- TAB: Meus Dados -->
+    <div class="tab-pane active" id="tab-dados">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="card-header-text">
+            <h2>Informações Pessoais</h2>
+            <p>Seus dados cadastrados</p>
+          </div>
+        </div>
+        <div class="info-grid">
+          <div class="info-field">
+            <label>Nome Completo</label>
+            <div class="value" id="d-nome">—</div>
+          </div>
+          <div class="info-field">
+            <label>E-mail</label>
+            <div class="value" id="d-email">—</div>
+          </div>
+          <div class="info-field">
+            <label>CPF</label>
+            <div class="value" id="d-cpf">—</div>
+          </div>
+          <div class="info-field">
+            <label>WhatsApp</label>
+            <div class="value" id="d-whatsapp">—</div>
+          </div>
+        </div>
+      </div>
+
+      <a href="meus-pedidos.html" class="action-card">
+        <div class="action-card-icon purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
+        <div class="action-card-text">
+          <strong>Meus Pedidos</strong>
+          <span>Ver histórico de compras</span>
+        </div>
+        <div class="action-card-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="#" class="action-card" onclick="event.preventDefault(); switchTab('enderecos');">
+        <div class="action-card-icon purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="action-card-text">
+          <strong>Meus Endereços</strong>
+          <span>Gerenciar endereços de entrega</span>
+        </div>
+        <div class="action-card-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="#" class="action-card" onclick="event.preventDefault(); switchTab('senha');">
+        <div class="action-card-icon purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="action-card-text">
+          <strong>Alterar Senha</strong>
+          <span>Atualizar senha de acesso</span>
+        </div>
+        <div class="action-card-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="atendimento.html" class="action-card">
+        <div class="action-card-icon green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.66 3.38 2 2 0 0 1 3.64 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.85A16 16 0 0 0 13 14l.93-.93a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 15.36"/></svg>
+        </div>
+        <div class="action-card-text">
+          <strong>Atendimento</strong>
+          <span>Falar com nossa equipe de suporte</span>
+        </div>
+        <div class="action-card-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <div class="action-card" id="logout-btn" style="cursor:pointer;">
+        <div class="action-card-icon red">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+        <div class="action-card-text">
+          <strong style="color:var(--red);">Sair da Conta</strong>
+          <span>Encerrar sessão atual</span>
+        </div>
+        <div class="action-card-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+
+    <!-- TAB: Meus Endereços -->
+    <div class="tab-pane" id="tab-enderecos">
+      <div class="section-head">
+        <div>
+          <h2>Meus Endereços</h2>
+          <p>Gerencie seus endereços de entrega</p>
+        </div>
+        <button class="btn-primary" id="btn-novo-end" onclick="showEndForm()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Adicionar
+        </button>
+      </div>
+
+      <div class="feedback-msg" id="addr-feedback"></div>
+      <div id="addr-list"></div>
+
+      <div class="addr-empty" id="addr-empty" style="display:none;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <p>Nenhum endereço cadastrado</p>
+        <small>Adicione um endereço para facilitar suas compras</small>
+      </div>
+
+      <!-- Formulário de endereço -->
+      <div class="card" id="addr-form-card" style="display:none;">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="card-header-text">
+            <h2 id="addr-form-title">Novo Endereço</h2>
+            <p>Preencha os dados corretamente</p>
+          </div>
+        </div>
+
+        <div class="feedback-msg" id="addr-form-feedback"></div>
+
+        <form id="addr-form" novalidate>
+          <input type="hidden" id="addr-edit-id" value="">
+
+          <div class="form-group">
+            <label>Nome do Destinatário *</label>
+            <input type="text" id="af-nome" placeholder="Nome de quem vai receber" maxlength="100"/>
+          </div>
+
+          <div class="two-col">
+            <div class="form-group">
+              <label>CEP *</label>
+              <input type="text" id="af-cep" placeholder="00000-000" maxlength="9"/>
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;">
+              <button type="button" class="btn-secondary" onclick="buscarCEP()" style="width:100%;">Buscar CEP</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Rua / Logradouro *</label>
+            <input type="text" id="af-rua" placeholder="Nome da rua ou avenida" maxlength="150"/>
+          </div>
+
+          <div class="num-col">
+            <div class="form-group">
+              <label>Número *</label>
+              <input type="text" id="af-numero" placeholder="123" maxlength="20"/>
+            </div>
+            <div class="form-group">
+              <label>Complemento</label>
+              <input type="text" id="af-complemento" placeholder="Apto, Bloco, Casa..." maxlength="100"/>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Bairro *</label>
+            <input type="text" id="af-bairro" placeholder="Nome do bairro" maxlength="100"/>
+          </div>
+
+          <div class="city-col">
+            <div class="form-group">
+              <label>Cidade *</label>
+              <input type="text" id="af-cidade" placeholder="Sua cidade" maxlength="100"/>
+            </div>
+            <div class="form-group">
+              <label>Estado *</label>
+              <input type="text" id="af-estado" placeholder="SP" maxlength="2" style="text-transform:uppercase;"/>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Ponto de Referência</label>
+            <input type="text" id="af-referencia" placeholder="Próximo ao mercado, portão azul..." maxlength="200"/>
+          </div>
+
+          <label class="check-label">
+            <input type="checkbox" id="af-principal"/>
+            Definir como endereço principal
+          </label>
+
+          <div class="btn-row">
+            <button type="submit" class="btn-primary" id="addr-submit">Salvar Endereço</button>
+            <button type="button" class="btn-secondary" onclick="hideEndForm()">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB: Editar Perfil -->
+    <div class="tab-pane" id="tab-editar">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <div class="card-header-text">
+            <h2>Editar Dados</h2>
+            <p>Atualize seu nome e WhatsApp</p>
+          </div>
+        </div>
+        <div class="feedback-msg" id="edit-feedback"></div>
+        <form id="edit-form" novalidate>
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <input type="text" id="edit-nome" placeholder="Nome completo"/>
+          </div>
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input type="tel" id="edit-whatsapp" placeholder="(11) 99999-9999" maxlength="15"/>
+          </div>
+          <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="edit-email" disabled/>
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" id="edit-cpf" disabled/>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn-primary" id="edit-submit">Salvar Alterações</button>
+            <button type="button" class="btn-secondary" onclick="switchTab('dados')">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB: Alterar Senha -->
+    <div class="tab-pane" id="tab-senha">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="card-header-text">
+            <h2>Alterar Senha</h2>
+            <p>Defina uma nova senha de acesso</p>
+          </div>
+        </div>
+        <div class="feedback-msg" id="pw-feedback"></div>
+        <form id="pw-form" novalidate>
+          <div class="form-group">
+            <label>Senha Atual</label>
+            <input type="password" id="pw-atual" placeholder="Sua senha atual"/>
+          </div>
+          <div class="form-group">
+            <label>Nova Senha</label>
+            <input type="password" id="pw-nova" placeholder="Mínimo 6 caracteres"/>
+          </div>
+          <div class="form-group">
+            <label>Confirmar Nova Senha</label>
+            <input type="password" id="pw-confirmar" placeholder="Repita a nova senha"/>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn-primary" id="pw-submit">Alterar Senha</button>
+            <button type="button" class="btn-secondary" onclick="switchTab('dados')">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- SUPPORT WIDGET -->
+<div class="support-widget">
+  <div class="support-menu-acc" id="acc-support-menu" style="display:none;">
+    <a href="https://wa.me/5511999999999" target="_blank" rel="noopener" class="support-opt">
+      <div class="su-i g"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div><strong>WhatsApp</strong><span>Resposta imediata</span></div>
+    </a>
+    <a href="atendimento.html" class="support-opt">
+      <div class="su-i p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.66 3.38 2 2 0 0 1 3.64 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.85A16 16 0 0 0 13 14l.93-.93a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 15.36"/></svg></div>
+      <div><strong>Atendimento</strong><span>Central de ajuda</span></div>
+    </a>
+    <a href="faq.html" class="support-opt">
+      <div class="su-i p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div><strong>Central de Ajuda</strong><span>Perguntas frequentes</span></div>
+    </a>
+  </div>
+  <button class="support-btn" onclick="toggleAccSupport()" aria-label="Suporte" title="Suporte ao cliente">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </button>
+</div>
+
+<script>
+function toggleAccSupport() {
+  const m = document.getElementById('acc-support-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.support-widget')) {
+    const m = document.getElementById('acc-support-menu');
+    if (m) m.style.display = 'none';
+  }
+});
+</script>
+
+<script>
+(function () {
+  const AUTH_KEY = 'user-session';
+  let currentUser = null;
+  let userToken = null;
+
+  function getSession() {
+    try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch(e) { return null; }
+  }
+
+  const session = getSession();
+  if (!session || !session.token) {
+    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname);
+  }
+  userToken = session ? session.token : null;
+
+  function formatCPF(cpf) {
+    const d = String(cpf).replace(/\D/g, '');
+    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  }
+
+  function formatWhatsApp(w) {
+    const d = String(w).replace(/\D/g, '');
+    if (d.length === 11) return '(' + d.slice(0,2) + ') ' + d.slice(2,7) + '-' + d.slice(7);
+    if (d.length === 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+    return d;
+  }
+
+  function formatWAInput(val) {
+    let v = val.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10) return '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
+    if (v.length > 6)  return '(' + v.slice(0,2) + ') ' + v.slice(2,6) + '-' + v.slice(6);
+    if (v.length > 2)  return '(' + v.slice(0,2) + ') ' + v.slice(2);
+    if (v.length > 0)  return '(' + v;
+    return '';
+  }
+
+  function formatCEPInput(val) {
+    let v = val.replace(/\D/g, '').slice(0, 8);
+    if (v.length > 5) return v.slice(0, 5) + '-' + v.slice(5);
+    return v;
+  }
+
+  function populateUI(user) {
+    currentUser = user;
+    const initials = user.nome ? user.nome.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase() : '?';
+    document.getElementById('avatar-initials').textContent = initials;
+    document.getElementById('user-name-title').textContent = 'Olá, ' + (user.nome ? user.nome.split(' ')[0] : '');
+    document.getElementById('user-email-sub').textContent = user.email || '';
+    document.getElementById('d-nome').textContent = user.nome || '—';
+    document.getElementById('d-email').textContent = user.email || '—';
+    document.getElementById('d-cpf').textContent = user.cpf ? formatCPF(user.cpf) : '—';
+    document.getElementById('d-whatsapp').textContent = user.whatsapp ? formatWhatsApp(user.whatsapp) : '—';
+    document.getElementById('edit-nome').value = user.nome || '';
+    document.getElementById('edit-whatsapp').value = user.whatsapp ? formatWhatsApp(user.whatsapp) : '';
+    document.getElementById('edit-email').value = user.email || '';
+    document.getElementById('edit-cpf').value = user.cpf ? formatCPF(user.cpf) : '';
+  }
+
+  async function loadUser() {
+    try {
+      const r = await fetch('/api/auth/me', { headers: { 'x-auth-token': session.token } });
+      if (!r.ok) { localStorage.removeItem(AUTH_KEY); window.location.href = 'login.html'; return; }
+      const data = await r.json();
+      if (data.success) {
+        localStorage.setItem(AUTH_KEY, JSON.stringify({ token: session.token, ...data.user }));
+        populateUI(data.user);
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('account-content').style.display = 'block';
+        loadAddresses();
+      }
+    } catch (e) {
+      document.getElementById('loading-state').textContent = 'Erro ao carregar dados. Recarregue a página.';
+    }
+  }
+
+  loadUser();
+
+  // ===== TABS =====
+  window.switchTab = function(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+  };
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.addEventListener('click', function() { switchTab(this.dataset.tab); });
+  });
+
+  // ===== EDIT PROFILE =====
+  document.getElementById('edit-whatsapp').addEventListener('input', function() {
+    this.value = formatWAInput(this.value);
+  });
+
+  document.getElementById('edit-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const fb = document.getElementById('edit-feedback');
+    fb.style.display = 'none';
+    const nome = document.getElementById('edit-nome').value.trim();
+    const whatsapp = document.getElementById('edit-whatsapp').value;
+    if (!nome) { showFeedback(fb, 'Nome é obrigatório.', 'error'); return; }
+    const btn = document.getElementById('edit-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Salvando...';
+    try {
+      const r = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': session.token },
+        body: JSON.stringify({ nome, whatsapp })
+      });
+      const data = await r.json();
+      if (data.success) {
+        localStorage.setItem(AUTH_KEY, JSON.stringify({ token: session.token, ...data.user }));
+        populateUI(data.user);
+        showFeedback(fb, 'Dados atualizados com sucesso!', 'success');
+        setTimeout(() => { fb.style.display = 'none'; switchTab('dados'); }, 2000);
+      } else {
+        showFeedback(fb, data.error || 'Erro ao salvar.', 'error');
+      }
+    } catch(err) {
+      showFeedback(fb, 'Erro de conexão.', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Salvar Alterações';
+  });
+
+  // ===== CHANGE PASSWORD =====
+  document.getElementById('pw-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const fb = document.getElementById('pw-feedback');
+    fb.style.display = 'none';
+    const senhaAtual = document.getElementById('pw-atual').value;
+    const novaSenha = document.getElementById('pw-nova').value;
+    const confirmar = document.getElementById('pw-confirmar').value;
+    if (!senhaAtual || !novaSenha || !confirmar) { showFeedback(fb, 'Preencha todos os campos.', 'error'); return; }
+    if (novaSenha.length < 6) { showFeedback(fb, 'A nova senha deve ter pelo menos 6 caracteres.', 'error'); return; }
+    if (novaSenha !== confirmar) { showFeedback(fb, 'As senhas não coincidem.', 'error'); return; }
+    const btn = document.getElementById('pw-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Alterando...';
+    try {
+      const r = await fetch('/api/auth/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': session.token },
+        body: JSON.stringify({ senhaAtual, novaSenha })
+      });
+      const data = await r.json();
+      if (data.success) {
+        showFeedback(fb, 'Senha alterada com sucesso!', 'success');
+        document.getElementById('pw-form').reset();
+        setTimeout(() => { fb.style.display = 'none'; switchTab('dados'); }, 2000);
+      } else {
+        showFeedback(fb, data.error || 'Erro ao alterar senha.', 'error');
+      }
+    } catch(err) {
+      showFeedback(fb, 'Erro de conexão.', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Alterar Senha';
+  });
+
+  // ===== LOGOUT =====
+  document.getElementById('logout-btn').addEventListener('click', async function() {
+    try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'x-auth-token': session.token } }); } catch(e) {}
+    localStorage.removeItem(AUTH_KEY);
+    window.location.href = 'login.html';
+  });
+
+  // ===== HELPERS =====
+  function showFeedback(el, msg, type) {
+    el.textContent = msg;
+    el.className = 'feedback-msg ' + type;
+    el.style.display = 'block';
+  }
+
+  // ===== ADDRESS MANAGEMENT =====
+  let addresses = [];
+
+  async function loadAddresses() {
+    try {
+      const r = await fetch('/api/auth/addresses', { headers: { 'x-auth-token': userToken } });
+      const data = await r.json();
+      if (data.success) {
+        addresses = data.addresses || [];
+        renderAddresses();
+      }
+    } catch(e) {}
+  }
+
+  function renderAddresses() {
+    const list = document.getElementById('addr-list');
+    const empty = document.getElementById('addr-empty');
+    if (!addresses.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = addresses.map(a => `
+      <div class="addr-card${a.principal ? ' is-principal' : ''}">
+        ${a.principal ? '<div class="addr-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Principal</div>' : ''}
+        <div class="addr-name">${escHtml(a.nome)}</div>
+        <div class="addr-line">
+          ${escHtml(a.rua)}, ${escHtml(a.numero)}${a.complemento ? ' — ' + escHtml(a.complemento) : ''}<br>
+          ${escHtml(a.bairro)} — ${escHtml(a.cidade)} / ${escHtml(a.estado)}<br>
+          CEP: ${formatCEP(a.cep)}${a.referencia ? '<br>Ref: ' + escHtml(a.referencia) : ''}
+        </div>
+        <div class="addr-actions">
+          ${!a.principal ? `<button class="addr-btn is-star" onclick="setPrincipal('${a.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Definir como Principal
+          </button>` : ''}
+          <button class="addr-btn" onclick="editAddress('${a.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+          </button>
+          <button class="addr-btn is-del" onclick="deleteAddress('${a.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Excluir
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatCEP(cep) {
+    const d = String(cep).replace(/\D/g,'');
+    return d.length === 8 ? d.slice(0,5) + '-' + d.slice(5) : cep;
+  }
+
+  window.showEndForm = function(id) {
+    const card = document.getElementById('addr-form-card');
+    const fb = document.getElementById('addr-form-feedback');
+    fb.style.display = 'none';
+    document.getElementById('addr-edit-id').value = id || '';
+    document.getElementById('addr-form-title').textContent = id ? 'Editar Endereço' : 'Novo Endereço';
+    document.getElementById('addr-submit').textContent = id ? 'Atualizar Endereço' : 'Salvar Endereço';
+
+    if (id) {
+      const a = addresses.find(x => x.id === id);
+      if (a) {
+        document.getElementById('af-nome').value = a.nome || '';
+        document.getElementById('af-cep').value = formatCEP(a.cep);
+        document.getElementById('af-rua').value = a.rua || '';
+        document.getElementById('af-numero').value = a.numero || '';
+        document.getElementById('af-complemento').value = a.complemento || '';
+        document.getElementById('af-bairro').value = a.bairro || '';
+        document.getElementById('af-cidade').value = a.cidade || '';
+        document.getElementById('af-estado').value = a.estado || '';
+        document.getElementById('af-referencia').value = a.referencia || '';
+        document.getElementById('af-principal').checked = a.principal || false;
+      }
+    } else {
+      document.getElementById('addr-form').reset();
+      document.getElementById('af-principal').checked = addresses.length === 0;
+    }
+    card.style.display = 'block';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  window.hideEndForm = function() {
+    document.getElementById('addr-form-card').style.display = 'none';
+    document.getElementById('addr-form').reset();
+  };
+
+  window.editAddress = function(id) { showEndForm(id); };
+
+  window.deleteAddress = async function(id) {
+    if (!confirm('Excluir este endereço?')) return;
+    const fb = document.getElementById('addr-feedback');
+    try {
+      const r = await fetch('/api/auth/addresses/' + id, {
+        method: 'DELETE',
+        headers: { 'x-auth-token': userToken }
+      });
+      const data = await r.json();
+      if (data.success) {
+        addresses = data.addresses;
+        renderAddresses();
+        showFeedback(fb, 'Endereço excluído.', 'success');
+        setTimeout(() => { fb.style.display = 'none'; }, 2500);
+      } else {
+        showFeedback(fb, data.error || 'Erro ao excluir.', 'error');
+      }
+    } catch(e) {
+      showFeedback(fb, 'Erro de conexão.', 'error');
+    }
+  };
+
+  window.setPrincipal = async function(id) {
+    const fb = document.getElementById('addr-feedback');
+    try {
+      const r = await fetch('/api/auth/addresses/' + id + '/principal', {
+        method: 'PATCH',
+        headers: { 'x-auth-token': userToken }
+      });
+      const data = await r.json();
+      if (data.success) {
+        addresses = data.addresses;
+        renderAddresses();
+        showFeedback(fb, 'Endereço principal definido.', 'success');
+        setTimeout(() => { fb.style.display = 'none'; }, 2500);
+      }
+    } catch(e) {}
+  };
+
+  window.buscarCEP = async function() {
+    const cep = document.getElementById('af-cep').value.replace(/\D/g,'');
+    if (cep.length !== 8) { alert('CEP inválido. Informe 8 dígitos.'); return; }
+    try {
+      const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+      const d = await r.json();
+      if (d.erro) { alert('CEP não encontrado.'); return; }
+      document.getElementById('af-rua').value = d.logradouro || '';
+      document.getElementById('af-bairro').value = d.bairro || '';
+      document.getElementById('af-cidade').value = d.localidade || '';
+      document.getElementById('af-estado').value = d.uf || '';
+      document.getElementById('af-numero').focus();
+    } catch(e) {
+      alert('Não foi possível buscar o CEP. Verifique sua conexão.');
+    }
+  };
+
+  document.getElementById('af-cep').addEventListener('input', function() {
+    this.value = formatCEPInput(this.value);
+  });
+
+  document.getElementById('addr-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const fb = document.getElementById('addr-form-feedback');
+    fb.style.display = 'none';
+    const editId = document.getElementById('addr-edit-id').value;
+
+    const body = {
+      nome: document.getElementById('af-nome').value.trim(),
+      cep: document.getElementById('af-cep').value,
+      rua: document.getElementById('af-rua').value.trim(),
+      numero: document.getElementById('af-numero').value.trim(),
+      complemento: document.getElementById('af-complemento').value.trim(),
+      bairro: document.getElementById('af-bairro').value.trim(),
+      cidade: document.getElementById('af-cidade').value.trim(),
+      estado: document.getElementById('af-estado').value.trim().toUpperCase(),
+      referencia: document.getElementById('af-referencia').value.trim(),
+      principal: document.getElementById('af-principal').checked
+    };
+
+    const required = ['nome','cep','rua','numero','bairro','cidade','estado'];
+    for (const f of required) {
+      if (!body[f]) { showFeedback(fb, 'Preencha todos os campos obrigatórios (*).', 'error'); return; }
+    }
+    if (body.cep.replace(/\D/g,'').length !== 8) { showFeedback(fb, 'CEP inválido.', 'error'); return; }
+    if (body.estado.length !== 2) { showFeedback(fb, 'Estado deve ter 2 letras (Ex: SP).', 'error'); return; }
+
+    const btn = document.getElementById('addr-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+    try {
+      const url = editId ? '/api/auth/addresses/' + editId : '/api/auth/addresses';
+      const method = editId ? 'PUT' : 'POST';
+      const r = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': userToken },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      if (data.success) {
+        addresses = data.addresses;
+        renderAddresses();
+        hideEndForm();
+        const listFb = document.getElementById('addr-feedback');
+        showFeedback(listFb, editId ? 'Endereço atualizado com sucesso!' : 'Endereço adicionado com sucesso!', 'success');
+        setTimeout(() => { listFb.style.display = 'none'; }, 3000);
+      } else {
+        showFeedback(fb, data.error || 'Erro ao salvar endereço.', 'error');
+      }
+    } catch(err) {
+      showFeedback(fb, 'Erro de conexão.', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = editId ? 'Atualizar Endereço' : 'Salvar Endereço';
+  });
+
+})();
+</script>
+</body>
+</html>

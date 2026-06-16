@@ -1,0 +1,536 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trocas e Devoluções - jessi.iphones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #2563EB;
+  --blue-dark: #1D4ED8;
+  --blue-light: #EFF6FF;
+  --yellow: #F59E0B;
+  --green: #16a34a;
+  --red: #dc2626;
+  --bg: #F1F5F9;
+  --card: #fff;
+  --text: #0F172A;
+  --text-2: #475569;
+  --muted: #94A3B8;
+  --border: #E2E8F0;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { overflow-x: hidden; width: 100%; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+a { text-decoration: none; color: inherit; }
+
+/* HEADER */
+.site-header { background: var(--blue); padding: 0 24px; position: sticky; top: 0; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.logo { font-size: 20px; font-weight: 800; color: #fff; }
+.logo span { color: var(--yellow); }
+.btn-back { background: rgba(255,255,255,.15); padding: 7px 16px; border-radius: 8px; color: #fff; font-weight: 600; font-size: 13px; transition: background .2s; }
+.btn-back:hover { background: rgba(255,255,255,.25); }
+
+/* HERO */
+.hero { background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%); color: #fff; padding: 60px 24px; text-align: center; }
+.hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 12px; }
+.hero p { font-size: 16px; color: rgba(255,255,255,.8); max-width: 520px; margin: 0 auto; }
+
+/* MAIN */
+.main-wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+
+/* SUMMARY CARDS */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.sum-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 22px 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.sum-num { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+.sum-num.blue { color: var(--blue); }
+.sum-num.green { color: var(--green); }
+.sum-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+/* SECTION */
+.policy-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.policy-section h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.policy-section h2 svg { color: var(--blue); }
+.section-intro {
+  font-size: 14px;
+  color: var(--text-2);
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.steps-list { list-style: none; }
+.step-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.step-item:last-child { border-bottom: none; padding-bottom: 0; }
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--blue-light);
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.step-content strong { font-size: 14px; font-weight: 700; display: block; margin-bottom: 3px; }
+.step-content p { font-size: 13px; color: var(--text-2); }
+
+/* ALERT */
+.alert-box {
+  border-radius: 10px;
+  padding: 16px 20px;
+  font-size: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 18px;
+}
+.alert-box.info { background: var(--blue-light); color: #1e40af; border: 1px solid #bfdbfe; }
+.alert-box.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.alert-box.success { background: #f0fff4; color: #14532d; border: 1px solid #bbf7d0; }
+.alert-box svg { flex-shrink: 0; margin-top: 1px; }
+
+/* REFUND TIMELINE */
+.refund-steps {
+  display: flex;
+  gap: 0;
+  margin-top: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.refund-step {
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  padding: 12px 8px;
+  position: relative;
+}
+.refund-step::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  right: -1px;
+  width: calc(50% + 1px);
+  height: 2px;
+  background: var(--border);
+}
+.refund-step::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: -1px;
+  width: calc(50% + 1px);
+  height: 2px;
+  background: var(--border);
+}
+.refund-step:first-child::before { display: none; }
+.refund-step:last-child::after { display: none; }
+.rs-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--blue);
+  margin: 6px auto 10px;
+  position: relative;
+  z-index: 1;
+}
+.rs-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.rs-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* NOT COVERED */
+.not-covered-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.nc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.nc-item svg { color: var(--red); flex-shrink: 0; }
+
+/* CTA */
+.cta-block { background: linear-gradient(135deg, var(--blue-light), #e0e7ff); border-radius: var(--radius); padding: 36px 32px; text-align: center; margin-top: 32px; }
+.cta-block h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.cta-block p { font-size: 14px; color: var(--text-2); margin-bottom: 20px; }
+.btn-cta { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: var(--blue); color: #fff; border-radius: 10px; font-weight: 700; font-size: 14px; transition: background .2s; }
+.btn-cta:hover { background: var(--blue-dark); }
+
+/* FOOTER */
+.site-footer { background: #0F172A; color: #64748B; padding: 24px; text-align: center; font-size: 13px; }
+.site-footer a { color: #94A3B8; margin: 0 8px; }
+.site-footer a:hover { color: #fff; }
+
+@media (max-width: 768px) {
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .not-covered-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 26px; }
+}
+@media (max-width: 480px) {
+  .main-wrap { padding: 32px 16px 60px; }
+  .policy-section { padding: 22px 18px; }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo" href="index.html">jessi.<span>iphones</span></a>
+    <a href="index.html" class="btn-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar à Loja
+    </a>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Trocas e Devoluções</h1>
+  <p>Sua satisfação é nossa prioridade. Conheça nossa política e saiba como solicitar trocas e devoluções.</p>
+</section>
+
+<main class="main-wrap">
+
+  <!-- Resumo -->
+  <div class="summary-grid">
+    <div class="sum-card">
+      <div class="sum-num blue">7</div>
+      <div class="sum-label">Dias para Troca</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-num blue">7</div>
+      <div class="sum-label">Dias para Devolução</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-num green">90</div>
+      <div class="sum-label">Dias de Garantia</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-num blue">10</div>
+      <div class="sum-label">Dias para Reembolso</div>
+    </div>
+  </div>
+
+  <!-- Prazo para Troca -->
+  <div class="policy-section">
+    <h2>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      Prazo para Troca
+    </h2>
+    <p class="section-intro">Aceita em até <strong>7 dias corridos</strong> após o recebimento do produto.</p>
+    <ul class="steps-list">
+      <li class="step-item">
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <strong>Entre em contato</strong>
+          <p>Acesse nosso <a href="atendimento.html" style="color:var(--blue);font-weight:600;">WhatsApp ou e-mail</a> informando o número do pedido e o motivo da troca.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <strong>Aguarde aprovação</strong>
+          <p>Nossa equipe analisará sua solicitação em até 48 horas úteis e informará os próximos passos.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <strong>Envie o produto</strong>
+          <p>Embale o produto na embalagem original com todos os acessórios e nota fiscal. Envie para o endereço indicado.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">4</span>
+        <div class="step-content">
+          <strong>Receba o novo produto</strong>
+          <p>Após inspeção e aprovação, o produto substituto será enviado em até 5 dias úteis.</p>
+        </div>
+      </li>
+    </ul>
+    <div class="alert-box info">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      O produto deve estar em perfeito estado, sem sinais de uso, com acessórios e embalagem original intactos.
+    </div>
+  </div>
+
+  <!-- Prazo para Devolução -->
+  <div class="policy-section">
+    <h2>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10"/><polyline points="1 4 1 10 7 10"/></svg>
+      Prazo para Devolução
+    </h2>
+    <p class="section-intro">Conforme o Código de Defesa do Consumidor (Art. 49), você tem <strong>7 dias corridos</strong> após o recebimento para desistir da compra sem precisar justificar.</p>
+    <ul class="steps-list">
+      <li class="step-item">
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <strong>Solicite a devolução</strong>
+          <p>Entre em contato pelo <a href="atendimento.html" style="color:var(--blue);font-weight:600;">WhatsApp ou e-mail</a> dentro do prazo de 7 dias do recebimento.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <strong>Receba as instruções</strong>
+          <p>Enviaremos um código de postagem e as instruções de embalagem em até 24 horas.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <strong>Poste o produto</strong>
+          <p>Leve o produto embalado a qualquer agência dos Correios, utilizando o código de postagem fornecido (frete grátis para você).</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">4</span>
+        <div class="step-content">
+          <strong>Aguarde o reembolso</strong>
+          <p>Após recebermos e inspecionarmos o produto, o reembolso será processado em até 10 dias úteis.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Produto com Defeito -->
+  <div class="policy-section">
+    <h2>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Produto com Defeito
+    </h2>
+    <p class="section-intro">Produtos com defeitos de fabricação são cobertos pela <strong>garantia</strong> e têm tratamento especial.</p>
+    <ul class="steps-list">
+      <li class="step-item">
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <strong>Registre o defeito</strong>
+          <p>Tire fotos/vídeos do defeito e entre em contato informando o número do pedido e a descrição do problema.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <strong>Análise técnica</strong>
+          <p>Nossa equipe técnica avaliará o problema em até 48 horas úteis para confirmar se é defeito de fabricação.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <strong>Solução</strong>
+          <p>Dependendo da análise, poderemos oferecer reparo, troca por produto igual ou reembolso total.</p>
+        </div>
+      </li>
+    </ul>
+    <div class="alert-box success">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Para produtos novos: 12 meses de garantia. Para seminovos: 90 dias de garantia.
+    </div>
+  </div>
+
+  <!-- Produto Avariado -->
+  <div class="policy-section">
+    <h2>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Produto Avariado na Entrega
+    </h2>
+    <p class="section-intro">Se o produto chegou danificado devido ao transporte, siga os passos abaixo <strong>imediatamente</strong> ao receber.</p>
+    <ul class="steps-list">
+      <li class="step-item">
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <strong>Recuse o recebimento (ideal)</strong>
+          <p>Se possível, recuse a entrega e anote na nota do entregador que o produto chegou avariado.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <strong>Fotografe tudo</strong>
+          <p>Documente a embalagem danificada, o produto e todos os itens antes de mover qualquer coisa.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <strong>Notifique-nos em até 48 horas</strong>
+          <p>Entre em contato com fotos/vídeos. Enviamos um novo produto ou processamos o reembolso integral.</p>
+        </div>
+      </li>
+    </ul>
+    <div class="alert-box warning">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Casos relatados após 48 horas do recebimento podem não ser elegíveis para troca por avaria no transporte.
+    </div>
+  </div>
+
+  <!-- Estorno e Reembolso -->
+  <div class="policy-section">
+    <h2>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Estorno e Reembolso
+    </h2>
+    <p class="section-intro">Após aprovação da devolução, o reembolso é processado conforme o método de pagamento utilizado na compra.</p>
+
+    <div class="refund-steps">
+      <div class="refund-step">
+        <div class="rs-dot"></div>
+        <div class="rs-label">Produto Recebido</div>
+        <div class="rs-time">Dia 0</div>
+      </div>
+      <div class="refund-step">
+        <div class="rs-dot"></div>
+        <div class="rs-label">Inspeção</div>
+        <div class="rs-time">1-2 dias úteis</div>
+      </div>
+      <div class="refund-step">
+        <div class="rs-dot"></div>
+        <div class="rs-label">Aprovação</div>
+        <div class="rs-time">+1 dia útil</div>
+      </div>
+      <div class="refund-step">
+        <div class="rs-dot"></div>
+        <div class="rs-label">Reembolso</div>
+        <div class="rs-time">Até 10 dias úteis</div>
+      </div>
+    </div>
+
+    <ul class="steps-list" style="margin-top:20px;">
+      <li class="step-item">
+        <span class="step-num" style="background:#dcfce7;color:var(--green);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <div class="step-content">
+          <strong>PIX — Reembolso em até 2 dias úteis</strong>
+          <p>O valor é devolvido diretamente para a chave PIX utilizada no pagamento.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num" style="background:#eff6ff;color:var(--blue);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </span>
+        <div class="step-content">
+          <strong>Cartão de Crédito — Até 2 faturas</strong>
+          <p>O estorno é solicitado à operadora, que pode levar até 2 ciclos de faturamento para processar.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <span class="step-num" style="background:#eff6ff;color:var(--blue);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </span>
+        <div class="step-content">
+          <strong>Boleto — Reembolso via TED em até 10 dias úteis</strong>
+          <p>Solicitaremos seus dados bancários para efetuar a transferência. TED sem custo para o cliente.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- O que NÃO é coberto -->
+  <div class="policy-section">
+    <h2>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      O que NÃO é coberto pela garantia
+    </h2>
+    <p class="section-intro">A garantia não cobre danos causados por mau uso ou situações externas ao defeito de fabricação.</p>
+    <div class="not-covered-grid">
+      <div class="nc-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Danos por queda ou impacto
+      </div>
+      <div class="nc-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Danos por contato com líquidos
+      </div>
+      <div class="nc-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Arranhões e desgaste natural
+      </div>
+      <div class="nc-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Produtos com lacre violado por terceiros
+      </div>
+      <div class="nc-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Danos por tensão elétrica inadequada
+      </div>
+      <div class="nc-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Modificações ou reparos não autorizados
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-block">
+    <h3>Precisa solicitar troca ou devolução?</h3>
+    <p>Nossa equipe está pronta para resolver sua situação da forma mais rápida possível.</p>
+    <a href="atendimento.html" class="btn-cta">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Entrar em Contato
+    </a>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <p style="margin-bottom:10px;">
+    <a href="index.html">Loja</a>
+    <a href="atendimento.html">Atendimento</a>
+    <a href="faq.html">FAQ</a>
+    <a href="termos.html">Termos de Uso</a>
+  </p>
+  <p>© 2026 jessi.iphones LTDA — Todos os direitos reservados</p>
+</footer>
+
+</body>
+</html>

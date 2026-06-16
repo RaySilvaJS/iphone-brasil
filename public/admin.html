@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Admin | jessi.iphones_</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/">jessi.iphones_ Admin</a>
+        <a class="nav-button" href="/">Voltar ao site</a>
+      </header>
+
+      <main>
+        <section class="section-block">
+          <div class="section-heading">
+            <span>Admin</span>
+            <h2>Gerenciar produtos do catálogo</h2>
+            <p>Adicione novos iPhones, edite informações ou marque como vendidos.</p>
+          </div>
+
+          <div class="catalog-panel">
+            <div class="catalog-filter glass-card">
+              <h3>Adicionar produto</h3>
+              <label>Id do produto<input id="product-id" type="text" placeholder="iphone-16" /></label>
+              <label>Nome<input id="product-name" type="text" placeholder="iPhone 16" /></label>
+              <label>Modelo<input id="product-model" type="text" placeholder="16" /></label>
+              <label>Preço<input id="product-price" type="number" placeholder="4999" /></label>
+              <label>Condição<select id="product-condition">
+                  <option value="Novo">Novo</option>
+                  <option value="Seminovo">Seminovo</option>
+                </select></label>
+              <label>Cor<input id="product-color" type="text" placeholder="Preto" /></label>
+              <label>Armazenamento<input id="product-storage" type="text" placeholder="128GB" /></label>
+              <label>Estoque<input id="product-stock" type="number" min="1" value="1" /></label>
+              <label>URLs das Imagens<textarea id="product-image" rows="3" placeholder="Uma URL por linha&#10;https://http2.mlstatic.com/...&#10;https://http2.mlstatic.com/..." style="font-size:.8rem;"></textarea></label>
+              <label>Descrição<textarea id="product-description" rows="4" placeholder="Descrição do produto"></textarea></label>
+              <hr style="margin: 10px 0; opacity: 0.2;">
+              <h4>Especificações Adicionais</h4>
+              <label>Processador<input id="product-cpu" type="text" placeholder="A17 Pro" /></label>
+              <label>Bateria<input id="product-battery" type="text" placeholder="Até 23h" /></label>
+              <button id="product-add" class="button button-primary">Adicionar produto</button>
+              <hr style="margin: 20px 0; opacity: 0.2;">
+              <button id="scrape-worten" class="button button-secondary">Importar da Worten</button>
+              <button id="scrape-swappie" class="button button-secondary" style="margin-top: 10px;">Importar da Swappie</button>
+              <p id="admin-feedback" style="color: #b5b2ff; margin-top: 14px;"></p>
+            </div>
+            <div class="catalog-grid" id="admin-product-list"></div>
+          </div>
+        </section>
+        <section class="section-block">
+          <div class="section-heading">
+            <span>Comprovantes</span>
+            <h2>Envios de comprovante</h2>
+            <p>Consulte comprovantes enviados pelos clientes e acesse os arquivos diretamente.</p>
+          </div>
+          <div id="proof-list" class="catalog-grid"></div>
+        </section>
+      </main>
+    </div>
+    <script src="admin.js"></script>
+  </body>
+</html>
