@@ -6,7 +6,18 @@ const { v4: uuidv4 } = require('uuid');
 const { getSocket, sendPaymentRequest } = require('./whatsapp');
 
 const paymentsPath = path.join(__dirname, 'data', 'payments.json');
+const usersPath = path.join(__dirname, 'data', 'users.json');
 const proofsDir = path.join(__dirname, 'data', 'proofs');
+
+const loadUsers = () => {
+  try { return JSON.parse(fs.readFileSync(usersPath, 'utf-8')); } catch (e) { return []; }
+};
+
+const getAuthUser = (req) => {
+  const token = req.headers['x-auth-token'] || req.query.token;
+  if (!token) return null;
+  return loadUsers().find(u => u.token === token) || null;
+};
 
 if (!fs.existsSync(proofsDir)) {
   fs.mkdirSync(proofsDir, { recursive: true });
@@ -46,7 +57,23 @@ const formatBRL = (value) => {
 
 // Gera um novo ID de pagamento
 router.post('/generate', async (req, res) => {
-  const { productId, amount, productName, userId } = req.body;
+  const user = getAuthUser(req);
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'Você precisa estar logado para finalizar a compra.' });
+  }
+
+  const enderecos = user.enderecos || [];
+  if (enderecos.length === 0) {
+    return res.status(400).json({ success: false, error: 'Cadastre um endereço de entrega antes de finalizar a compra.' });
+  }
+
+  const { productId, amount, productName, addressId } = req.body;
+  if (!productId || !amount) {
+    return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
+  }
+
+  const address = enderecos.find(a => a.id === addressId) || enderecos.find(a => a.principal) || enderecos[0];
+
   const paymentId = uuidv4();
   const payments = loadPayments();
 
@@ -59,10 +86,11 @@ router.post('/generate', async (req, res) => {
     createdAt: new Date().toISOString(),
     qrCode: null,
     clientId: req.ip,
-    userId: userId || null,
+    userId: user.id,
+    address,
     proofs: []
   };
-  
+
   payments.push(newPayment);
   savePayments(payments);
 

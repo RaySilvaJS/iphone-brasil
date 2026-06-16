@@ -1643,83 +1643,14 @@ header {
 
 <div id="chat-widget" style="display:none"><button id="chat-close"></button><div class="chat-option"></div></div>
 
+<script src="js/cookie-consent.js"></script>
 <script src="js/auth.js"></script>
 <script src="cart.js"></script>
 <script src="compare.js"></script>
 <script src="js/loja-oficial.js"></script>
 <script src="app.js"></script>
 
-<script>
-class ResultsManager {
-  constructor() {
-    this.sortDropdown = document.getElementById('sort-dropdown');
-    this.sortTrigger  = document.getElementById('sort-trigger');
-    this.sortMenu     = document.getElementById('sort-menu');
-    this.productCountEl = document.getElementById('product-count');
-    this.resultsSection = document.getElementById('results-section');
-    this.filtersText    = document.getElementById('filters-text');
-    this.sortOptions    = document.querySelectorAll('.sort-dropdown__option');
-    this.currentSort    = 'popularity';
-    this.initEvents();
-  }
-  initEvents() {
-    this.sortTrigger.addEventListener('click', e => { e.stopPropagation(); this.toggle(); });
-    document.addEventListener('click', e => { if (!this.sortDropdown.contains(e.target)) this.close(); });
-    this.sortOptions.forEach(opt => opt.addEventListener('click', e => { e.preventDefault(); this.select(opt); }));
-    this.observe();
-  }
-  toggle() { this.sortMenu.classList.contains('active') ? this.close() : this.open(); }
-  open()   { this.sortMenu.classList.add('active');    this.sortTrigger.classList.add('active'); }
-  close()  { this.sortMenu.classList.remove('active'); this.sortTrigger.classList.remove('active'); }
-  select(opt) {
-    this.sortOptions.forEach(o => o.classList.remove('selected'));
-    opt.classList.add('selected');
-    document.getElementById('sort-selected').textContent = opt.textContent.trim();
-    this.currentSort = opt.getAttribute('data-sort');
-    this.sortProducts();
-    setTimeout(() => this.close(), 120);
-    this.filtersText.textContent = `Ordenado por ${opt.textContent.trim().toLowerCase()}`;
-  }
-  sortProducts() {
-    const cards = Array.from(document.querySelectorAll('.olx-adcard'));
-    const getPrice = c => { const t = c.querySelector('.olx-adcard__price')?.textContent; return t ? parseFloat(t.replace(/[^\d,.]/g,'').replace('.','').replace(',','.')) : 0; };
-    const getName  = c => c.querySelector('.olx-adcard__title')?.textContent || '';
-    const getRating= c => { const t = c.querySelector('.rating')?.textContent; return t ? parseFloat(t) : 0; };
-    cards.sort((a,b) => {
-      switch(this.currentSort) {
-        case 'price-low':    return getPrice(a) - getPrice(b);
-        case 'price-high':   return getPrice(b) - getPrice(a);
-        case 'alphabetical': return getName(a).localeCompare(getName(b),'pt-BR');
-        case 'newest':       return 0;
-        default:             return getRating(b) - getRating(a);
-      }
-    });
-    const grid = document.getElementById('products-grid');
-    cards.forEach(c => grid.appendChild(c));
-  }
-  updateCount() {
-    const n = document.querySelectorAll('.olx-adcard:not([style*="display: none"])').length;
-    this.productCountEl.textContent = n > 1000 ? '1000+' : n;
-    this.filtersText.textContent = `${n} ${n===1?'produto':'produtos'} encontrado(s)`;
-    this.resultsSection.style.display = n > 0 ? 'flex' : 'none';
-  }
-  observe() {
-    const grid = document.getElementById('products-grid');
-    let _debounce = null;
-    new MutationObserver(() => {
-      clearTimeout(_debounce);
-      _debounce = setTimeout(() => this.updateCount(), 60);
-    }).observe(grid, { childList: true });
-    this.updateCount();
-  }
-}
-
-document.readyState === 'loading'
-  ? document.addEventListener('DOMContentLoaded', () => window.resultsManager = new ResultsManager())
-  : (window.resultsManager = new ResultsManager());
-
-function updateProductsCount() { window.resultsManager?.updateCount(); }
-</script>
+<script src="/pages/index-1.js"></script>
 
 <!-- FOOTER -->
 <footer class="footer">
@@ -1794,61 +1725,7 @@ function updateProductsCount() { window.resultsManager?.updateCount(); }
 </footer>
 
 
-<script>
-/* ===== MENU LATERAL — DRAWER ===== */
-(function () {
-  const menuBtn      = document.getElementById('menu-btn');
-  const sideDrawer   = document.getElementById('side-drawer');
-  const overlay      = document.getElementById('drawer-overlay');
-  const closeBtn     = document.getElementById('drawer-close-btn');
-
-  function openDrawer() {
-    sideDrawer.classList.add('open');
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    menuBtn.setAttribute('aria-expanded', 'true');
-  }
-  function closeDrawer() {
-    sideDrawer.classList.remove('open');
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-    menuBtn.setAttribute('aria-expanded', 'false');
-  }
-
-  menuBtn.addEventListener('click', openDrawer);
-  closeBtn.addEventListener('click', closeDrawer);
-  overlay.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
-
-  /* Links de categoria no drawer acionam filtro */
-  document.querySelectorAll('.drawer-link[data-catalog]').forEach(function(link) {
-    link.addEventListener('click', function(e) {
-      e.preventDefault();
-      closeDrawer();
-      const catalog = this.getAttribute('data-catalog');
-      document.querySelectorAll('.categories .cat-item').forEach(function(btn) {
-        btn.classList.toggle('active', btn.dataset.catalog === catalog);
-      });
-      const fm = document.getElementById('filter-model');
-      if (fm) fm.value = '';
-      if (window.fetchProducts) window.fetchProducts();
-    });
-  });
-
-  /* Atualiza o drawer com dados do utilizador logado */
-  try {
-    const session = JSON.parse(localStorage.getItem('user-session') || 'null');
-    if (session && session.nome) {
-      const nameEl = document.getElementById('drawer-user-name');
-      const subEl  = document.getElementById('drawer-user-sub');
-      const authEl = document.getElementById('drawer-auth-section');
-      if (nameEl) nameEl.textContent = 'Olá, ' + session.nome.split(' ')[0];
-      if (subEl)  subEl.textContent  = session.email || '';
-      if (authEl) authEl.style.display = 'none';
-    }
-  } catch(e) {}
-})();
-</script>
+<script src="/pages/index-2.js"></script>
 
 <!-- SUPPORT WIDGET -->
 <div class="support-widget" id="support-widget">
@@ -1887,27 +1764,7 @@ function updateProductsCount() { window.resultsManager?.updateCount(); }
   </button>
 </div>
 
-<script>
-function toggleSupport() {
-  const menu = document.getElementById('support-menu');
-  const open = document.getElementById('su-icon-open');
-  const close = document.getElementById('su-icon-close');
-  const visible = menu.style.display !== 'none';
-  menu.style.display = visible ? 'none' : 'block';
-  open.style.display  = visible ? '' : 'none';
-  close.style.display = visible ? 'none' : '';
-}
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('#support-widget')) {
-    const menu = document.getElementById('support-menu');
-    if (menu && menu.style.display !== 'none') {
-      menu.style.display = 'none';
-      document.getElementById('su-icon-open').style.display = '';
-      document.getElementById('su-icon-close').style.display = 'none';
-    }
-  }
-});
-</script>
+<script src="/pages/index-3.js"></script>
 
 </body>
 </html>

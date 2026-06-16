@@ -654,12 +654,12 @@
     <img id="lightbox-img" src="" alt="Imagem ampliada"/>
   </div>
 
-  <script>
-    window.formatCurrency = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
-  </script>
+  <script src="/pages/product-1.js"></script>
+  <script src="js/cookie-consent.js"></script>
   <script src="js/auth.js"></script>
   <script src="cart.js"></script>
   <script src="js/loja-oficial.js"></script>
+  <script src="/pages/product-2.js"></script>
   <script>
   (function () {
     'use strict';
@@ -800,6 +800,10 @@
     };
 
     window.buyNow = async (productId) => {
+      if (window.Auth && !window.Auth.isLoggedIn()) {
+        window.location.href = 'login.html?redirect=' + encodeURIComponent('product.html?id=' + productId);
+        return;
+      }
       await window.addToCart(productId);
       if (typeof window._showTypingMessage === 'function') {
         window._showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {

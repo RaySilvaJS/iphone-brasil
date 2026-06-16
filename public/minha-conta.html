@@ -775,7 +775,7 @@ document.addEventListener('click', function(e) {
 
   const session = getSession();
   if (!session || !session.token) {
-    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname);
+    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
   }
   userToken = session ? session.token : null;
 
@@ -849,6 +849,10 @@ document.addEventListener('click', function(e) {
   document.querySelectorAll('.tab-btn').forEach(b => {
     b.addEventListener('click', function() { switchTab(this.dataset.tab); });
   });
+  var initialTab = new URLSearchParams(window.location.search).get('tab');
+  if (initialTab && document.getElementById('tab-' + initialTab)) {
+    switchTab(initialTab);
+  }
 
   // ===== EDIT PROFILE =====
   document.getElementById('edit-whatsapp').addEventListener('input', function() {
@@ -1150,5 +1154,6 @@ document.addEventListener('click', function(e) {
 
 })();
 </script>
+<script src="/js/cookie-consent.js"></script>
 </body>
 </html>

@@ -618,6 +618,10 @@ async function addToCart(productId) {
 }
 
 async function buyNow(productId) {
+  if (window.Auth && !window.Auth.isLoggedIn()) {
+    window.location.href = 'login.html?redirect=' + encodeURIComponent('product.html?id=' + productId);
+    return;
+  }
   const product = await getProduct(productId);
   if (product) {
     const extras = getOrCreateCardExtras(productId);

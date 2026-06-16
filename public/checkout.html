@@ -105,6 +105,36 @@
     .order-item-details strong { display: block; font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 2px; }
     .order-item-details p { margin: 2px 0; font-size: 12px; color: #6B7280; }
 
+    /* ENDEREÇO */
+    .addr-option {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 12px 14px;
+      border: 1.5px solid #E5E7EB; border-radius: 8px;
+      background: #fff; cursor: pointer; margin-bottom: 8px;
+    }
+    .addr-option:last-child { margin-bottom: 0; }
+    .addr-option.selected { border-color: #2563EB; background: #EFF6FF; }
+    .addr-option input[type=radio] { margin-top: 3px; flex-shrink: 0; }
+    .addr-option .addr-name { font-weight: 700; font-size: 13px; color: #111827; }
+    .addr-option .addr-line { font-size: 12.5px; color: #6B7280; margin-top: 2px; }
+    .addr-badge {
+      display: inline-block; margin-left: 6px; padding: 1px 6px;
+      background: #DBEAFE; color: #2563EB; border-radius: 4px;
+      font-size: 10.5px; font-weight: 700; vertical-align: middle;
+    }
+    .addr-empty {
+      text-align: center; padding: 8px 0;
+    }
+    .btn-add-addr {
+      display: inline-block; margin-top: 10px;
+      padding: 9px 16px; background: #2563EB; color: #fff;
+      border-radius: 8px; font-size: 13px; font-weight: 600;
+    }
+    .sum-addr {
+      font-size: 12.5px; color: #374151; padding: 8px 0;
+      border-bottom: 1px solid #F3F4F6; line-height: 1.5;
+    }
+
     /* CEP */
     .cep-row { display: flex; gap: 8px; align-items: flex-end; }
     label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
@@ -243,6 +273,14 @@
       </div>
     </div>
 
+    <!-- Endereço -->
+    <div class="card">
+      <div class="card-title">Endereço de entrega</div>
+      <div class="card-body" id="address-card-body">
+        <p class="text-muted">Carregando endereços...</p>
+      </div>
+    </div>
+
     <!-- CEP -->
     <div class="card">
       <div class="card-title">Calcular frete</div>
@@ -269,6 +307,7 @@
     <div class="card">
       <div class="card-title">Resumo</div>
       <div class="card-body">
+        <div id="sum-addr-wrap"></div>
         <div class="sum-rows">
           <div class="sum-row">
             <span>Subtotal</span>
@@ -294,6 +333,7 @@
 
 </div>
 
+<script src="/js/cookie-consent.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/cart.js"></script>
 <script src="/js/checkout.js"></script>

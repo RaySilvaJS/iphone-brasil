@@ -1,5 +1,84 @@
 // checkout.js - front-end logic for calculating and selecting shipping
 document.addEventListener('DOMContentLoaded', () => {
+  // Compra exige login - sem sessão válida, volta para o login e retorna aqui depois
+  if (window.Auth && !window.Auth.requireLogin(true)) return;
+
+  const authSession = (function () {
+    try { return JSON.parse(localStorage.getItem('user-session')); } catch (e) { return null; }
+  })();
+
+  const addressCardBody = document.getElementById('address-card-body');
+  const sumAddrWrap = document.getElementById('sum-addr-wrap');
+  let addresses = [];
+  let selectedAddressId = null;
+
+  function escapeAddr(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function addressLine(a) {
+    return `${escapeAddr(a.rua)}, ${escapeAddr(a.numero)}${a.complemento ? ' - ' + escapeAddr(a.complemento) : ''} — ${escapeAddr(a.bairro)}, ${escapeAddr(a.cidade)}/${escapeAddr(a.estado)} — CEP ${escapeAddr(a.cep)}`;
+  }
+
+  function renderAddressSummary() {
+    const addr = addresses.find(a => a.id === selectedAddressId);
+    if (!addr) { sumAddrWrap.innerHTML = ''; return; }
+    sumAddrWrap.innerHTML = `<div class="sum-addr"><strong>Entregar em:</strong><br>${escapeAddr(addr.nome)} — ${addressLine(addr)}</div>`;
+  }
+
+  function selectAddress(id) {
+    selectedAddressId = id;
+    addressCardBody.querySelectorAll('.addr-option').forEach((el) => {
+      el.classList.toggle('selected', el.dataset.id === id);
+      const radio = el.querySelector('input[type=radio]');
+      if (radio) radio.checked = el.dataset.id === id;
+    });
+    const addr = addresses.find(a => a.id === id);
+    if (addr && cepInput) {
+      cepInput.value = addr.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+    }
+    renderAddressSummary();
+  }
+
+  function renderAddresses() {
+    if (!addresses.length) {
+      addressCardBody.innerHTML = `
+        <div class="addr-empty">
+          <p class="text-muted">Você ainda não tem nenhum endereço cadastrado.</p>
+          <a class="btn-add-addr" href="minha-conta.html?tab=enderecos">Cadastrar endereço</a>
+        </div>`;
+      if (continueBtn) continueBtn.disabled = true;
+      return;
+    }
+    addressCardBody.innerHTML = addresses.map((a) => `
+      <label class="addr-option" data-id="${a.id}">
+        <input type="radio" name="address" value="${a.id}" ${a.principal ? 'checked' : ''}/>
+        <div>
+          <span class="addr-name">${escapeAddr(a.nome)}</span>${a.principal ? '<span class="addr-badge">PRINCIPAL</span>' : ''}
+          <div class="addr-line">${addressLine(a)}</div>
+        </div>
+      </label>
+    `).join('') + '<a class="btn-add-addr" href="minha-conta.html?tab=enderecos" style="background:transparent;color:#2563EB;padding:8px 0;">+ Adicionar outro endereço</a>';
+
+    addressCardBody.querySelectorAll('.addr-option').forEach((el) => {
+      el.addEventListener('click', () => selectAddress(el.dataset.id));
+    });
+
+    const principal = addresses.find(a => a.principal) || addresses[0];
+    selectAddress(principal.id);
+  }
+
+  async function loadAddresses() {
+    try {
+      const r = await fetch('/api/auth/addresses', {
+        headers: { 'x-auth-token': authSession ? authSession.token : '' }
+      });
+      const data = await r.json();
+      addresses = (data && data.addresses) || [];
+    } catch (e) {
+      addresses = [];
+    }
+    renderAddresses();
+  }
+
   const cepInput = document.getElementById('cep');
   const calcBtn = document.getElementById('calcBtn');
   const results = document.getElementById('results');
@@ -62,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   renderOrderItems();
+  loadAddresses();
 
   cepInput.addEventListener('input', (e) => {
     let v = e.target.value.replace(/\D/g, '');
@@ -131,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         shippingValueEl.textContent = formatBRL(shipping.price);
       }
       totalEl.textContent = formatBRL(subtotal + shippingFinal);
-      continueBtn.disabled = false;
+      continueBtn.disabled = !selectedAddressId;
 
       const checkoutSummary = {
         produto: orderItems.map(item => ({
@@ -170,20 +250,24 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Por favor, calcule o frete antes de continuar.');
       return;
     }
+    if (!selectedAddressId) {
+      alert('Selecione um endereço de entrega antes de continuar.');
+      return;
+    }
 
     const summary = JSON.parse(localStorage.getItem('checkout-summary') || 'null');
-    const authSession = (function() { try { return JSON.parse(localStorage.getItem('user-session')); } catch(e) { return null; } })();
     const payload = {
       productId: summary && summary.produto.length === 1 ? summary.produto[0].id : summary ? summary.produto.map(p => p.id || p.nome).join(', ') : 'Compra',
       productName: summary ? summary.produto.map(p => p.nome).join(', ') : 'Compra',
       amount: summary ? summary.total_final : subtotal,
       userId: authSession ? authSession.id : null,
+      addressId: selectedAddressId,
     };
 
     try {
       const response = await fetch('/api/payment/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': authSession ? authSession.token : '' },
         body: JSON.stringify(payload),
       });
       const data = await response.json();

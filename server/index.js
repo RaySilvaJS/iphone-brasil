@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 const axios = require('axios');
+const bcrypt = require('bcryptjs');
 const paymentRouter = require('./payment');
 const { initWhatsApp, sendPaymentRequest } = require('./whatsapp');
 const { v4: uuidv4 } = require('uuid');
@@ -416,7 +417,7 @@ app.post('/api/auth/register', (req, res) => {
     cpf: cpf.replace(/\D/g, ''),
     whatsapp: whatsappDigits,
     email: email.toLowerCase().trim(),
-    senha,
+    senha: bcrypt.hashSync(senha, 10),
     token: null,
     createdAt: new Date().toISOString()
   };
@@ -431,9 +432,21 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
   }
   const users = loadUsers();
-  const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase().trim() && u.senha === senha);
+  const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase().trim());
   if (idx === -1) {
     return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+  }
+  const storedHash = users[idx].senha || '';
+  const isBcryptHash = /^\$2[aby]\$/.test(storedHash);
+  const passwordOk = isBcryptHash
+    ? bcrypt.compareSync(senha, storedHash)
+    : storedHash === senha;
+  if (!passwordOk) {
+    return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+  }
+  if (!isBcryptHash) {
+    // Migra senha legada em texto puro para hash bcrypt no primeiro login
+    users[idx].senha = bcrypt.hashSync(senha, 10);
   }
   users[idx].token = uuidv4();
   saveUsers(users);
@@ -472,9 +485,12 @@ app.put('/api/auth/password', (req, res) => {
   const idx = users.findIndex(u => u.token === token);
   if (idx === -1) return res.status(401).json({ error: 'Sessão inválida.' });
   const { senhaAtual, novaSenha } = req.body || {};
-  if (users[idx].senha !== senhaAtual) return res.status(400).json({ error: 'Senha atual incorreta.' });
+  const storedHash = users[idx].senha || '';
+  const isBcryptHash = /^\$2[aby]\$/.test(storedHash);
+  const currentOk = isBcryptHash ? bcrypt.compareSync(senhaAtual || '', storedHash) : storedHash === senhaAtual;
+  if (!currentOk) return res.status(400).json({ error: 'Senha atual incorreta.' });
   if (!novaSenha || novaSenha.length < 6) return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres.' });
-  users[idx].senha = novaSenha;
+  users[idx].senha = bcrypt.hashSync(novaSenha, 10);
   saveUsers(users);
   res.json({ success: true });
 });
