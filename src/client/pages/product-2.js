@@ -329,7 +329,7 @@
     const specEntries = Object.entries(specs);
     const VISIBLE_ROWS = 8;
 
-    root.innerHTML = `
+    const html = `
       <nav class="breadcrumb" aria-label="Navegação">
         <a href="index.html">Home</a>
         <span class="breadcrumb-sep">/</span>
@@ -608,11 +608,35 @@
       </section>
     `;
 
+    swapSkeletonForContent(html);
+
     setupGallery(images);
     loadMLVariations(product, storeDiscount);
     setupSpecsToggle(specEntries.length);
     setupDescToggle();
     setupLazyReviews(reviewsList);
+  };
+
+  /* ── SKELETON → CONTEÚDO REAL (crossfade) ── */
+  const swapSkeletonForContent = (html) => {
+    const skeleton = document.getElementById('product-skeleton');
+    const content = document.createElement('div');
+    content.className = 'product-content-fade';
+    content.innerHTML = html;
+
+    if (!skeleton) {
+      root.innerHTML = '';
+      root.appendChild(content);
+      requestAnimationFrame(() => content.classList.add('sk-visible'));
+      return;
+    }
+
+    skeleton.classList.add('sk-fade-out');
+    root.appendChild(content);
+    setTimeout(() => {
+      skeleton.remove();
+      requestAnimationFrame(() => content.classList.add('sk-visible'));
+    }, 220);
   };
 
   const loadMLVariations = (product, storeDiscount) => {

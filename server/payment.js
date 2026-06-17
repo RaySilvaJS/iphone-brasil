@@ -87,19 +87,36 @@ router.post('/generate', async (req, res) => {
     qrCode: null,
     clientId: req.ip,
     userId: user.id,
+    clientPhone: user.whatsapp || null,
+    groupMessageId: null,
     address,
-    proofs: []
+    proofs: [],
+    logs: []
   };
 
   payments.push(newPayment);
-  savePayments(payments);
 
-  // Notifica o grupo do WhatsApp para um admin enviar o QR Code
+  // Notifica o grupo e vincula o ID da mensagem ao pedido
   const sock = getSocket();
   if (sock) {
-    await sendPaymentRequest(sock, paymentId, productName || productId, amount);
+    const messageId = await sendPaymentRequest(sock, paymentId, productName || productId, amount, user.whatsapp);
+    newPayment.groupMessageId = messageId;
+    newPayment.logs.push({
+      timestamp: new Date().toISOString(),
+      type: 'order_created',
+      details: messageId
+        ? `Notificação enviada ao grupo WhatsApp. MessageID: ${messageId}`
+        : 'Pedido criado sem notificação WhatsApp (socket offline)'
+    });
+  } else {
+    newPayment.logs.push({
+      timestamp: new Date().toISOString(),
+      type: 'order_created',
+      details: 'Pedido criado sem notificação WhatsApp (socket offline)'
+    });
   }
-  
+
+  savePayments(payments);
   res.json({ success: true, paymentId });
 });
 
