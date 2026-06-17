@@ -678,6 +678,50 @@ router.patch('/orders/:id', adminAuth, (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ---- Analytics ----
+router.get('/analytics', adminAuth, (req, res) => {
+  const { period = '7d' } = req.query;
+  const dayCount = period === 'today' ? 1 : period === 'yesterday' ? 2 : period === '30d' ? 30 : period === 'all' ? 365 : 7;
+  const allDays  = tracker.getHistory(dayCount); // newest first
+
+  // For "yesterday", we only aggregate the second element
+  const relevant = period === 'yesterday' ? allDays.slice(1, 2) : allDays;
+
+  const totals = relevant.reduce((acc, d) => {
+    acc.visitors  += d.visitors;
+    acc.pageViews += d.pageViews;
+    acc.logins    += d.logins;
+    acc.signups   += d.signups;
+    acc.orders    += d.orders;
+    acc.pix       += d.pix;
+    acc.checkouts += d.checkouts;
+    return acc;
+  }, { visitors: 0, pageViews: 0, logins: 0, signups: 0, orders: 0, pix: 0, checkouts: 0 });
+
+  totals.conversionRate = totals.visitors > 0 ? +(totals.pix / totals.visitors * 100).toFixed(1) : 0;
+
+  const byHour = {};
+  for (let h = 0; h < 24; h++) byHour[h] = 0;
+  relevant.forEach(d => {
+    Object.entries(d.byHour || {}).forEach(([h, v]) => { byHour[h] = (byHour[h] || 0) + v; });
+  });
+
+  const sources = {};
+  relevant.forEach(d => {
+    Object.entries(d.sources || {}).forEach(([s, v]) => { sources[s] = (sources[s] || 0) + v; });
+  });
+
+  res.json({
+    period,
+    days:     [...relevant].reverse(), // chronological for charts
+    totals,
+    byHour,
+    sources,
+    products: Array.from(tracker.products.values()).sort((a, b) => b.views - a.views).slice(0, 20),
+    lifetime: tracker.lifetime,
+  });
+});
+
 module.exports = router;
 module.exports.loadConfig = loadConfig;
 module.exports.loadSecurity = loadSecurity;

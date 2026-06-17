@@ -90,6 +90,9 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .btn-red:hover:not(:disabled) { background: rgba(248,81,73,.25); }
 .btn-yellow { background: rgba(210,153,34,.15); color: var(--yellow); border: 1px solid rgba(210,153,34,.3); }
 .btn-yellow:hover:not(:disabled) { background: rgba(210,153,34,.25); }
+.analytics-period { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+.analytics-period:hover { color: var(--text); }
+.analytics-period.active { background: var(--blue); color: #fff; border-color: var(--blue); }
 .btn-ghost { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
 .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--blue); }
 .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -382,6 +385,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="audit"><span class="ni-icon">📜</span> Auditoria</div>
     <div class="nav-item" data-page="alerts"><span class="ni-icon">🔔</span> Alertas</div>
     <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
+    <div class="nav-item" data-page="analytics"><span class="ni-icon">📊</span> Analytics</div>
     <div class="nav-item" data-page="settings"><span class="ni-icon">⚙️</span> Config</div>
   </div>
   <div class="sidebar-footer">
@@ -798,6 +802,72 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
     <div id="order-drawer-overlay" onclick="closeOrderDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299"></div>
 
+    <!-- ANALYTICS PAGE -->
+    <div class="page" id="page-analytics">
+      <!-- Period tabs -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px">
+        <button class="btn analytics-period active" data-p="today">Hoje</button>
+        <button class="btn analytics-period" data-p="yesterday">Ontem</button>
+        <button class="btn analytics-period" data-p="7d">7 dias</button>
+        <button class="btn analytics-period" data-p="30d">30 dias</button>
+        <button class="btn analytics-period" data-p="all">Total Geral</button>
+        <button class="btn btn-ghost" style="margin-left:auto" onclick="loadAnalytics()">↺</button>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="stats-grid" id="analytics-kpis" style="margin-bottom:22px"></div>
+
+      <!-- Lifetime banner -->
+      <div id="analytics-lifetime" style="margin-bottom:22px"></div>
+
+      <!-- Charts row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px">
+        <div class="card">
+          <div class="card-title">Visitantes por Hora</div>
+          <div id="chart-by-hour" style="margin-top:10px"></div>
+        </div>
+        <div class="card" id="chart-by-day-wrap">
+          <div class="card-title">Visitantes por Dia</div>
+          <div id="chart-by-day" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <!-- Conversions + PIX chart row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px">
+        <div class="card">
+          <div class="card-title">Pedidos por Dia</div>
+          <div id="chart-orders" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">PIX Gerados por Dia</div>
+          <div id="chart-pix" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <!-- Sources + Products -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px">
+        <div class="card">
+          <div class="card-title">Origem do Tráfego</div>
+          <div id="analytics-sources" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Produtos Mais Vistos</div>
+          <div id="analytics-products" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Daily breakdown table -->
+      <div class="card">
+        <div class="card-title">Histórico por Dia</div>
+        <div style="overflow-x:auto;margin-top:12px">
+          <table class="table" id="analytics-daily-table">
+            <thead><tr><th>Data</th><th>Visitantes</th><th>Pageviews</th><th>Pedidos</th><th>PIX</th><th>Logins</th><th>Cadastros</th><th>Conversão</th></tr></thead>
+            <tbody id="analytics-daily-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -879,7 +949,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', settings: 'Configurações' };
+const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', analytics: 'Analytics & Estatísticas', settings: 'Configurações' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -915,6 +985,7 @@ function loadPage(name) {
   else if (name === 'audit') loadAudit();
   else if (name === 'alerts') loadAlerts();
   else if (name === 'orders') loadOrders();
+  else if (name === 'analytics') loadAnalytics();
   else if (name === 'settings') loadSettings();
 }
 
@@ -1935,6 +2006,138 @@ function closeOrderDrawer() {
   document.getElementById('order-drawer').style.transform = 'translateX(100%)';
   document.getElementById('order-drawer-overlay').style.display = 'none';
 }
+
+// ═══════════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════════
+let _analyticsPeriod = 'today';
+
+// SVG bar chart — no external libs
+function barChart(items, { color = 'var(--blue)', chartH = 100 } = {}) {
+  if (!items.length) return '<div class="empty-state" style="padding:16px">Sem dados</div>';
+  const max = Math.max(...items.map(d => d.v), 1);
+  const BAR = Math.max(6, Math.floor(Math.min(600, items.length * 22) / items.length) - 2);
+  const W   = items.length * (BAR + 2);
+  const H   = chartH + 18;
+  const bars = items.map((d, i) => {
+    const bh = Math.max(2, Math.round((d.v / max) * chartH));
+    const x  = i * (BAR + 2);
+    const y  = chartH - bh;
+    const showLabel = items.length <= 32;
+    return `<g>
+      <rect x="${x}" y="${y}" width="${BAR}" height="${bh}" fill="${color}" rx="2" opacity=".85">
+        <title>${esc(d.l)}: ${d.v}</title></rect>
+      ${showLabel ? `<text x="${x + BAR/2}" y="${H - 1}" text-anchor="middle" font-size="8" fill="var(--muted)">${esc(String(d.l))}</text>` : ''}
+    </g>`;
+  }).join('');
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;display:block">${bars}</svg></div>`;
+}
+
+// Horizontal bar for sources
+function hBar(label, value, max, color = 'var(--blue)') {
+  const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 2;
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+    <span style="min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)" title="${esc(label)}">${esc(label)}</span>
+    <div style="flex:1;background:var(--bg3);border-radius:3px;height:12px;position:relative">
+      <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;transition:width .4s"></div>
+    </div>
+    <span style="min-width:32px;text-align:right;color:var(--muted)">${value}</span>
+  </div>`;
+}
+
+async function loadAnalytics() {
+  const data = await api.get(`/api/admin/analytics?period=${_analyticsPeriod}`);
+  if (!data) return;
+
+  const { totals, byHour, sources, products: prods, days, lifetime } = data;
+
+  // ── KPI cards ──────────────────────────────────────────────────────────────
+  document.getElementById('analytics-kpis').innerHTML = `
+    <div class="stat-card info"><div class="stat-icon">👥</div><div><div class="stat-value">${totals.visitors}</div><div class="stat-label">Visitantes</div></div></div>
+    <div class="stat-card ok"><div class="stat-icon">📄</div><div><div class="stat-value">${totals.pageViews}</div><div class="stat-label">Pageviews</div></div></div>
+    <div class="stat-card warn"><div class="stat-icon">📦</div><div><div class="stat-value">${totals.orders}</div><div class="stat-label">Pedidos</div></div></div>
+    <div class="stat-card ok"><div class="stat-icon">💸</div><div><div class="stat-value">${totals.pix}</div><div class="stat-label">PIX Gerados</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">🔑</div><div><div class="stat-value">${totals.logins}</div><div class="stat-label">Logins</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">✅</div><div><div class="stat-value">${totals.signups}</div><div class="stat-label">Cadastros</div></div></div>
+    <div class="stat-card ${totals.conversionRate >= 5 ? 'ok' : 'warn'}"><div class="stat-icon">📈</div><div><div class="stat-value">${totals.conversionRate}%</div><div class="stat-label">Conversão</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">🛒</div><div><div class="stat-value">${totals.checkouts}</div><div class="stat-label">Checkouts</div></div></div>
+  `;
+
+  // ── Lifetime banner ─────────────────────────────────────────────────────────
+  if (lifetime) {
+    document.getElementById('analytics-lifetime').innerHTML = `
+      <div class="card" style="background:linear-gradient(135deg,#1e3a5f 0%,#162032 100%);border-color:#2563EB44">
+        <div class="card-title" style="color:#93C5FD;margin-bottom:12px">Total Geral — Desde o início</div>
+        <div style="display:flex;flex-wrap:wrap;gap:24px">
+          <div><div style="font-size:22px;font-weight:800;color:#fff">${lifetime.visitors.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Visitantes</div></div>
+          <div><div style="font-size:22px;font-weight:800;color:#fff">${lifetime.pageViews.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Pageviews</div></div>
+          <div><div style="font-size:22px;font-weight:800;color:#34D399">${lifetime.orders.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Pedidos</div></div>
+          <div><div style="font-size:22px;font-weight:800;color:#34D399">${lifetime.pix.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">PIX Gerados</div></div>
+          <div><div style="font-size:22px;font-weight:800;color:#fff">${lifetime.signups.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Cadastros</div></div>
+          <div><div style="font-size:22px;font-weight:800;color:#fff">${(lifetime.wa?.sent||0).toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Msgs WA Enviadas</div></div>
+        </div>
+      </div>`;
+  }
+
+  // ── Chart: by hour ─────────────────────────────────────────────────────────
+  const hourItems = Array.from({ length: 24 }, (_, h) => ({ l: h + 'h', v: byHour[h] || 0 }));
+  document.getElementById('chart-by-hour').innerHTML = barChart(hourItems, { color: 'var(--blue)', chartH: 100 });
+
+  // ── Chart: by day ──────────────────────────────────────────────────────────
+  if (days.length > 1) {
+    const dayItems = days.map(d => ({ l: d.date.slice(5), v: d.visitors }));
+    document.getElementById('chart-by-day').innerHTML = barChart(dayItems, { color: '#6366F1', chartH: 100 });
+    document.getElementById('chart-by-day-wrap').style.display = '';
+  } else {
+    document.getElementById('chart-by-day-wrap').style.display = 'none';
+  }
+
+  // ── Chart: orders by day ───────────────────────────────────────────────────
+  const ordItems = days.map(d => ({ l: d.date.slice(5), v: d.orders }));
+  document.getElementById('chart-orders').innerHTML = barChart(ordItems, { color: 'var(--green)', chartH: 80 });
+
+  // ── Chart: pix by day ─────────────────────────────────────────────────────
+  const pixItems = days.map(d => ({ l: d.date.slice(5), v: d.pix }));
+  document.getElementById('chart-pix').innerHTML = barChart(pixItems, { color: 'var(--yellow)', chartH: 80 });
+
+  // ── Sources ────────────────────────────────────────────────────────────────
+  const srcEntries = Object.entries(sources).sort((a, b) => b[1] - a[1]);
+  const srcMax = srcEntries[0]?.[1] || 1;
+  document.getElementById('analytics-sources').innerHTML = srcEntries.length
+    ? srcEntries.map(([s, v]) => hBar(s, v, srcMax)).join('')
+    : '<div class="empty-state" style="padding:12px">Sem dados</div>';
+
+  // ── Products ───────────────────────────────────────────────────────────────
+  const prodMax = prods[0]?.views || 1;
+  document.getElementById('analytics-products').innerHTML = prods.length
+    ? prods.slice(0, 10).map(p => hBar(p.name, p.views, prodMax, 'var(--yellow)')).join('')
+    : '<div class="empty-state" style="padding:12px">Sem dados</div>';
+
+  // ── Daily table ────────────────────────────────────────────────────────────
+  document.getElementById('analytics-daily-tbody').innerHTML = [...days].reverse().map(d => {
+    const conv = d.visitors > 0 ? (d.pix / d.visitors * 100).toFixed(1) : '0.0';
+    return `<tr>
+      <td>${d.date}</td>
+      <td>${d.visitors}</td>
+      <td>${d.pageViews}</td>
+      <td>${d.orders}</td>
+      <td>${d.pix}</td>
+      <td>${d.logins}</td>
+      <td>${d.signups}</td>
+      <td><span class="badge ${parseFloat(conv) >= 5 ? 'badge-green' : 'badge-yellow'}">${conv}%</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados para o período</td></tr>';
+}
+
+// Period selector
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.analytics-period');
+  if (!btn) return;
+  document.querySelectorAll('.analytics-period').forEach(b => b.classList.remove('active', 'btn-blue'));
+  btn.classList.add('active');
+  _analyticsPeriod = btn.dataset.p;
+  loadAnalytics();
+});
 
 // ═══════════════════════════════════════════════
 // INIT
