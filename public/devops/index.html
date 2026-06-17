@@ -379,6 +379,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="backup"><span class="ni-icon">💾</span> Backup</div>
     <div class="nav-item" data-page="files"><span class="ni-icon">📁</span> Arquivos</div>
     <div class="nav-item" data-page="security"><span class="ni-icon">🔒</span> Segurança</div>
+    <div class="nav-item" data-page="audit"><span class="ni-icon">📜</span> Auditoria</div>
     <div class="nav-item" data-page="settings"><span class="ni-icon">⚙️</span> Config</div>
   </div>
   <div class="sidebar-footer">
@@ -400,8 +401,29 @@ tbody tr:last-child td { border-bottom: none; }
 
     <!-- ═══ DASHBOARD ═══ -->
     <div class="page active" id="page-dashboard">
-      <div class="stats-grid" id="dash-stats"></div>
-      <div class="grid-2">
+      <!-- System stats row -->
+      <div class="stats-grid" id="dash-stats" style="margin-bottom:10px"></div>
+      <!-- Realtime traffic/sales stats row -->
+      <div class="stats-grid" id="dash-rt-stats" style="margin-bottom:16px"></div>
+
+      <!-- Active visitors + Event feed -->
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card" style="padding:16px">
+          <h3 style="margin-bottom:10px">Visitantes Ativos <span id="dash-active-count" style="color:var(--green);font-size:16px;font-weight:700">0</span></h3>
+          <div id="dash-visitors" style="max-height:280px;overflow-y:auto">
+            <div class="empty-state" style="padding:20px">Nenhum visitante ativo</div>
+          </div>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3 style="margin-bottom:10px">Feed de Eventos em Tempo Real</h3>
+          <div id="dash-events" class="log-list" style="max-height:280px;overflow-y:auto">
+            <div class="empty-state" style="padding:20px">Aguardando eventos...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CPU/RAM charts + Product ranking -->
+      <div class="grid-2" style="margin-bottom:16px">
         <div class="card">
           <h3>CPU — Últimos 60s</h3>
           <div class="chart-container"><canvas id="cpu-chart"></canvas></div>
@@ -411,8 +433,23 @@ tbody tr:last-child td { border-bottom: none; }
           <div class="chart-container"><canvas id="ram-chart"></canvas></div>
         </div>
       </div>
+
+      <!-- Product ranking + Order monitoring -->
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card" style="padding:16px">
+          <h3 style="margin-bottom:12px">Produtos Mais Vistos Hoje</h3>
+          <div id="dash-products">
+            <div class="empty-state" style="padding:20px">Nenhum dado ainda</div>
+          </div>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3 style="margin-bottom:12px">Pedidos</h3>
+          <div id="dash-orders"></div>
+        </div>
+      </div>
+
       <div class="card">
-        <h3>Atividade Recente</h3>
+        <h3>Atividade Recente do Sistema</h3>
         <div id="recent-logs" class="log-list"></div>
       </div>
     </div>
@@ -635,6 +672,35 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </div>
 
+    <!-- ═══ AUDITORIA ═══ -->
+    <div class="page" id="page-audit">
+      <div class="stats-grid" id="audit-stats" style="margin-bottom:16px"></div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <select class="input" id="audit-type-filter" style="width:220px" onchange="loadAudit()">
+          <option value="">Todos os eventos</option>
+          <option value="login">Login</option>
+          <option value="signup">Cadastro</option>
+          <option value="product_edit">Edição de Produto</option>
+          <option value="price_change">Alteração de Preço</option>
+          <option value="order_created">Pedido Criado</option>
+          <option value="deploy">Deploy</option>
+          <option value="system_restart">Reinício do Sistema</option>
+          <option value="wa_restart">Reinício WhatsApp</option>
+          <option value="wa_clear_session">Limpeza de Sessão WA</option>
+        </select>
+        <button class="btn btn-ghost" onclick="loadAudit()">↺ Atualizar</button>
+        <span id="audit-total" style="color:var(--muted);font-size:12px;margin-left:auto"></span>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data / Hora</th><th>Evento</th><th>Usuário</th><th>IP</th><th>Detalhes</th></tr></thead>
+            <tbody id="audit-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -716,7 +782,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', settings: 'Configurações' };
+const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', settings: 'Configurações' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -728,6 +794,8 @@ function closeMobMenu() {
 }
 
 function showPage(name) {
+  // Disconnect tracker SSE when leaving dashboard
+  if (currentPage === 'dashboard' && name !== 'dashboard') disconnectTrackerSSE();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${name}`).classList.add('active');
@@ -747,6 +815,7 @@ function loadPage(name) {
   else if (name === 'backup') loadBackups();
   else if (name === 'files') loadFiles('');
   else if (name === 'security') loadSecurity();
+  else if (name === 'audit') loadAudit();
   else if (name === 'settings') loadSettings();
 }
 
@@ -785,11 +854,132 @@ function pushChart(chart, history, val) {
 // ═══════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════
+let trackerSSE = null;
+
+function connectTrackerSSE() {
+  if (trackerSSE) return;
+  trackerSSE = new EventSource(`/api/admin/tracker/stream?adminToken=${encodeURIComponent(adminToken)}`);
+  trackerSSE.onmessage = (e) => {
+    try { updateDashboardRealtime(JSON.parse(e.data)); } catch {}
+  };
+  trackerSSE.onerror = () => {
+    if (trackerSSE) { trackerSSE.close(); trackerSSE = null; }
+    if (currentPage === 'dashboard') setTimeout(connectTrackerSSE, 5000);
+  };
+}
+function disconnectTrackerSSE() {
+  if (trackerSSE) { trackerSSE.close(); trackerSSE = null; }
+}
+
+// Event type display config
+const EV_ICONS = {
+  visitor_enter: ['🟢', 'Visitante entrou', 'var(--green)'],
+  login: ['🔑', 'Login realizado', 'var(--blue)'],
+  signup: ['✨', 'Novo cadastro', 'var(--purple)'],
+  order_created: ['🛒', 'Pedido criado', 'var(--yellow)'],
+  pix_created: ['💳', 'PIX gerado', 'var(--green)'],
+  checkout_start: ['⚡', 'Checkout iniciado', 'var(--orange)'],
+  wa_sent: ['📤', 'Mensagem WA enviada', 'var(--blue)'],
+  wa_received: ['📨', 'Mensagem WA recebida', 'var(--muted)'],
+};
+
+function updateDashboardRealtime(snap) {
+  if (currentPage !== 'dashboard') return;
+
+  // Realtime stats cards
+  const conv = snap.conversionRate;
+  document.getElementById('dash-rt-stats').innerHTML = `
+    <div class="stat-card ok"><div class="stat-icon">👥</div><div><div class="stat-value" style="color:var(--green)">${snap.activeNow}</div><div class="stat-label">Online Agora</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">📊</div><div><div class="stat-value">${snap.visitorsToday}</div><div class="stat-label">Visitantes Hoje</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">⏱️</div><div><div class="stat-value">${snap.visitorsLastHour}</div><div class="stat-label">Última Hora</div></div></div>
+    <div class="stat-card ${snap.ordersToday>0?'ok':'info'}"><div class="stat-icon">🛒</div><div><div class="stat-value">${snap.ordersToday}</div><div class="stat-label">Pedidos Hoje</div></div></div>
+    <div class="stat-card ${snap.pixToday>0?'ok':'info'}"><div class="stat-icon">💳</div><div><div class="stat-value">${snap.pixToday}</div><div class="stat-label">PIX Hoje</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">🔑</div><div><div class="stat-value">${snap.loginsToday}</div><div class="stat-label">Logins Hoje</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">✨</div><div><div class="stat-value">${snap.signupsToday}</div><div class="stat-label">Cadastros Hoje</div></div></div>
+    <div class="stat-card ${conv>5?'ok':conv>1?'warn':'info'}"><div class="stat-icon">📈</div><div><div class="stat-value">${conv}%</div><div class="stat-label">Conversão</div></div></div>
+  `;
+
+  // Active visitors count badge
+  const ac = document.getElementById('dash-active-count');
+  if (ac) ac.textContent = snap.activeNow;
+
+  // Visitors table
+  const visEl = document.getElementById('dash-visitors');
+  if (visEl) {
+    if (!snap.sessions || snap.sessions.length === 0) {
+      visEl.innerHTML = '<div class="empty-state" style="padding:20px">Nenhum visitante ativo</div>';
+    } else {
+      const now = Date.now();
+      visEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="padding:6px 8px;text-align:left;color:var(--muted);font-size:10px;white-space:nowrap">SESSÃO</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--muted);font-size:10px;white-space:nowrap">TEMPO</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--muted);font-size:10px;white-space:nowrap">PÁGINA</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--muted);font-size:10px;white-space:nowrap">PRODUTO</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--muted);font-size:10px;white-space:nowrap">ORIGEM</th>
+        </tr></thead>
+        <tbody>${snap.sessions.map(s => {
+          const elapsed = Math.floor((now - new Date(s.startedAt).getTime()) / 1000);
+          const elStr = elapsed < 60 ? `${elapsed}s` : elapsed < 3600 ? `${Math.floor(elapsed/60)}m` : `${Math.floor(elapsed/3600)}h`;
+          const srcColor = { Facebook:'#1877f2', Instagram:'#e1306c', Google:'#4285f4', TikTok:'#010101', WhatsApp:'#25d366', YouTube:'#ff0000' }[s.source] || 'var(--muted)';
+          return `<tr style="border-bottom:1px solid var(--bg3)">
+            <td style="padding:6px 8px;font-family:monospace;color:var(--muted)">${esc(s.id.slice(0,8))}</td>
+            <td style="padding:6px 8px;color:var(--green)">${elStr}</td>
+            <td style="padding:6px 8px">${esc(s.page)}</td>
+            <td style="padding:6px 8px;color:var(--blue);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.productName||'')}">${esc(s.productName||'—')}</td>
+            <td style="padding:6px 8px;color:${srcColor};font-weight:600">${esc(s.source||'Direto')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+    }
+  }
+
+  // Event feed
+  const evEl = document.getElementById('dash-events');
+  if (evEl && snap.events) {
+    if (snap.events.length === 0) {
+      evEl.innerHTML = '<div class="empty-state" style="padding:20px">Aguardando eventos...</div>';
+    } else {
+      evEl.innerHTML = snap.events.map(ev => {
+        const [icon, label, color] = EV_ICONS[ev.type] || ['•', ev.type, 'var(--muted)'];
+        const detail = ev.data?.productName ? ` — ${esc(ev.data.productName)}` : ev.data?.email ? ` — ${esc(ev.data.email)}` : ev.data?.page ? ` / ${esc(ev.data.page)}` : '';
+        return `<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--bg3);font-size:12px;align-items:flex-start">
+          <span style="flex-shrink:0;color:var(--muted);font-family:monospace;font-size:10px;margin-top:1px;white-space:nowrap">${new Date(ev.at).toLocaleTimeString('pt-BR')}</span>
+          <span style="flex-shrink:0">${icon}</span>
+          <span style="color:${color};flex:1">${label}<span style="color:var(--muted)">${detail}</span></span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Product ranking
+  const prodEl = document.getElementById('dash-products');
+  if (prodEl && snap.products) {
+    if (snap.products.length === 0) {
+      prodEl.innerHTML = '<div class="empty-state" style="padding:20px">Nenhum dado ainda</div>';
+    } else {
+      const maxViews = snap.products[0]?.views || 1;
+      prodEl.innerHTML = snap.products.map((p, i) => `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.name)}">${i+1}. ${esc(p.name.slice(0,40))}</span>
+            <span style="font-size:11px;color:var(--muted);flex-shrink:0;margin-left:8px">${p.views} vis · ${p.checkouts} checkout · ${p.pix} PIX</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar progress-blue" style="width:${Math.round(p.views/maxViews*100)}%"></div></div>
+        </div>`).join('');
+    }
+  }
+}
+
 async function loadDashboard() {
-  const [mon, wa, logs] = await Promise.all([
+  // Connect tracker SSE if not already connected
+  connectTrackerSSE();
+
+  const [mon, wa, logs, orders] = await Promise.all([
     api.get('/api/admin/monitor'),
     api.get('/api/admin/whatsapp'),
-    api.get('/api/admin/logs?type=app&limit=20')
+    api.get('/api/admin/logs?type=app&limit=20'),
+    api.get('/api/admin/orders/stats')
   ]);
 
   if (mon) {
@@ -806,6 +996,23 @@ async function loadDashboard() {
     pushChart(ramChart, RAM_H, mon.ram.percent);
   }
 
+  // Order monitoring panel
+  if (orders) {
+    const o = orders;
+    document.getElementById('dash-orders').innerHTML = `
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div class="stat-card info" style="padding:12px"><div class="stat-icon" style="font-size:20px">📋</div><div><div class="stat-value" style="font-size:16px">${o.todayTotal}</div><div class="stat-label">Novos Hoje</div></div></div>
+        <div class="stat-card warn" style="padding:12px"><div class="stat-icon" style="font-size:20px">⏳</div><div><div class="stat-value" style="font-size:16px">${o.todayPending}</div><div class="stat-label">Ag. PIX Hoje</div></div></div>
+        <div class="stat-card ok" style="padding:12px"><div class="stat-icon" style="font-size:20px">✅</div><div><div class="stat-value" style="font-size:16px">${o.todayPaid}</div><div class="stat-label">Pagos Hoje</div></div></div>
+        <div class="stat-card info" style="padding:12px"><div class="stat-icon" style="font-size:20px">📦</div><div><div class="stat-value" style="font-size:16px">${o.pending}</div><div class="stat-label">Pendentes Total</div></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding-top:8px;border-top:1px solid var(--bg3)">
+        <span>Total geral: <b style="color:var(--text)">${o.total}</b></span>
+        <span>Pagos: <b style="color:var(--green)">${o.paid}</b></span>
+        <span>Cancelados: <b style="color:var(--red)">${o.cancelled}</b></span>
+      </div>`;
+  }
+
   if (logs) {
     document.getElementById('recent-logs').innerHTML = logs.slice(0,15).map(l => `
       <div class="log-item">
@@ -814,6 +1021,10 @@ async function loadDashboard() {
         <span class="log-msg">${esc(l.msg)}</span>
       </div>`).join('') || '<div class="empty-state">Sem logs recentes</div>';
   }
+
+  // Fetch initial tracker snapshot (SSE may not fire immediately)
+  const snap = await api.get('/api/admin/tracker/stats');
+  if (snap) updateDashboardRealtime(snap);
 }
 
 // ═══════════════════════════════════════════════
@@ -1333,6 +1544,47 @@ async function markNotifsRead() {
 }
 
 // ═══════════════════════════════════════════════
+// AUDIT
+// ═══════════════════════════════════════════════
+const AUDIT_TYPE_LABELS = {
+  '': 'Todos os tipos',
+  login: '🔑 Login',
+  logout: '🚪 Logout',
+  signup: '✨ Cadastro',
+  product_edit: '✏️ Edição de produto',
+  price_change: '💰 Mudança de preço',
+  order_created: '🛒 Pedido criado',
+  deploy: '🚀 Deploy',
+  system_restart: '🔄 Restart sistema',
+  wa_restart: '💬 Restart WhatsApp',
+  wa_clear_session: '🗑️ Sessão WA limpa',
+};
+
+async function loadAudit() {
+  const typeFilter = document.getElementById('audit-type-filter')?.value || '';
+  const url = '/api/admin/audit' + (typeFilter ? `?type=${encodeURIComponent(typeFilter)}` : '');
+  const entries = await api.get(url);
+  const tbody = document.getElementById('audit-table');
+  if (!tbody) return;
+  if (!entries || entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Nenhum registro encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => {
+    const typeLabel = AUDIT_TYPE_LABELS[e.type] || e.type;
+    const detail = e.data ? Object.entries(e.data).filter(([k]) => !['token','password'].includes(k))
+      .map(([k,v]) => `<span style="color:var(--muted)">${k}:</span> ${esc(String(v||'').slice(0,60))}`).join(' · ') : '—';
+    return `<tr>
+      <td style="padding:8px;white-space:nowrap;color:var(--muted);font-size:11px">${new Date(e.at).toLocaleString('pt-BR')}</td>
+      <td style="padding:8px">${typeLabel}</td>
+      <td style="padding:8px;font-family:monospace;font-size:12px">${esc(e.user||'sistema')}</td>
+      <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--muted)">${esc(e.ip||'—')}</td>
+      <td style="padding:8px;font-size:11px">${detail}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 async function init() {
@@ -1343,12 +1595,60 @@ async function init() {
   monCpuChart = makeChart('mon-cpu-chart', 'rgb(88,166,255)', 'CPU');
   monRamChart = makeChart('mon-ram-chart', 'rgb(63,185,80)', 'RAM');
 
-  // Load initial page
+  // Load initial page + connect realtime tracker
   loadDashboard();
   loadNotifications();
 
-  // Auto-refresh dashboard every 10s
-  setInterval(() => { if (currentPage === 'dashboard') loadDashboard(); }, 10000);
+  // System stats refresh every 10s (SSE handles tracker realtime)
+  setInterval(() => {
+    if (currentPage === 'dashboard') {
+      // Only refresh system stats & orders, not tracker (SSE handles that)
+      Promise.all([
+        api.get('/api/admin/monitor'),
+        api.get('/api/admin/whatsapp'),
+        api.get('/api/admin/orders/stats'),
+        api.get('/api/admin/logs?type=app&limit=20'),
+      ]).then(([mon, wa, orders, logs]) => {
+        if (currentPage !== 'dashboard') return;
+        if (mon) {
+          const waStatus = wa?.status === 'connected' ? 'ok' : 'warn';
+          document.getElementById('dash-stats').innerHTML = `
+            <div class="stat-card ok"><div class="stat-icon">🖥️</div><div><div class="stat-value">Online</div><div class="stat-label">Sistema</div></div></div>
+            <div class="stat-card ${waStatus}"><div class="stat-icon">💬</div><div><div class="stat-value">${wa?.status === 'connected' ? 'Online' : wa?.status || 'Offline'}</div><div class="stat-label">WhatsApp</div></div></div>
+            <div class="stat-card ${mon.cpu.percent > 80 ? 'err' : mon.cpu.percent > 60 ? 'warn' : 'info'}"><div class="stat-icon">⚡</div><div><div class="stat-value">${mon.cpu.percent}%</div><div class="stat-label">CPU</div></div></div>
+            <div class="stat-card ${mon.ram.percent > 85 ? 'err' : mon.ram.percent > 65 ? 'warn' : 'info'}"><div class="stat-icon">🧠</div><div><div class="stat-value">${mon.ram.percent}%</div><div class="stat-label">RAM</div></div></div>
+            <div class="stat-card ${mon.disk.percent > 85 ? 'err' : mon.disk.percent > 70 ? 'warn' : 'ok'}"><div class="stat-icon">💽</div><div><div class="stat-value">${mon.disk.percent}%</div><div class="stat-label">Disco</div></div></div>
+            <div class="stat-card info"><div class="stat-icon">⏱️</div><div><div class="stat-value">${fmtUptime(mon.uptime.app)}</div><div class="stat-label">Uptime App</div></div></div>
+          `;
+          pushChart(cpuChart, CPU_H, mon.cpu.percent);
+          pushChart(ramChart, RAM_H, mon.ram.percent);
+        }
+        if (orders) {
+          const o = orders;
+          document.getElementById('dash-orders').innerHTML = `
+            <div class="stats-grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+              <div class="stat-card info" style="padding:12px"><div class="stat-icon" style="font-size:20px">📋</div><div><div class="stat-value" style="font-size:16px">${o.todayTotal}</div><div class="stat-label">Novos Hoje</div></div></div>
+              <div class="stat-card warn" style="padding:12px"><div class="stat-icon" style="font-size:20px">⏳</div><div><div class="stat-value" style="font-size:16px">${o.todayPending}</div><div class="stat-label">Ag. PIX Hoje</div></div></div>
+              <div class="stat-card ok" style="padding:12px"><div class="stat-icon" style="font-size:20px">✅</div><div><div class="stat-value" style="font-size:16px">${o.todayPaid}</div><div class="stat-label">Pagos Hoje</div></div></div>
+              <div class="stat-card info" style="padding:12px"><div class="stat-icon" style="font-size:20px">📦</div><div><div class="stat-value" style="font-size:16px">${o.pending}</div><div class="stat-label">Pendentes Total</div></div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding-top:8px;border-top:1px solid var(--bg3)">
+              <span>Total geral: <b style="color:var(--text)">${o.total}</b></span>
+              <span>Pagos: <b style="color:var(--green)">${o.paid}</b></span>
+              <span>Cancelados: <b style="color:var(--red)">${o.cancelled}</b></span>
+            </div>`;
+        }
+        if (logs) {
+          document.getElementById('recent-logs').innerHTML = logs.slice(0,15).map(l => `
+            <div class="log-item">
+              <span class="log-ts">${new Date(l.ts).toLocaleTimeString('pt-BR')}</span>
+              <span class="log-level log-level-${l.level}">${l.level.toUpperCase()}</span>
+              <span class="log-msg">${esc(l.msg)}</span>
+            </div>`).join('') || '<div class="empty-state">Sem logs recentes</div>';
+        }
+      });
+    }
+  }, 10000);
   setInterval(loadNotifications, 30000);
 }
 

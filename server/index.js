@@ -11,6 +11,8 @@ const adminRouter = require('./admin');
 const { loadConfig, loadSecurity, saveSecurity } = require('./admin');
 const { initWhatsApp, sendPaymentRequest } = require('./whatsapp');
 const { v4: uuidv4 } = require('uuid');
+const tracker = require('./tracker');
+const audit = require('./audit');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -367,6 +369,9 @@ app.patch('/api/admin/catalog/:catalogKey/:productId', requireAdmin, (req, res) 
   }
 
   console.log(`[CATALOG-EDIT] OK | id="${productId}" | catálogo="${catalogKey}" | campos=${Object.keys(diff).join(',') || 'nenhum'} | by=${by}`);
+  const changedFields = Object.keys(diff);
+  audit.append('product_edit', by, req.ip, { productId, catalogKey, fields: changedFields, changes: diff });
+  if (diff.price) audit.append('price_change', by, req.ip, { productId, catalogKey, from: diff.price.from, to: diff.price.to });
   res.json({ success: true, product: catalog[idx] });
 });
 
@@ -623,6 +628,8 @@ app.post('/api/auth/register', (req, res) => {
   };
   users.push(newUser);
   saveUsers(users);
+  tracker.record('signup', { email: newUser.email });
+  audit.append('signup', newUser.email, req.ip, { email: newUser.email, nome: newUser.nome });
   res.json({ success: true, message: 'Cadastro realizado com sucesso.' });
 });
 
@@ -664,6 +671,8 @@ app.post('/api/auth/login', (req, res) => {
     saveSecurity(sec);
   } catch {}
   const u = users[idx];
+  tracker.record('login', { email: u.email });
+  audit.append('login', u.email, req.ip, { email: u.email, role: u.role || 'user' });
   res.json({
     success: true,
     token: u.token,
@@ -832,6 +841,15 @@ app.patch('/api/auth/addresses/:id/principal', (req, res) => {
   users[idx].enderecos[aIdx].principal = true;
   saveUsers(users);
   res.json({ success: true, addresses: users[idx].enderecos });
+});
+
+// ── Visitor tracker beacon (public pages POST heartbeats here) ────────────────
+app.post('/api/track/heartbeat', (req, res) => {
+  res.status(204).end(); // respond immediately, non-blocking
+  try {
+    const ip = req.ip || req.connection?.remoteAddress;
+    tracker.heartbeat({ ...req.body, ip });
+  } catch {}
 });
 
 // ======================================================

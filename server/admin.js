@@ -6,6 +6,8 @@ const os = require('os');
 const { exec, spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('./logger');
+const tracker = require('./tracker');
+const audit = require('./audit');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(__dirname, 'data');
@@ -164,6 +166,7 @@ router.post('/system/deploy', adminAuth, (req, res) => {
 
 // ---- System Commands ----
 router.post('/system/restart-app', adminAuth, (req, res) => {
+  audit.append('system_restart', req.adminUser?.email || 'devops', req.ip, { method: 'restart-app' });
   res.json({ ok: true, message: 'Reiniciando aplicação...' });
   setTimeout(() => process.exit(0), 300);
 });
@@ -249,6 +252,7 @@ router.post('/whatsapp/restart', adminAuth, async (req, res) => {
   try {
     const wa = require('./whatsapp');
     if (wa.restartWhatsApp) await wa.restartWhatsApp();
+    audit.append('wa_restart', req.adminUser?.email || 'devops', req.ip, {});
     res.json({ ok: true, message: 'WhatsApp reiniciado.' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -273,6 +277,7 @@ router.post('/whatsapp/clear-session', adminAuth, async (req, res) => {
   try {
     const wa = require('./whatsapp');
     if (wa.clearSession) await wa.clearSession();
+    audit.append('wa_clear_session', req.adminUser?.email || 'devops', req.ip, {});
     res.json({ ok: true, message: 'Sessão limpa. Aguarde o novo QR Code.' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -516,6 +521,50 @@ router.put('/users/:id/role', adminAuth, (req, res) => {
     fs.writeFileSync(path.join(DATA, 'users.json'), JSON.stringify(users, null, 2));
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ---- Tracker (visitor analytics) ----
+router.get('/tracker/stream', adminAuth, (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  const send = (data) => { try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {} };
+  send(tracker.snap()); // initial snapshot
+  const onSnap = (data) => send(data);
+  tracker.bus.on('snap', onSnap);
+  const hb = setInterval(() => { try { res.write(': ping\n\n'); } catch {} }, 25000);
+  req.on('close', () => { tracker.bus.off('snap', onSnap); clearInterval(hb); });
+});
+
+router.get('/tracker/stats', adminAuth, (req, res) => {
+  res.json(tracker.snap());
+});
+
+router.get('/orders/stats', adminAuth, (req, res) => {
+  try {
+    const payments = JSON.parse(fs.readFileSync(path.join(DATA, 'payments.json'), 'utf-8'));
+    const today = new Date().toISOString().slice(0, 10);
+    const todayPayments = payments.filter(p => (p.createdAt || '').startsWith(today));
+    res.json({
+      total: payments.length,
+      pending: payments.filter(p => p.status === 'pending').length,
+      paid: payments.filter(p => p.status === 'paid').length,
+      cancelled: payments.filter(p => p.status === 'cancelled').length,
+      todayTotal: todayPayments.length,
+      todayPending: todayPayments.filter(p => p.status === 'pending').length,
+      todayPaid: todayPayments.filter(p => p.status === 'paid').length,
+      todayCancelled: todayPayments.filter(p => p.status === 'cancelled').length
+    });
+  } catch { res.json({ total: 0, pending: 0, paid: 0, cancelled: 0, todayTotal: 0, todayPending: 0, todayPaid: 0, todayCancelled: 0 }); }
+});
+
+// ---- Audit log ----
+router.get('/audit', adminAuth, (req, res) => {
+  const { limit = 200, type } = req.query;
+  res.json(audit.get(parseInt(limit), type || null));
 });
 
 module.exports = router;

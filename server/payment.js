@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { getSocket, sendPaymentRequest } = require('./whatsapp');
+const tracker = require('./tracker');
+const audit = require('./audit');
 
 const paymentsPath = path.join(__dirname, 'data', 'payments.json');
 const usersPath = path.join(__dirname, 'data', 'users.json');
@@ -117,6 +119,8 @@ router.post('/generate', async (req, res) => {
   }
 
   savePayments(payments);
+  tracker.record('order_created', { productId, productName, amount });
+  audit.append('order_created', user.email, req.ip, { paymentId, productName, amount });
   res.json({ success: true, paymentId });
 });
 

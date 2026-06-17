@@ -5,6 +5,8 @@ const fs = require('fs');
 
 const paymentsPath = path.join(__dirname, 'data', 'payments.json');
 const WHATSAPP_GROUP_ID = process.env.WHATSAPP_GROUP_ID;
+// Lazy require to avoid circular dependency during startup
+const getTracker = () => { try { return require('./tracker'); } catch { return null; } };
 
 const loadPayments = () => {
   try { return JSON.parse(fs.readFileSync(paymentsPath, 'utf-8')); } catch { return []; }
@@ -189,6 +191,7 @@ const initWhatsApp = async () => {
     const adminSender = message.key.participant || message.key.remoteJid;
 
     console.log(`[WA] Grupo | Admin: ${adminSender.split('@')[0]} | "${text.substring(0, 50)}"`);
+    try { getTracker()?.record('wa_received', { from: 'group' }); } catch {}
 
     let allPayments = loadPayments();
     let payment = null;
@@ -264,6 +267,7 @@ const initWhatsApp = async () => {
 
         addLog(cur, { type: 'forward_success', admin: adminSender, contentType: mediaType, clientRecipient: clientPhone, details: `${mediaType} encaminhado para ${clientPhone}` });
         console.log(`[WA] [${mediaType}] encaminhado ao cliente ${clientPhone} | Pedido ${payment.id}`);
+        try { getTracker()?.record('wa_sent', { to: 'client', type: mediaType }); } catch {}
       } else if (text.trim()) {
         await sock.sendMessage(clientJid, { text });
         addLog(cur, { type: 'forward_success', admin: adminSender, contentType: 'text', clientRecipient: clientPhone, details: `Texto: "${text.substring(0, 80)}"` });
@@ -308,6 +312,7 @@ const sendPaymentRequest = async (sock, paymentId, product, amount, clientPhone)
     const sent = await sock.sendMessage(WHATSAPP_GROUP_ID, { text: message });
     const messageId = sent?.key?.id || null;
     console.log(`[WA] Pedido ${paymentId} notificado no grupo. MessageID: ${messageId}`);
+    try { getTracker()?.record('wa_sent', { to: 'group' }); } catch {}
     return messageId;
   } catch (err) {
     console.error('[WA] Erro ao notificar pedido no grupo:', err.message);
