@@ -883,12 +883,21 @@ app.patch('/api/auth/addresses/:id/principal', (req, res) => {
   res.json({ success: true, addresses: users[idx].enderecos });
 });
 
-// ── Visitor tracker beacon (public pages POST heartbeats here) ────────────────
+// ── Visitor tracker beacon ────────────────────────────────────────────────────
 app.post('/api/track/heartbeat', (req, res) => {
-  res.status(204).end(); // respond immediately, non-blocking
+  res.status(204).end();
   try {
     const ip = req.ip || req.connection?.remoteAddress;
-    tracker.heartbeat({ ...req.body, ip });
+    const ua = req.headers['user-agent'] || '';
+    tracker.heartbeat({ ...req.body, ip, ua });
+  } catch {}
+});
+
+app.post('/api/track/event', (req, res) => {
+  res.status(204).end();
+  try {
+    const { sessionId, type, data } = req.body || {};
+    if (sessionId && type) tracker.record(type, { sessionId, ...(data || {}) });
   } catch {}
 });
 

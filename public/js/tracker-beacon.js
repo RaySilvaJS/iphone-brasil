@@ -1,8 +1,8 @@
-/* tracker-beacon.js — anonymous visitor tracking for devops dashboard */
+/* tracker-beacon.js — visitor tracking for devops dashboard */
 (function () {
   'use strict';
 
-  // Session ID: tab-scoped (new tab = new session)
+  // ── Session ID (tab-scoped) ─────────────────────────────────────────────────
   const KEY = 'jbr_sid';
   let sid = sessionStorage.getItem(KEY);
   if (!sid) {
@@ -10,69 +10,132 @@
     sessionStorage.setItem(KEY, sid);
   }
 
-  // Traffic source from URL params or referrer (captured once per session)
-  const SRC_KEY = 'jbr_src';
-  function detectSource() {
-    const saved = sessionStorage.getItem(SRC_KEY);
-    if (saved) return saved;
-    const p = new URLSearchParams(location.search);
-    const utm = p.get('utm_source') || p.get('ref') || '';
-    if (utm) { sessionStorage.setItem(SRC_KEY, utm); return utm; }
-    const ref = document.referrer || '';
-    sessionStorage.setItem(SRC_KEY, ref);
-    return ref;
-  }
-  const utmSource = new URLSearchParams(location.search).get('utm_source') || new URLSearchParams(location.search).get('ref') || '';
-  const referrer = sessionStorage.getItem(SRC_KEY) || document.referrer || '';
+  // ── Client info (collected once) ────────────────────────────────────────────
+  const screenW   = window.screen ? window.screen.width  : null;
+  const screenH   = window.screen ? window.screen.height : null;
+  const language  = navigator.language || null;
+  const timezone  = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
 
-  // Page + product detection
+  // ── UTM params (all 5, persisted in sessionStorage) ─────────────────────────
+  const SRC_KEY = 'jbr_utm';
+  function getUtm() {
+    const saved = sessionStorage.getItem(SRC_KEY);
+    if (saved) { try { return JSON.parse(saved); } catch {} }
+    const p = new URLSearchParams(location.search);
+    const utm = {
+      utmSource:   p.get('utm_source')   || p.get('ref') || '',
+      utmMedium:   p.get('utm_medium')   || '',
+      utmCampaign: p.get('utm_campaign') || '',
+      utmContent:  p.get('utm_content')  || '',
+      utmTerm:     p.get('utm_term')     || '',
+    };
+    // Only persist if at least one UTM param is present
+    if (Object.values(utm).some(Boolean)) sessionStorage.setItem(SRC_KEY, JSON.stringify(utm));
+    return utm;
+  }
+  const utm = getUtm();
+
+  // ── Referrer (stored once per session) ──────────────────────────────────────
+  const REF_KEY = 'jbr_ref';
+  if (!sessionStorage.getItem(REF_KEY)) {
+    sessionStorage.setItem(REF_KEY, document.referrer || '');
+  }
+  const referrer = sessionStorage.getItem(REF_KEY) || '';
+
+  // ── Page + product detection ────────────────────────────────────────────────
   function getPageInfo() {
-    const pn = location.pathname.toLowerCase();
+    const pn     = location.pathname.toLowerCase();
     const params = new URLSearchParams(location.search);
     let page = 'outro';
     if (pn === '/' || pn.endsWith('/index.html') || pn.endsWith('/index')) page = 'inicio';
-    else if (pn.includes('product')) page = 'produto';
-    else if (pn.includes('checkout')) page = 'checkout';
-    else if (pn.includes('minha-conta')) page = 'minha-conta';
-    else if (pn.includes('meus-pedidos')) page = 'pedidos';
-    else if (pn.includes('cadastro')) page = 'cadastro';
-    else if (pn.includes('login')) page = 'login';
-    else if (pn.includes('atendimento')) page = 'atendimento';
-    else if (pn.includes('faq')) page = 'faq';
-    else if (pn.includes('trocas')) page = 'trocas';
+    else if (pn.includes('product'))    page = 'produto';
+    else if (pn.includes('checkout'))   page = 'checkout';
+    else if (pn.includes('minha-conta'))page = 'minha-conta';
+    else if (pn.includes('meus-pedido'))page = 'pedidos';
+    else if (pn.includes('cadastro'))   page = 'cadastro';
+    else if (pn.includes('login'))      page = 'login';
+    else if (pn.includes('atendimento'))page = 'atendimento';
+    else if (pn.includes('faq'))        page = 'faq';
+    else if (pn.includes('trocas'))     page = 'trocas';
 
     const productId = params.get('id') || null;
-    // Try to get product name from DOM (may not be ready on first call)
     let productName = null;
     if (productId) {
       const el = document.querySelector('[data-product-name], h1.product-title, .product-name');
       if (el) productName = el.textContent.trim().slice(0, 80);
       if (!productName) {
-        const title = document.title;
-        const parts = title.split(/[|\-–]/);
+        const parts = document.title.split(/[|\-–]/);
         if (parts.length > 1 && parts[0].trim().length > 3) productName = parts[0].trim().slice(0, 80);
       }
     }
     return { page, productId, productName };
   }
 
+  // ── Send heartbeat ──────────────────────────────────────────────────────────
   function send() {
-    detectSource();
     const { page, productId, productName } = getPageInfo();
     const payload = JSON.stringify({
       sessionId: sid, page, productId, productName,
-      referrer, utmSource
+      referrer, ...utm,
+      screenW, screenH, language, timezone,
     });
     try {
       if (navigator.sendBeacon) {
         navigator.sendBeacon('/api/track/heartbeat', new Blob([payload], { type: 'application/json' }));
       } else {
-        fetch('/api/track/heartbeat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
+        fetch('/api/track/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true
+        }).catch(() => {});
       }
     } catch {}
   }
 
-  // Send on load (slight delay so product name might be in DOM)
+  // ── Send named event ────────────────────────────────────────────────────────
+  function sendEvent(type, data) {
+    try {
+      fetch('/api/track/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: sid, type, data: data || {} }),
+        keepalive: true
+      }).catch(() => {});
+    } catch {}
+  }
+
+  // ── Click event tracking ────────────────────────────────────────────────────
+  document.addEventListener('click', function (e) {
+    const el = e.target;
+
+    // Buy / checkout buttons
+    const buyBtn = el.closest('[data-track="buy"], [data-track="checkout"], .btn-comprar, .buy-btn');
+    if (buyBtn) {
+      sendEvent('click_buy', { page: location.pathname, label: buyBtn.textContent.trim().slice(0, 40) });
+      return;
+    }
+
+    // Buy detected by button text (fallback)
+    if ((el.tagName === 'BUTTON' || el.tagName === 'A') && /comprar|compre|finalizar|checkout/i.test(el.textContent)) {
+      sendEvent('click_buy', { page: location.pathname, label: el.textContent.trim().slice(0, 40) });
+      return;
+    }
+
+    // WhatsApp links
+    const waLink = el.closest('a[href*="wa.me"], a[href*="whatsapp"]');
+    if (waLink) {
+      sendEvent('click_whatsapp', { page: location.pathname });
+      return;
+    }
+
+    // PIX copy button
+    if (el.closest('[data-track="pix-copy"]') || /copiar.*pix|pix.*copia/i.test(el.textContent)) {
+      sendEvent('pix_copy', { page: location.pathname });
+    }
+  }, { passive: true });
+
+  // ── Initial send ────────────────────────────────────────────────────────────
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => setTimeout(send, 800));
   } else {
@@ -82,6 +145,6 @@
   // Heartbeat every 30s
   setInterval(send, 30_000);
 
-  // Re-send on tab focus (updates "last active")
+  // Re-send on tab focus
   document.addEventListener('visibilitychange', () => { if (!document.hidden) send(); });
 })();

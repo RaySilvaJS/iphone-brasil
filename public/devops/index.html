@@ -93,6 +93,9 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .analytics-period { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
 .analytics-period:hover { color: var(--text); }
 .analytics-period.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.an-tab { background: none; border: none; color: var(--muted); padding: 8px 14px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; border-radius: 0; font-weight: 500; }
+.an-tab:hover { color: var(--text); }
+.an-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
 .btn-ghost { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
 .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--blue); }
 .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -804,68 +807,149 @@ tbody tr:last-child td { border-bottom: none; }
 
     <!-- ANALYTICS PAGE -->
     <div class="page" id="page-analytics">
-      <!-- Period tabs -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px">
-        <button class="btn analytics-period active" data-p="today">Hoje</button>
-        <button class="btn analytics-period" data-p="yesterday">Ontem</button>
-        <button class="btn analytics-period" data-p="7d">7 dias</button>
-        <button class="btn analytics-period" data-p="30d">30 dias</button>
-        <button class="btn analytics-period" data-p="all">Total Geral</button>
-        <button class="btn btn-ghost" style="margin-left:auto" onclick="loadAnalytics()">↺</button>
+
+      <!-- Internal tab navigation -->
+      <div style="display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:20px;padding-bottom:0">
+        <button class="an-tab active" data-an="overview">Visão Geral</button>
+        <button class="an-tab" data-an="live">Ao Vivo</button>
+        <button class="an-tab" data-an="visitors">Visitantes</button>
+        <button class="an-tab" data-an="geo">Mapa & Geo</button>
+        <button class="an-tab" data-an="devices">Dispositivos</button>
+        <button class="an-tab" data-an="funnel">Funil</button>
+        <button class="an-tab" data-an="export">Exportar</button>
       </div>
 
-      <!-- KPI cards -->
-      <div class="stats-grid" id="analytics-kpis" style="margin-bottom:22px"></div>
-
-      <!-- Lifetime banner -->
-      <div id="analytics-lifetime" style="margin-bottom:22px"></div>
-
-      <!-- Charts row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px">
-        <div class="card">
-          <div class="card-title">Visitantes por Hora</div>
-          <div id="chart-by-hour" style="margin-top:10px"></div>
+      <!-- ── OVERVIEW TAB ─────────────────────────────────────────────────── -->
+      <div class="an-section" id="an-overview">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">
+          <button class="btn analytics-period active" data-p="today">Hoje</button>
+          <button class="btn analytics-period" data-p="yesterday">Ontem</button>
+          <button class="btn analytics-period" data-p="7d">7 dias</button>
+          <button class="btn analytics-period" data-p="30d">30 dias</button>
+          <button class="btn analytics-period" data-p="all">Total Geral</button>
+          <button class="btn btn-ghost" style="margin-left:auto" onclick="loadAnalytics()">↺</button>
         </div>
-        <div class="card" id="chart-by-day-wrap">
-          <div class="card-title">Visitantes por Dia</div>
-          <div id="chart-by-day" style="margin-top:10px"></div>
+        <div class="stats-grid" id="analytics-kpis" style="margin-bottom:18px"></div>
+        <div id="analytics-lifetime" style="margin-bottom:18px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div class="card"><div class="card-title">Visitantes por Hora</div><div id="chart-by-hour" style="margin-top:10px"></div></div>
+          <div class="card" id="chart-by-day-wrap"><div class="card-title">Visitantes por Dia</div><div id="chart-by-day" style="margin-top:10px"></div></div>
         </div>
-      </div>
-
-      <!-- Conversions + PIX chart row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px">
-        <div class="card">
-          <div class="card-title">Pedidos por Dia</div>
-          <div id="chart-orders" style="margin-top:10px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div class="card"><div class="card-title">Pedidos por Dia</div><div id="chart-orders" style="margin-top:10px"></div></div>
+          <div class="card"><div class="card-title">PIX Gerados por Dia</div><div id="chart-pix" style="margin-top:10px"></div></div>
         </div>
-        <div class="card">
-          <div class="card-title">PIX Gerados por Dia</div>
-          <div id="chart-pix" style="margin-top:10px"></div>
-        </div>
-      </div>
-
-      <!-- Sources + Products -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px">
-        <div class="card">
-          <div class="card-title">Origem do Tráfego</div>
-          <div id="analytics-sources" style="margin-top:12px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div class="card"><div class="card-title">Origem do Tráfego</div><div id="analytics-sources" style="margin-top:12px"></div></div>
+          <div class="card"><div class="card-title">Produtos Mais Vistos</div><div id="analytics-products" style="margin-top:12px"></div></div>
         </div>
         <div class="card">
-          <div class="card-title">Produtos Mais Vistos</div>
-          <div id="analytics-products" style="margin-top:12px"></div>
+          <div class="card-title">Histórico por Dia</div>
+          <div style="overflow-x:auto;margin-top:12px">
+            <table class="table"><thead><tr><th>Data</th><th>Visitantes</th><th>Pageviews</th><th>Pedidos</th><th>PIX Gerados</th><th>PIX Pagos</th><th>Cliques Comprar</th><th>Logins</th><th>Cadastros</th><th>Conversão</th></tr></thead>
+              <tbody id="analytics-daily-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- Daily breakdown table -->
-      <div class="card">
-        <div class="card-title">Histórico por Dia</div>
-        <div style="overflow-x:auto;margin-top:12px">
-          <table class="table" id="analytics-daily-table">
-            <thead><tr><th>Data</th><th>Visitantes</th><th>Pageviews</th><th>Pedidos</th><th>PIX</th><th>Logins</th><th>Cadastros</th><th>Conversão</th></tr></thead>
-            <tbody id="analytics-daily-tbody"></tbody>
-          </table>
+      <!-- ── LIVE TAB ─────────────────────────────────────────────────────── -->
+      <div class="an-section" id="an-live" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div class="card">
+            <div class="card-title" style="display:flex;justify-content:space-between">
+              <span>Visitantes Online Agora</span>
+              <span class="badge badge-green" id="live-active-count">0</span>
+            </div>
+            <div id="live-sessions" style="margin-top:12px;max-height:420px;overflow-y:auto"></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="display:flex;justify-content:space-between">
+              <span>Feed de Eventos em Tempo Real</span>
+              <label style="font-size:11px;display:flex;align-items:center;gap:5px;cursor:pointer">
+                <input type="checkbox" id="live-pause" style="margin:0"> Pausar
+              </label>
+            </div>
+            <div id="live-feed" style="font-family:monospace;font-size:11px;max-height:420px;overflow-y:auto;margin-top:10px"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="live-kpis"></div>
+      </div>
+
+      <!-- ── VISITORS TAB ─────────────────────────────────────────────────── -->
+      <div class="an-section" id="an-visitors" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <input class="input" id="vis-search" placeholder="Buscar por IP, cidade, país, navegador..." style="flex:1;min-width:200px" oninput="loadVisitorsDebounced()">
+          <input class="input" id="vis-country" placeholder="País (ex: BR)" style="width:90px" oninput="loadVisitorsDebounced()">
+          <button class="btn btn-ghost" onclick="loadVisitors()">↺</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="table" style="font-size:12px">
+              <thead><tr><th>IP</th><th>Local</th><th>Dispositivo</th><th>Navegador</th><th>SO</th><th>Tela</th><th>Idioma</th><th>Fuso</th><th>1ª Visita</th><th>Última Visita</th><th>Visitas</th><th>Origem</th></tr></thead>
+              <tbody id="visitors-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="visitors-pagination" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px"></div>
+      </div>
+
+      <!-- ── GEO TAB ──────────────────────────────────────────────────────── -->
+      <div class="an-section" id="an-geo" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="card">
+            <div class="card-title">Visitantes por País</div>
+            <div id="geo-countries" style="margin-top:12px"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Visitantes por Cidade</div>
+            <div id="geo-cities" style="margin-top:12px"></div>
+          </div>
         </div>
       </div>
+
+      <!-- ── DEVICES TAB ──────────────────────────────────────────────────── -->
+      <div class="an-section" id="an-devices" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div class="card"><div class="card-title">Dispositivos</div><div id="chart-devices" style="margin-top:12px"></div></div>
+          <div class="card"><div class="card-title">Navegadores</div><div id="chart-browsers" style="margin-top:12px"></div></div>
+          <div class="card"><div class="card-title">Sistemas Operacionais</div><div id="chart-os" style="margin-top:12px"></div></div>
+        </div>
+      </div>
+
+      <!-- ── FUNNEL TAB ───────────────────────────────────────────────────── -->
+      <div class="an-section" id="an-funnel" style="display:none">
+        <div class="card" style="max-width:680px">
+          <div class="card-title" style="margin-bottom:20px">Funil de Conversão</div>
+          <div id="funnel-steps"></div>
+          <div style="margin-top:20px;font-size:12px;color:var(--muted)">Baseado no período selecionado na aba Visão Geral</div>
+        </div>
+      </div>
+
+      <!-- ── EXPORT TAB ───────────────────────────────────────────────────── -->
+      <div class="an-section" id="an-export" style="display:none">
+        <div class="card" style="max-width:520px">
+          <div class="card-title" style="margin-bottom:16px">Exportar Dados</div>
+          <div style="margin-bottom:14px;font-size:13px;color:var(--muted)">Período: <b id="export-period-label" style="color:var(--text)">Hoje</b></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn btn-blue" onclick="exportData('csv')" style="width:100%;justify-content:flex-start;gap:10px">
+              📄 Exportar CSV (Histórico por Dia)
+            </button>
+            <button class="btn btn-ghost" onclick="exportData('json')" style="width:100%;justify-content:flex-start;gap:10px">
+              { } Exportar JSON (Dados Completos)
+            </button>
+            <button class="btn btn-ghost" onclick="exportVisitors()" style="width:100%;justify-content:flex-start;gap:10px">
+              👥 Exportar Lista de Visitantes (JSON)
+            </button>
+          </div>
+          <div style="margin-top:20px;padding:14px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.7">
+            <b style="color:var(--text)">Dados incluídos:</b><br>
+            Data · Visitantes · Pageviews · Pedidos · PIX Gerados · PIX Pagos<br>
+            Cliques Comprar · Cliques WhatsApp · Logins · Cadastros · Taxa de Conversão
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div><!-- /content -->
@@ -1054,6 +1138,11 @@ const EV_ICONS = {
 };
 
 function updateDashboardRealtime(snap) {
+  window._lastSnap = snap;
+  // Update live analytics tab if it's visible
+  if (currentPage === 'analytics' && _currentAnTab === 'live') {
+    renderLive(document.getElementById('live-pause')?.checked);
+  }
   if (currentPage !== 'dashboard') return;
 
   // Realtime stats cards
@@ -2008,11 +2097,22 @@ function closeOrderDrawer() {
 }
 
 // ═══════════════════════════════════════════════
-// ANALYTICS
+// ANALYTICS — Complete system
 // ═══════════════════════════════════════════════
 let _analyticsPeriod = 'today';
+let _analyticsData   = null;   // last loaded API response
+let _currentAnTab    = 'overview';
+let _visPage = 1;
+let _visDebTimer = null;
 
-// SVG bar chart — no external libs
+// ── Country code → flag emoji ─────────────────────────────────────────────────
+function flag(code) {
+  if (!code || code.length !== 2) return '';
+  const o = 0x1F1E6 - 65;
+  return String.fromCodePoint(code.charCodeAt(0) + o) + String.fromCodePoint(code.charCodeAt(1) + o);
+}
+
+// ── SVG bar chart ─────────────────────────────────────────────────────────────
 function barChart(items, { color = 'var(--blue)', chartH = 100 } = {}) {
   if (!items.length) return '<div class="empty-state" style="padding:16px">Sem dados</div>';
   const max = Math.max(...items.map(d => d.v), 1);
@@ -2023,45 +2123,75 @@ function barChart(items, { color = 'var(--blue)', chartH = 100 } = {}) {
     const bh = Math.max(2, Math.round((d.v / max) * chartH));
     const x  = i * (BAR + 2);
     const y  = chartH - bh;
-    const showLabel = items.length <= 32;
     return `<g>
       <rect x="${x}" y="${y}" width="${BAR}" height="${bh}" fill="${color}" rx="2" opacity=".85">
-        <title>${esc(d.l)}: ${d.v}</title></rect>
-      ${showLabel ? `<text x="${x + BAR/2}" y="${H - 1}" text-anchor="middle" font-size="8" fill="var(--muted)">${esc(String(d.l))}</text>` : ''}
+        <title>${esc(String(d.l))}: ${d.v}</title></rect>
+      ${items.length <= 32 ? `<text x="${x + BAR/2}" y="${H - 1}" text-anchor="middle" font-size="8" fill="var(--muted)">${esc(String(d.l))}</text>` : ''}
     </g>`;
   }).join('');
   return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;display:block">${bars}</svg></div>`;
 }
 
-// Horizontal bar for sources
-function hBar(label, value, max, color = 'var(--blue)') {
+// ── Horizontal bar ────────────────────────────────────────────────────────────
+function hBar(label, value, max, color = 'var(--blue)', prefix = '') {
   const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 2;
-  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
-    <span style="min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)" title="${esc(label)}">${esc(label)}</span>
-    <div style="flex:1;background:var(--bg3);border-radius:3px;height:12px;position:relative">
-      <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;transition:width .4s"></div>
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px">
+    <span style="min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)" title="${esc(label)}">${prefix}${esc(label)}</span>
+    <div style="flex:1;background:var(--bg3);border-radius:3px;height:11px">
+      <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;transition:width .5s"></div>
     </div>
-    <span style="min-width:32px;text-align:right;color:var(--muted)">${value}</span>
+    <span style="min-width:34px;text-align:right;color:var(--muted);font-weight:600">${value}</span>
   </div>`;
 }
 
+// ── Internal analytics tabs ───────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const tab = e.target.closest('.an-tab');
+  if (!tab) return;
+  const name = tab.dataset.an;
+  document.querySelectorAll('.an-tab').forEach(t => t.classList.toggle('active', t.dataset.an === name));
+  document.querySelectorAll('.an-section').forEach(s => s.style.display = s.id === 'an-' + name ? '' : 'none');
+  _currentAnTab = name;
+  if (name === 'visitors') { _visPage = 1; loadVisitors(); }
+  if (name === 'geo')      renderGeo();
+  if (name === 'devices')  renderDevices();
+  if (name === 'funnel')   renderFunnel();
+  if (name === 'live')     renderLive(document.getElementById('live-pause')?.checked);
+});
+
+// Period selector
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.analytics-period');
+  if (!btn) return;
+  document.querySelectorAll('.analytics-period').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _analyticsPeriod = btn.dataset.p;
+  document.getElementById('export-period-label').textContent = btn.textContent;
+  loadAnalytics();
+});
+
+// ── Main analytics load ────────────────────────────────────────────────────────
 async function loadAnalytics() {
   const data = await api.get(`/api/admin/analytics?period=${_analyticsPeriod}`);
   if (!data) return;
-
-  const { totals, byHour, sources, products: prods, days, lifetime } = data;
+  _analyticsData = data;
+  const { totals, byHour, sources, products: prods, days, lifetime, funnel } = data;
 
   // ── KPI cards ──────────────────────────────────────────────────────────────
-  document.getElementById('analytics-kpis').innerHTML = `
-    <div class="stat-card info"><div class="stat-icon">👥</div><div><div class="stat-value">${totals.visitors}</div><div class="stat-label">Visitantes</div></div></div>
-    <div class="stat-card ok"><div class="stat-icon">📄</div><div><div class="stat-value">${totals.pageViews}</div><div class="stat-label">Pageviews</div></div></div>
-    <div class="stat-card warn"><div class="stat-icon">📦</div><div><div class="stat-value">${totals.orders}</div><div class="stat-label">Pedidos</div></div></div>
-    <div class="stat-card ok"><div class="stat-icon">💸</div><div><div class="stat-value">${totals.pix}</div><div class="stat-label">PIX Gerados</div></div></div>
-    <div class="stat-card info"><div class="stat-icon">🔑</div><div><div class="stat-value">${totals.logins}</div><div class="stat-label">Logins</div></div></div>
-    <div class="stat-card info"><div class="stat-icon">✅</div><div><div class="stat-value">${totals.signups}</div><div class="stat-label">Cadastros</div></div></div>
-    <div class="stat-card ${totals.conversionRate >= 5 ? 'ok' : 'warn'}"><div class="stat-icon">📈</div><div><div class="stat-value">${totals.conversionRate}%</div><div class="stat-label">Conversão</div></div></div>
-    <div class="stat-card info"><div class="stat-icon">🛒</div><div><div class="stat-value">${totals.checkouts}</div><div class="stat-label">Checkouts</div></div></div>
-  `;
+  document.getElementById('analytics-kpis').innerHTML = [
+    ['👥', totals.visitors,        'Visitantes',        'info'],
+    ['📄', totals.pageViews,       'Pageviews',         'ok'],
+    ['📦', totals.orders,          'Pedidos',           'warn'],
+    ['💸', totals.pix,             'PIX Gerados',       'ok'],
+    ['✅', totals.pixPaid || 0,    'PIX Pagos',         'ok'],
+    ['🛒', totals.clickBuy || 0,   'Cliques Comprar',   'info'],
+    ['💬', totals.clickWa || 0,    'Cliques WhatsApp',  'info'],
+    ['📈', totals.conversionRate + '%', 'Conversão',    totals.conversionRate >= 5 ? 'ok' : 'warn'],
+    ['🔑', totals.logins,          'Logins',            'info'],
+    ['✍️', totals.signups,          'Cadastros',         'info'],
+  ].map(([icon, val, label, cls]) =>
+    `<div class="stat-card ${cls}"><div class="stat-icon">${icon}</div><div><div class="stat-value">${val}</div><div class="stat-label">${label}</div></div></div>`
+  ).join('');
 
   // ── Lifetime banner ─────────────────────────────────────────────────────────
   if (lifetime) {
@@ -2069,75 +2199,249 @@ async function loadAnalytics() {
       <div class="card" style="background:linear-gradient(135deg,#1e3a5f 0%,#162032 100%);border-color:#2563EB44">
         <div class="card-title" style="color:#93C5FD;margin-bottom:12px">Total Geral — Desde o início</div>
         <div style="display:flex;flex-wrap:wrap;gap:24px">
-          <div><div style="font-size:22px;font-weight:800;color:#fff">${lifetime.visitors.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Visitantes</div></div>
-          <div><div style="font-size:22px;font-weight:800;color:#fff">${lifetime.pageViews.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Pageviews</div></div>
-          <div><div style="font-size:22px;font-weight:800;color:#34D399">${lifetime.orders.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Pedidos</div></div>
-          <div><div style="font-size:22px;font-weight:800;color:#34D399">${lifetime.pix.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">PIX Gerados</div></div>
-          <div><div style="font-size:22px;font-weight:800;color:#fff">${lifetime.signups.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Cadastros</div></div>
-          <div><div style="font-size:22px;font-weight:800;color:#fff">${(lifetime.wa?.sent||0).toLocaleString('pt-BR')}</div><div style="font-size:11px;color:#93C5FD">Msgs WA Enviadas</div></div>
+          ${[
+            ['#fff',    lifetime.visitors.toLocaleString('pt-BR'),                   'Visitantes Únicos'],
+            ['#fff',    lifetime.pageViews.toLocaleString('pt-BR'),                  'Pageviews'],
+            ['#34D399', lifetime.orders.toLocaleString('pt-BR'),                     'Pedidos'],
+            ['#34D399', lifetime.pix.toLocaleString('pt-BR'),                        'PIX Gerados'],
+            ['#34D399', (lifetime.pixPaid||0).toLocaleString('pt-BR'),               'PIX Pagos'],
+            ['#fff',    lifetime.signups.toLocaleString('pt-BR'),                    'Cadastros'],
+            ['#FBBF24', (lifetime.clickBuy||0).toLocaleString('pt-BR'),              'Cliques Comprar'],
+            ['#60A5FA', (lifetime.wa?.sent||0).toLocaleString('pt-BR'),              'Msgs WA Enviadas'],
+          ].map(([c, v, l]) => `<div><div style="font-size:20px;font-weight:800;color:${c}">${v}</div><div style="font-size:10px;color:#93C5FD">${l}</div></div>`).join('')}
         </div>
       </div>`;
   }
 
-  // ── Chart: by hour ─────────────────────────────────────────────────────────
-  const hourItems = Array.from({ length: 24 }, (_, h) => ({ l: h + 'h', v: byHour[h] || 0 }));
-  document.getElementById('chart-by-hour').innerHTML = barChart(hourItems, { color: 'var(--blue)', chartH: 100 });
-
-  // ── Chart: by day ──────────────────────────────────────────────────────────
+  // ── Charts ─────────────────────────────────────────────────────────────────
+  document.getElementById('chart-by-hour').innerHTML = barChart(
+    Array.from({ length: 24 }, (_, h) => ({ l: h + 'h', v: byHour[h] || 0 })),
+    { color: 'var(--blue)', chartH: 100 }
+  );
   if (days.length > 1) {
-    const dayItems = days.map(d => ({ l: d.date.slice(5), v: d.visitors }));
-    document.getElementById('chart-by-day').innerHTML = barChart(dayItems, { color: '#6366F1', chartH: 100 });
+    document.getElementById('chart-by-day').innerHTML = barChart(days.map(d => ({ l: d.date.slice(5), v: d.visitors })), { color: '#6366F1', chartH: 100 });
     document.getElementById('chart-by-day-wrap').style.display = '';
-  } else {
-    document.getElementById('chart-by-day-wrap').style.display = 'none';
-  }
+  } else { document.getElementById('chart-by-day-wrap').style.display = 'none'; }
+  document.getElementById('chart-orders').innerHTML = barChart(days.map(d => ({ l: d.date.slice(5), v: d.orders })), { color: 'var(--green)', chartH: 80 });
+  document.getElementById('chart-pix').innerHTML    = barChart(days.map(d => ({ l: d.date.slice(5), v: d.pix })),    { color: 'var(--yellow)', chartH: 80 });
 
-  // ── Chart: orders by day ───────────────────────────────────────────────────
-  const ordItems = days.map(d => ({ l: d.date.slice(5), v: d.orders }));
-  document.getElementById('chart-orders').innerHTML = barChart(ordItems, { color: 'var(--green)', chartH: 80 });
-
-  // ── Chart: pix by day ─────────────────────────────────────────────────────
-  const pixItems = days.map(d => ({ l: d.date.slice(5), v: d.pix }));
-  document.getElementById('chart-pix').innerHTML = barChart(pixItems, { color: 'var(--yellow)', chartH: 80 });
-
-  // ── Sources ────────────────────────────────────────────────────────────────
-  const srcEntries = Object.entries(sources).sort((a, b) => b[1] - a[1]);
-  const srcMax = srcEntries[0]?.[1] || 1;
-  document.getElementById('analytics-sources').innerHTML = srcEntries.length
-    ? srcEntries.map(([s, v]) => hBar(s, v, srcMax)).join('')
+  // ── Sources ─────────────────────────────────────────────────────────────────
+  const srcE = Object.entries(sources).sort((a, b) => b[1] - a[1]);
+  document.getElementById('analytics-sources').innerHTML = srcE.length
+    ? srcE.map(([s, v]) => hBar(s, v, srcE[0][1])).join('')
     : '<div class="empty-state" style="padding:12px">Sem dados</div>';
 
-  // ── Products ───────────────────────────────────────────────────────────────
-  const prodMax = prods[0]?.views || 1;
+  // ── Products ─────────────────────────────────────────────────────────────────
   document.getElementById('analytics-products').innerHTML = prods.length
-    ? prods.slice(0, 10).map(p => hBar(p.name, p.views, prodMax, 'var(--yellow)')).join('')
+    ? prods.slice(0, 10).map(p => hBar(p.name, p.views, prods[0]?.views || 1, 'var(--yellow)')).join('')
     : '<div class="empty-state" style="padding:12px">Sem dados</div>';
 
-  // ── Daily table ────────────────────────────────────────────────────────────
+  // ── Daily table ─────────────────────────────────────────────────────────────
   document.getElementById('analytics-daily-tbody').innerHTML = [...days].reverse().map(d => {
     const conv = d.visitors > 0 ? (d.pix / d.visitors * 100).toFixed(1) : '0.0';
-    return `<tr>
-      <td>${d.date}</td>
-      <td>${d.visitors}</td>
-      <td>${d.pageViews}</td>
-      <td>${d.orders}</td>
-      <td>${d.pix}</td>
-      <td>${d.logins}</td>
-      <td>${d.signups}</td>
-      <td><span class="badge ${parseFloat(conv) >= 5 ? 'badge-green' : 'badge-yellow'}">${conv}%</span></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados para o período</td></tr>';
+    return `<tr><td>${d.date}</td><td>${d.visitors}</td><td>${d.pageViews}</td><td>${d.orders}</td>
+      <td>${d.pix}</td><td>${d.pixPaid||0}</td><td>${d.clickBuy||0}</td>
+      <td>${d.logins}</td><td>${d.signups}</td>
+      <td><span class="badge ${parseFloat(conv)>=5?'badge-green':'badge-yellow'}">${conv}%</span></td></tr>`;
+  }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Sem dados para o período</td></tr>';
+
+  // Refresh active sub-tabs
+  if (_currentAnTab === 'geo')     renderGeo();
+  if (_currentAnTab === 'devices') renderDevices();
+  if (_currentAnTab === 'funnel')  renderFunnel();
 }
 
-// Period selector
-document.addEventListener('click', e => {
-  const btn = e.target.closest('.analytics-period');
-  if (!btn) return;
-  document.querySelectorAll('.analytics-period').forEach(b => b.classList.remove('active', 'btn-blue'));
-  btn.classList.add('active');
-  _analyticsPeriod = btn.dataset.p;
-  loadAnalytics();
-});
+// ── GEO rendering ────────────────────────────────────────────────────────────
+function renderGeo() {
+  const snap = _analyticsData;
+  if (!snap) { loadAnalytics().then(renderGeo); return; }
+  const countries = snap.countries || {};
+  const cities    = snap.days?.reduce((acc, d) => { Object.entries(d.countries || {}).forEach(([k, v]) => { acc[k] = (acc[k] || 0) + v; }); return acc; }, countries) || {};
+
+  const sortedC = Object.entries(countries).sort((a, b) => b[1] - a[1]);
+  const maxC = sortedC[0]?.[1] || 1;
+  document.getElementById('geo-countries').innerHTML = sortedC.length
+    ? sortedC.map(([code, v]) => hBar(code, v, maxC, 'var(--blue)', flag(code) + ' ')).join('')
+    : '<div class="empty-state" style="padding:16px">Sem dados de geolocalização ainda.<br><small>Os dados aparecem após a primeira visita com geo lookup concluído.</small></div>';
+
+  // For cities, use an aggregate from _analyticsData
+  const cityAgg = {};
+  (snap.days || []).forEach(d => { /* cities not in daily yet — show from snap */ });
+  document.getElementById('geo-cities').innerHTML = '<div class="empty-state" style="padding:16px;font-size:12px;color:var(--muted)">Dados de cidade disponíveis após acúmulo de visitas. Os países são exibidos ao lado.</div>';
+}
+
+// ── DEVICES rendering ─────────────────────────────────────────────────────────
+function renderDevices() {
+  const snap = _analyticsData;
+  if (!snap) { loadAnalytics().then(renderDevices); return; }
+  const agg = (obj) => Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+
+  const COLORS = { Desktop: '#6366F1', Mobile: 'var(--green)', Tablet: 'var(--yellow)',
+    Chrome: '#4285F4', Firefox: '#FF7139', Safari: '#1C9DD9', Edge: '#0078D4',
+    Windows: '#0078D4', Android: '#3DDC84', iOS: '#555', macOS: '#888', Linux: '#F7C948' };
+
+  function renderBreakdown(entries, containerId) {
+    const max = entries[0]?.[1] || 1;
+    document.getElementById(containerId).innerHTML = entries.length
+      ? entries.map(([k, v]) => hBar(k, v, max, COLORS[k] || 'var(--blue)')).join('')
+      : '<div class="empty-state" style="padding:12px">Sem dados</div>';
+  }
+
+  renderBreakdown(agg(snap.devices),  'chart-devices');
+  renderBreakdown(agg(snap.browsers), 'chart-browsers');
+  renderBreakdown(agg(snap.os),       'chart-os');
+}
+
+// ── FUNNEL rendering ──────────────────────────────────────────────────────────
+function renderFunnel() {
+  const snap = _analyticsData;
+  if (!snap) { loadAnalytics().then(renderFunnel); return; }
+  const f = snap.funnel || {};
+  const steps = [
+    { label: 'Entrou no site',         icon: '🌐', value: f.visitors     || 0, color: '#6366F1' },
+    { label: 'Visualizou produto',      icon: '📱', value: f.productViews || 0, color: '#2563EB' },
+    { label: 'Clicou em Comprar',       icon: '🛒', value: snap.totals?.clickBuy || 0, color: 'var(--yellow)' },
+    { label: 'Gerou PIX',              icon: '💸', value: f.pix          || 0, color: 'var(--green)' },
+    { label: 'Pagamento Confirmado',    icon: '✅', value: f.pixPaid      || 0, color: '#10B981' },
+  ];
+  const base = steps[0].value || 1;
+  document.getElementById('funnel-steps').innerHTML = steps.map((s, i) => {
+    const pct     = base > 0 ? Math.round(s.value / base * 100) : 0;
+    const prevPct = i > 0 && steps[i-1].value > 0 ? Math.round(s.value / steps[i-1].value * 100) : null;
+    const w = Math.max(20, pct);
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+        <span>${s.icon} ${esc(s.label)}</span>
+        <span style="color:var(--muted)">${s.value.toLocaleString('pt-BR')} visitas${prevPct !== null ? ` <span style="color:${s.color};font-weight:700">(${prevPct}% do passo anterior)</span>` : ''}</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:6px;height:34px;position:relative;overflow:hidden">
+        <div style="width:${w}%;background:${s.color};height:100%;border-radius:6px;transition:width .6s;display:flex;align-items:center;padding-left:12px;font-size:12px;font-weight:700;color:#fff;min-width:50px">
+          ${pct}%
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── LIVE rendering (called by SSE snap update) ────────────────────────────────
+function renderLive(paused) {
+  const s = window._lastSnap;
+  if (!s) return;
+  // Active count badge
+  const countEl = document.getElementById('live-active-count');
+  if (countEl) countEl.textContent = s.activeNow || 0;
+
+  // Live KPI mini-cards
+  const kpis = document.getElementById('live-kpis');
+  if (kpis) kpis.innerHTML = [
+    ['👥', s.visitorsToday,    'Visitantes Hoje'],
+    ['⏱️', s.visitorsLastHour, 'Última Hora'],
+    ['📦', s.ordersToday,      'Pedidos Hoje'],
+    ['💸', s.pixToday,         'PIX Hoje'],
+  ].map(([icon, val, lbl]) =>
+    `<div class="stat-card info"><div class="stat-icon">${icon}</div><div><div class="stat-value">${val}</div><div class="stat-label">${lbl}</div></div></div>`
+  ).join('');
+
+  // Sessions list
+  const sessEl = document.getElementById('live-sessions');
+  if (sessEl) {
+    const DEV_ICON = { Mobile: '📱', Tablet: '🖥️', Desktop: '💻' };
+    sessEl.innerHTML = (s.sessions || []).slice(0, 40).map(sess => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:12px">
+        <span style="font-size:16px">${DEV_ICON[sess.device] || '💻'}</span>
+        <div style="flex:1;overflow:hidden">
+          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sess.page)}</div>
+          <div style="color:var(--muted);font-size:11px">${esc(sess.source || 'Direto')} · ${esc(sess.browser || '?')} · ${esc(sess.os || '?')}</div>
+        </div>
+        <span class="badge badge-green" style="font-size:10px">Online</span>
+      </div>`).join('') || '<div class="empty-state" style="padding:16px">Nenhum visitante ativo</div>';
+  }
+
+  // Event feed
+  if (!paused) {
+    const feedEl = document.getElementById('live-feed');
+    if (feedEl) {
+      const EV_ICON = {
+        visitor_enter: '🟢', login: '🔑', signup: '✍️', order_created: '📦',
+        pix_created: '💸', pix_paid: '✅', click_buy: '🛒', click_whatsapp: '💬',
+        checkout_start: '🛍️', wa_sent: '📤', wa_received: '📥', pix_copy: '📋',
+      };
+      feedEl.innerHTML = (s.events || []).slice(0, 100).map(ev => {
+        const t   = new Date(ev.at).toLocaleTimeString('pt-BR');
+        const icon = EV_ICON[ev.type] || '•';
+        const detail = ev.data?.page ? ` → ${esc(ev.data.page)}` : ev.data?.label ? ` → ${esc(ev.data.label)}` : '';
+        return `<div style="padding:3px 0;display:flex;gap:6px;align-items:baseline">
+          <span style="color:var(--muted);min-width:52px">${t}</span>
+          <span>${icon}</span>
+          <span style="color:var(--text)">${esc(ev.type.replace(/_/g,' '))}${detail}</span>
+        </div>`;
+      }).join('') || '<div style="color:var(--muted);padding:12px">Aguardando eventos...</div>';
+    }
+  }
+}
+
+// ── VISITORS list ─────────────────────────────────────────────────────────────
+function loadVisitorsDebounced() {
+  clearTimeout(_visDebTimer);
+  _visDebTimer = setTimeout(() => { _visPage = 1; loadVisitors(); }, 450);
+}
+
+async function loadVisitors() {
+  const search  = document.getElementById('vis-search')?.value  || '';
+  const country = document.getElementById('vis-country')?.value || '';
+  const params  = new URLSearchParams({ page: _visPage, limit: 50, search, country });
+  const data    = await api.get('/api/admin/analytics/visitors?' + params);
+  if (!data) return;
+
+  const DEVICE_ICON = { Mobile: '📱', Tablet: '🖥️', Desktop: '💻' };
+  document.getElementById('visitors-tbody').innerHTML = data.items.length
+    ? data.items.map(v => `<tr>
+        <td style="font-family:monospace;font-size:11px">${esc(v.ip || '—')}</td>
+        <td>${v.countryCode ? flag(v.countryCode) + ' ' : ''}${esc(v.city || v.country || '—')}</td>
+        <td>${DEVICE_ICON[v.device] || '💻'} ${esc(v.device || '—')}</td>
+        <td>${esc(v.browser || '—')}</td>
+        <td>${esc(v.os || '—')}</td>
+        <td style="color:var(--muted)">${v.screenW && v.screenH ? v.screenW + '×' + v.screenH : '—'}</td>
+        <td style="color:var(--muted)">${esc(v.language || '—')}</td>
+        <td style="color:var(--muted);font-size:11px">${esc(v.timezone ? v.timezone.split('/').pop() : '—')}</td>
+        <td style="white-space:nowrap;font-size:11px;color:var(--muted)">${v.firstSeen ? new Date(v.firstSeen).toLocaleDateString('pt-BR') : '—'}</td>
+        <td style="white-space:nowrap;font-size:11px">${v.lastSeen ? new Date(v.lastSeen).toLocaleString('pt-BR') : '—'}</td>
+        <td style="text-align:center"><span class="badge badge-blue">${v.visitCount || 1}</span></td>
+        <td style="color:var(--muted);font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v.utmSource || v.utmCampaign || '—')}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px">Nenhum visitante encontrado</td></tr>';
+
+  // Pagination
+  const pgEl = document.getElementById('visitors-pagination');
+  if (data.pages <= 1) { pgEl.innerHTML = ''; return; }
+  let pgHtml = '';
+  if (_visPage > 1) pgHtml += `<button class="btn btn-ghost" onclick="visPage(${_visPage-1})">← Anterior</button>`;
+  for (let i = Math.max(1,_visPage-2); i <= Math.min(data.pages,_visPage+2); i++)
+    pgHtml += `<button class="btn ${i===_visPage?'btn-blue':'btn-ghost'}" onclick="visPage(${i})">${i}</button>`;
+  if (_visPage < data.pages) pgHtml += `<button class="btn btn-ghost" onclick="visPage(${_visPage+1})">Próxima →</button>`;
+  pgEl.innerHTML = pgHtml;
+}
+function visPage(p) { _visPage = p; loadVisitors(); }
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function exportData(format) {
+  const url = `/api/admin/analytics/export?period=${_analyticsPeriod}&format=${format}`;
+  const a = document.createElement('a');
+  a.href = url + '&adminToken=' + (localStorage.getItem('devops-token') || '');
+  a.download = '';
+  a.click();
+}
+
+async function exportVisitors() {
+  const data = await api.get('/api/admin/analytics/visitors?limit=100');
+  if (!data) return;
+  const blob = new Blob([JSON.stringify(data.items, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'visitantes.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 
 // ═══════════════════════════════════════════════
 // INIT

@@ -1,9 +1,10 @@
 'use strict';
-const fs = require('fs');
-const path = require('path');
+const http   = require('http');
+const crypto = require('crypto');
+const fs     = require('fs');
+const path   = require('path');
 const EventEmitter = require('events');
 
-// ── Event bus ─────────────────────────────────────────────────────────────────
 const bus = new EventEmitter();
 bus.setMaxListeners(200);
 
@@ -13,9 +14,9 @@ const EV_DIR        = path.join(ANALYTICS_DIR, 'events');
 const DAILY_F       = path.join(ANALYTICS_DIR, 'daily.json');
 const PRODS_F       = path.join(ANALYTICS_DIR, 'products.json');
 const LIFE_F        = path.join(ANALYTICS_DIR, 'lifetime.json');
+const VISITORS_F    = path.join(ANALYTICS_DIR, 'visitors.json');
 
-if (!fs.existsSync(ANALYTICS_DIR)) fs.mkdirSync(ANALYTICS_DIR, { recursive: true });
-if (!fs.existsSync(EV_DIR))        fs.mkdirSync(EV_DIR, { recursive: true });
+[ANALYTICS_DIR, EV_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
 // ── Disk helpers ──────────────────────────────────────────────────────────────
 const readJ  = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return d; } };
@@ -27,79 +28,162 @@ const writeJ = (p, v) => {
   } catch {}
 };
 
-function blankDay() {
-  return { visitors: 0, pageViews: 0, logins: 0, signups: 0, orders: 0, pix: 0, checkouts: 0, byHour: {}, sources: {}, visitorIds: [] };
+// ── UA Parser ─────────────────────────────────────────────────────────────────
+function parseUA(ua = '') {
+  let device = 'Desktop';
+  if (/iPad|Tablet|PlayBook/i.test(ua)) device = 'Tablet';
+  else if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) device = 'Mobile';
+
+  let browser = 'Outro';
+  if (/SamsungBrowser/i.test(ua))    browser = 'Samsung';
+  else if (/Edg\//i.test(ua))        browser = 'Edge';
+  else if (/OPR|Opera/i.test(ua))    browser = 'Opera';
+  else if (/UCBrowser/i.test(ua))    browser = 'UC Browser';
+  else if (/Chromium/i.test(ua))     browser = 'Chromium';
+  else if (/Chrome/i.test(ua))       browser = 'Chrome';
+  else if (/Firefox/i.test(ua))      browser = 'Firefox';
+  else if (/Safari/i.test(ua))       browser = 'Safari';
+  else if (/MSIE|Trident/i.test(ua)) browser = 'IE';
+
+  let os = 'Outro';
+  if (/Windows NT/i.test(ua))            os = 'Windows';
+  else if (/Android/i.test(ua))          os = 'Android';
+  else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+  else if (/CrOS/i.test(ua))             os = 'ChromeOS';
+  else if (/Mac OS X/i.test(ua))         os = 'macOS';
+  else if (/Linux/i.test(ua))            os = 'Linux';
+
+  return { device, browser, os };
 }
 
-// ── Load persisted data ───────────────────────────────────────────────────────
-const dailyDB  = readJ(DAILY_F, {});
-const prodStore = readJ(PRODS_F, {});
-const lifetime = readJ(LIFE_F, { visitors: 0, pageViews: 0, logins: 0, signups: 0, orders: 0, pix: 0, checkouts: 0, wa: { sent: 0, received: 0 } });
+// ── Geo Lookup ────────────────────────────────────────────────────────────────
+const geoCache = new Map();
+const geoQueue = [];
+let geoRunning = false;
+const PRIVATE  = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|::1|fd)/;
+
+function httpGet(url) {
+  return new Promise((resolve, reject) => {
+    const req = http.get(url, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => { try { resolve(JSON.parse(raw)); } catch(e) { reject(e); } });
+    });
+    req.on('error', reject);
+    req.setTimeout(5000, () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+
+async function processGeoQueue() {
+  if (geoRunning) return;
+  geoRunning = true;
+  while (geoQueue.length) {
+    const { ip, cb } = geoQueue.shift();
+    if (PRIVATE.test(ip)) { cb(null); continue; }
+    const hit = geoCache.get(ip);
+    if (hit && Date.now() - hit.at < 24 * 60 * 60 * 1000) { cb(hit.data); continue; }
+    try {
+      const data = await httpGet(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city,timezone`);
+      if (data.status === 'success') {
+        geoCache.set(ip, { data, at: Date.now() });
+        cb(data);
+      } else cb(null);
+    } catch { cb(null); }
+    await new Promise(r => setTimeout(r, 1400)); // ~42 req/min (free limit: 45)
+  }
+  geoRunning = false;
+}
+
+function lookupGeo(ip, cb) {
+  if (!ip || PRIVATE.test(ip)) { cb(null); return; }
+  const hit = geoCache.get(ip);
+  if (hit && Date.now() - hit.at < 24 * 60 * 60 * 1000) { cb(hit.data); return; }
+  geoQueue.push({ ip, cb });
+  processGeoQueue().catch(() => {});
+}
+
+// ── Visitor fingerprint ───────────────────────────────────────────────────────
+function fingerprint(ip, ua) {
+  return crypto.createHash('sha256').update((ip || '') + '|' + (ua || '')).digest('hex').slice(0, 16);
+}
+
+// ── Data schemas ──────────────────────────────────────────────────────────────
+function blankDay() {
+  return {
+    visitors: 0, pageViews: 0, logins: 0, signups: 0,
+    orders: 0, pix: 0, checkouts: 0, pixPaid: 0,
+    clickBuy: 0, clickWa: 0,
+    byHour: {}, sources: {}, utmSources: {},
+    devices: {}, browsers: {}, os: {}, countries: {}, cities: {},
+    visitorIds: []
+  };
+}
+
+// ── Load all persisted data ───────────────────────────────────────────────────
+const dailyDB      = readJ(DAILY_F, {});
+const prodStore    = readJ(PRODS_F, {});
+const lifetime     = readJ(LIFE_F, {
+  visitors: 0, pageViews: 0, logins: 0, signups: 0, orders: 0, pix: 0,
+  checkouts: 0, pixPaid: 0, clickBuy: 0, clickWa: 0, wa: { sent: 0, received: 0 }
+});
 if (!lifetime.wa) lifetime.wa = { sent: 0, received: 0 };
+
+const visitorsStore = readJ(VISITORS_F, {});
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const hourStr  = () => String(new Date().getHours());
 
 let _day = todayStr();
+function dayRec(d) { if (!dailyDB[d]) dailyDB[d] = blankDay(); return dailyDB[d]; }
 
-function dayRec(dateStr) {
-  if (!dailyDB[dateStr]) dailyDB[dateStr] = blankDay();
-  return dailyDB[dateStr];
-}
-
-// ── Restore today's in-memory state from disk ─────────────────────────────────
-let dayData = dayRec(_day);
+let dayData    = dayRec(_day);
 const visitorSet = new Set(dayData.visitorIds || []);
 
 let stats = {
-  pageViews:  dayData.pageViews,
-  logins:     dayData.logins,
-  signups:    dayData.signups,
-  orders:     dayData.orders,
-  pix:        dayData.pix,
-  checkouts:  dayData.checkouts,
+  pageViews:  dayData.pageViews,  logins:    dayData.logins,
+  signups:    dayData.signups,    orders:    dayData.orders,
+  pix:        dayData.pix,        checkouts: dayData.checkouts,
+  pixPaid:    dayData.pixPaid   || 0,
+  clickBuy:   dayData.clickBuy  || 0,
+  clickWa:    dayData.clickWa   || 0,
 };
 
-// ── In-memory-only (ephemeral, OK to reset on restart) ────────────────────────
 const sessions      = new Map();
 const sessionStarts = [];
-const wa            = lifetime.wa;
 const products      = new Map(Object.entries(prodStore));
+const visitors      = new Map(Object.entries(visitorsStore));
+const wa            = lifetime.wa;
 
-// ── Dirty flags ───────────────────────────────────────────────────────────────
-let _dirtyDaily    = false;
-let _dirtyProducts = false;
-let _dirtyLifetime = false;
+// ── Dirty flags & debounced flush ─────────────────────────────────────────────
+let _dirtyDaily = false, _dirtyProducts = false, _dirtyLifetime = false, _dirtyVisitors = false;
 
-// ── Flush to disk (atomic write via tmp file) ─────────────────────────────────
 function flush() {
   if (_dirtyDaily) {
-    dayData.visitors  = visitorSet.size;
-    dayData.pageViews = stats.pageViews;
-    dayData.logins    = stats.logins;
-    dayData.signups   = stats.signups;
-    dayData.orders    = stats.orders;
-    dayData.pix       = stats.pix;
-    dayData.checkouts = stats.checkouts;
-    dayData.visitorIds = [...visitorSet].slice(0, 10000);
+    Object.assign(dayData, {
+      visitors:  visitorSet.size, pageViews: stats.pageViews,
+      logins:    stats.logins,    signups:   stats.signups,
+      orders:    stats.orders,    pix:       stats.pix,
+      checkouts: stats.checkouts, pixPaid:   stats.pixPaid,
+      clickBuy:  stats.clickBuy,  clickWa:   stats.clickWa,
+      visitorIds: [...visitorSet].slice(0, 10000),
+    });
     writeJ(DAILY_F, dailyDB);
     _dirtyDaily = false;
   }
-  if (_dirtyProducts) {
-    writeJ(PRODS_F, Object.fromEntries(products));
-    _dirtyProducts = false;
-  }
-  if (_dirtyLifetime) {
-    writeJ(LIFE_F, lifetime);
-    _dirtyLifetime = false;
+  if (_dirtyProducts) { writeJ(PRODS_F, Object.fromEntries(products)); _dirtyProducts = false; }
+  if (_dirtyLifetime) { writeJ(LIFE_F, lifetime);  _dirtyLifetime = false; }
+  if (_dirtyVisitors) {
+    const all = [...visitors.entries()];
+    const obj = all.length > 10000
+      ? Object.fromEntries(all.sort((a, b) => (b[1].lastSeen > a[1].lastSeen ? 1 : -1)).slice(0, 10000))
+      : Object.fromEntries(all);
+    writeJ(VISITORS_F, obj);
+    _dirtyVisitors = false;
   }
 }
 
-// Flush every 5 seconds if dirty
-setInterval(flush, 5_000).unref();
-
-// Graceful shutdown — ensure data is written before process dies
+setInterval(flush, 5000).unref();
 process.on('exit', flush);
 ['SIGTERM', 'SIGINT'].forEach(sig => process.on(sig, () => { flush(); process.exit(0); }));
 
@@ -107,130 +191,170 @@ process.on('exit', flush);
 function checkReset() {
   const d = todayStr();
   if (d === _day) return;
-
-  flush(); // persist the outgoing day first
-
+  flush();
   _day    = d;
   dayData = dayRec(_day);
-
   visitorSet.clear();
   (dayData.visitorIds || []).forEach(id => visitorSet.add(id));
-
   stats = {
-    pageViews:  dayData.pageViews,
-    logins:     dayData.logins,
-    signups:    dayData.signups,
-    orders:     dayData.orders,
-    pix:        dayData.pix,
-    checkouts:  dayData.checkouts,
+    pageViews:  dayData.pageViews,  logins:    dayData.logins,
+    signups:    dayData.signups,    orders:    dayData.orders,
+    pix:        dayData.pix,        checkouts: dayData.checkouts,
+    pixPaid:    dayData.pixPaid   || 0,
+    clickBuy:   dayData.clickBuy  || 0,
+    clickWa:    dayData.clickWa   || 0,
   };
 }
 
 // ── Event buffer ──────────────────────────────────────────────────────────────
-const evBuf  = [];
-const EV_MAX = 300;
-
+const evBuf = [];
+const EV_MAX = 500;
 function pushEv(type, data) {
   const ev = { type, data: data || {}, at: new Date().toISOString() };
   evBuf.unshift(ev);
   if (evBuf.length > EV_MAX) evBuf.length = EV_MAX;
-
-  // Business events only (not raw heartbeats) go to the daily file
-  const SKIP = new Set(['visitor_enter']); // visitor_enter is still persisted
-  if (!SKIP.has(type)) {
-    try { fs.appendFileSync(path.join(EV_DIR, `${todayStr()}.jsonl`), JSON.stringify(ev) + '\n', 'utf-8'); } catch {}
-  }
+  try { fs.appendFileSync(path.join(EV_DIR, `${todayStr()}.jsonl`), JSON.stringify(ev) + '\n', 'utf-8'); } catch {}
 }
 
-// ── Prune old event files (keep last 30 days) ─────────────────────────────────
-function pruneEvents() {
+setInterval(() => {
   try {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    fs.readdirSync(EV_DIR)
-      .filter(f => f.endsWith('.jsonl'))
+    fs.readdirSync(EV_DIR).filter(f => f.endsWith('.jsonl'))
       .map(f => ({ f, mt: fs.statSync(path.join(EV_DIR, f)).mtimeMs }))
       .filter(({ mt }) => mt < cutoff)
       .forEach(({ f }) => { try { fs.unlinkSync(path.join(EV_DIR, f)); } catch {} });
   } catch {}
-}
-setInterval(pruneEvents, 6 * 60 * 60 * 1000).unref();
+}, 6 * 60 * 60 * 1000).unref();
 
 // ── Traffic source detection ──────────────────────────────────────────────────
 const SRC_RE = [
-  [/facebook|fb\.com/i, 'Facebook'],
-  [/instagram/i,        'Instagram'],
-  [/google/i,           'Google'],
-  [/tiktok/i,           'TikTok'],
-  [/wa\.me|whatsapp/i,  'WhatsApp'],
-  [/youtube/i,          'YouTube'],
-  [/twitter|x\.com/i,   'Twitter/X'],
+  [/facebook|fb\.com/i, 'Facebook'],    [/instagram/i, 'Instagram'],
+  [/google/i, 'Google'],                [/tiktok/i, 'TikTok'],
+  [/wa\.me|whatsapp/i, 'WhatsApp'],     [/youtube/i, 'YouTube'],
+  [/twitter|x\.com/i, 'Twitter/X'],
 ];
 function getSource(ref, utm) {
-  if (utm) return String(utm).slice(0, 30);
+  if (utm) {
+    if (/facebook|fb/i.test(utm)) return 'Facebook Ads';
+    if (/instagram/i.test(utm))   return 'Instagram';
+    if (/google/i.test(utm))      return 'Google Ads';
+    if (/tiktok/i.test(utm))      return 'TikTok';
+    return String(utm).slice(0, 30);
+  }
   if (!ref) return 'Direto';
   for (const [re, label] of SRC_RE) if (re.test(ref)) return label;
   try { return new URL(ref).hostname.replace('www.', '').slice(0, 30); } catch { return 'Outro'; }
 }
 
-// ── Emit throttle (batch SSE updates within 400ms) ────────────────────────────
+// ── Emit throttle ─────────────────────────────────────────────────────────────
 let _emitTimer = null;
 function emit() {
   if (_emitTimer) return;
   _emitTimer = setTimeout(() => { _emitTimer = null; bus.emit('snap', snap()); }, 400);
 }
 
-// ── Session cleanup (every 60s) ────────────────────────────────────────────────
+// ── Session cleanup ────────────────────────────────────────────────────────────
 setInterval(() => {
   const cutoff = Date.now() - 3 * 60 * 1000;
-  for (const [id, s] of sessions) {
-    if (new Date(s.lastSeen).getTime() < cutoff) sessions.delete(id);
-  }
+  for (const [id, s] of sessions) if (new Date(s.lastSeen).getTime() < cutoff) sessions.delete(id);
   const h2ago = Date.now() - 2 * 60 * 60 * 1000;
   while (sessionStarts.length && new Date(sessionStarts[0].at).getTime() < h2ago) sessionStarts.shift();
 }, 60_000).unref();
 
-// ── Public API ────────────────────────────────────────────────────────────────
-
-function heartbeat({ sessionId, page, productId, productName, referrer, utmSource, ip }) {
+// ── heartbeat ─────────────────────────────────────────────────────────────────
+function heartbeat({
+  sessionId, page, productId, productName, referrer,
+  utmSource, utmMedium, utmCampaign, utmContent, utmTerm,
+  ip, ua, language, timezone, screenW, screenH
+}) {
   if (!sessionId) return;
   checkReset();
 
-  const now    = new Date().toISOString();
-  const isNew  = !sessions.has(sessionId);
-  const source = sessions.get(sessionId)?.source || getSource(referrer, utmSource);
-  const cleanIp = ip ? String(ip).replace('::ffff:', '').replace('::1', '127.0.0.1') : null;
+  const now      = new Date().toISOString();
+  const isNew    = !sessions.has(sessionId);
+  const existing = sessions.get(sessionId);
+  const source   = existing?.source || getSource(referrer, utmSource);
+  const cleanIp  = ip ? String(ip).replace('::ffff:', '').replace('::1', '127.0.0.1') : null;
+  const { device, browser, os } = parseUA(ua || '');
+  const fp = fingerprint(cleanIp, ua || '');
 
   if (isNew) {
     visitorSet.add(sessionId);
     sessionStarts.push({ sid: sessionId, at: now });
 
-    // Hourly + source breakdown (persisted via dayData)
     const h = hourStr();
-    dayData.byHour[h]     = (dayData.byHour[h] || 0) + 1;
-    dayData.sources[source] = (dayData.sources[source] || 0) + 1;
+    dayData.byHour[h]          = (dayData.byHour[h] || 0) + 1;
+    dayData.sources[source]    = (dayData.sources[source] || 0) + 1;
+    dayData.devices[device]    = (dayData.devices[device] || 0) + 1;
+    dayData.browsers[browser]  = (dayData.browsers[browser] || 0) + 1;
+    dayData.os[os]             = (dayData.os[os] || 0) + 1;
+    if (utmSource) dayData.utmSources[utmSource] = (dayData.utmSources[utmSource] || 0) + 1;
 
     lifetime.visitors++;
     _dirtyLifetime = true;
 
-    pushEv('visitor_enter', { page: page || '/', source, sessionId: sessionId.slice(0, 8) });
+    // Visitor profile
+    if (visitors.has(fp)) {
+      const v = visitors.get(fp);
+      v.lastSeen   = now;
+      v.visitCount = (v.visitCount || 1) + 1;
+      v.device = device; v.browser = browser; v.os = os;
+      if (language) v.language = language;
+      if (timezone) v.timezone = timezone;
+      if (screenW)  v.screenW  = screenW;
+      if (screenH)  v.screenH  = screenH;
+      if (!v.sessions) v.sessions = [];
+      if (!v.sessions.includes(sessionId)) v.sessions.unshift(sessionId);
+      if (v.sessions.length > 20) v.sessions.length = 20;
+    } else {
+      visitors.set(fp, {
+        fp, ip: cleanIp, device, browser, os,
+        language: language || null, timezone: timezone || null,
+        screenW: screenW || null, screenH: screenH || null,
+        firstSeen: now, lastSeen: now, visitCount: 1, sessions: [sessionId],
+        utmSource: utmSource || null, utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null, utmContent: utmContent || null,
+        country: null, countryCode: null, region: null, city: null,
+      });
+    }
+    _dirtyVisitors = true;
+
+    // Async geo lookup — non-blocking
+    if (cleanIp) {
+      lookupGeo(cleanIp, geo => {
+        if (!geo) return;
+        const v = visitors.get(fp);
+        if (v) {
+          v.country = geo.country || null; v.countryCode = geo.countryCode || null;
+          v.region  = geo.regionName || null; v.city = geo.city || null;
+          if (geo.timezone && !v.timezone) v.timezone = geo.timezone;
+          _dirtyVisitors = true;
+        }
+        if (geo.countryCode) dayData.countries[geo.countryCode] = (dayData.countries[geo.countryCode] || 0) + 1;
+        if (geo.city)        dayData.cities[geo.city]           = (dayData.cities[geo.city] || 0) + 1;
+        _dirtyDaily = true;
+      });
+    }
+
+    pushEv('visitor_enter', {
+      page: page || '/', source, device, browser, os,
+      sessionId: sessionId.slice(0, 8),
+    });
     _dirtyDaily = true;
   }
 
   sessions.set(sessionId, {
-    id:          sessionId,
-    startedAt:   sessions.get(sessionId)?.startedAt || now,
-    lastSeen:    now,
-    page:        page || '/',
-    productId:   productId || null,
-    productName: productName || null,
-    source,
-    ip:          cleanIp
+    id: sessionId, startedAt: existing?.startedAt || now, lastSeen: now,
+    page: page || '/', productId: productId || null, productName: productName || null,
+    source, ip: cleanIp, device, browser, os,
+    language: language || null, timezone: timezone || null,
+    utmSource: utmSource || null, utmMedium: utmMedium || null, utmCampaign: utmCampaign || null,
+    fp,
   });
 
   stats.pageViews++;
   lifetime.pageViews++;
-  _dirtyDaily    = true;
-  _dirtyLifetime = true;
+  _dirtyDaily = _dirtyLifetime = true;
 
   if (productId) {
     if (!products.has(productId)) {
@@ -240,8 +364,6 @@ function heartbeat({ sessionId, page, productId, productName, referrer, utmSourc
     p.views++;
     if (productName && p.name === productId) p.name = productName;
     _dirtyProducts = true;
-
-    // Keep top 200 products
     if (products.size > 200) {
       const sorted = [...products.entries()].sort((a, b) => b[1].views - a[1].views);
       sorted.slice(150).forEach(([k]) => products.delete(k));
@@ -251,40 +373,38 @@ function heartbeat({ sessionId, page, productId, productName, referrer, utmSourc
   emit();
 }
 
+// ── record ────────────────────────────────────────────────────────────────────
 function record(type, data = {}) {
   checkReset();
-
-  if (type === 'login')          { stats.logins++;    lifetime.logins++;    _dirtyLifetime = true; }
-  if (type === 'signup')         { stats.signups++;   lifetime.signups++;   _dirtyLifetime = true; }
-  if (type === 'order_created')  { stats.orders++;    lifetime.orders++;    _dirtyLifetime = true; }
-  if (type === 'pix_created')    { stats.pix++;       lifetime.pix++;       _dirtyLifetime = true; }
+  if (type === 'login')          { stats.logins++;    lifetime.logins++;    }
+  if (type === 'signup')         { stats.signups++;   lifetime.signups++;   }
+  if (type === 'order_created')  { stats.orders++;    lifetime.orders++;    }
+  if (type === 'pix_created')    { stats.pix++;       lifetime.pix++;       }
+  if (type === 'pix_paid')       { stats.pixPaid++;   lifetime.pixPaid = (lifetime.pixPaid || 0) + 1; }
+  if (type === 'click_buy')      { stats.clickBuy++;  lifetime.clickBuy = (lifetime.clickBuy || 0) + 1; }
+  if (type === 'click_whatsapp') { stats.clickWa++;   lifetime.clickWa  = (lifetime.clickWa  || 0) + 1; }
   if (type === 'checkout_start') {
-    stats.checkouts++;
-    lifetime.checkouts++;
-    _dirtyLifetime = true;
-    if (data.productId && products.has(data.productId)) {
-      products.get(data.productId).checkouts++;
-      _dirtyProducts = true;
-    }
+    stats.checkouts++; lifetime.checkouts++;
+    if (data.productId && products.has(data.productId)) { products.get(data.productId).checkouts++; _dirtyProducts = true; }
   }
   if (type === 'pix_created' && data.productId && products.has(data.productId)) {
-    products.get(data.productId).pix++;
-    _dirtyProducts = true;
+    products.get(data.productId).pix++; _dirtyProducts = true;
   }
-  if (type === 'wa_sent')     { wa.sent++;     _dirtyLifetime = true; }
-  if (type === 'wa_received') { wa.received++; _dirtyLifetime = true; }
+  if (type === 'wa_sent')     wa.sent++;
+  if (type === 'wa_received') wa.received++;
 
-  _dirtyDaily = true;
+  _dirtyDaily = _dirtyLifetime = true;
   pushEv(type, data);
   emit();
 }
 
+// ── snap ──────────────────────────────────────────────────────────────────────
 function snap() {
   checkReset();
-  const now   = Date.now();
-  const h1ago = now - 60 * 60 * 1000;
+  const now    = Date.now();
+  const h1ago  = now - 60 * 60 * 1000;
   const lastHour = sessionStarts.filter(s => new Date(s.at).getTime() > h1ago).length;
-  const uniq  = visitorSet.size;
+  const uniq   = visitorSet.size;
   return {
     activeNow:        sessions.size,
     visitorsToday:    uniq,
@@ -292,41 +412,75 @@ function snap() {
     pageViewsToday:   stats.pageViews,
     ordersToday:      stats.orders,
     pixToday:         stats.pix,
+    pixPaidToday:     stats.pixPaid,
     loginsToday:      stats.logins,
     signupsToday:     stats.signups,
     checkoutsToday:   stats.checkouts,
+    clickBuyToday:    stats.clickBuy,
+    clickWaToday:     stats.clickWa,
     conversionRate:   uniq > 0 ? +(stats.pix / uniq * 100).toFixed(1) : 0,
     sessions:  Array.from(sessions.values()).sort((a, b) => (b.lastSeen > a.lastSeen ? 1 : -1)),
-    events:    evBuf.slice(0, 100),
+    events:    evBuf.slice(0, 150),
     products:  Array.from(products.values()).sort((a, b) => b.views - a.views).slice(0, 15),
     wa:        { ...wa },
     date:      _day,
     lifetime:  { ...lifetime },
+    devices:   { ...dayData.devices },
+    browsers:  { ...dayData.browsers },
+    os:        { ...dayData.os },
+    countries: { ...dayData.countries },
+    sources:   { ...dayData.sources },
   };
 }
 
-// ── History reader (used by /api/admin/analytics) ─────────────────────────────
+// ── getHistory ────────────────────────────────────────────────────────────────
 function getHistory(days) {
   const result = [];
   for (let i = 0; i < days; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
-    const rec     = dailyDB[dateStr] || blankDay();
+    const ds  = d.toISOString().slice(0, 10);
+    const rec = dailyDB[ds] || blankDay();
+    const live = ds === _day;
     result.push({
-      date:      dateStr,
-      visitors:  dateStr === _day ? visitorSet.size : rec.visitors,
-      pageViews: dateStr === _day ? stats.pageViews  : rec.pageViews,
-      logins:    dateStr === _day ? stats.logins      : rec.logins,
-      signups:   dateStr === _day ? stats.signups     : rec.signups,
-      orders:    dateStr === _day ? stats.orders      : rec.orders,
-      pix:       dateStr === _day ? stats.pix         : rec.pix,
-      checkouts: dateStr === _day ? stats.checkouts   : rec.checkouts,
-      byHour:    dateStr === _day ? { ...dayData.byHour }   : rec.byHour || {},
-      sources:   dateStr === _day ? { ...dayData.sources }  : rec.sources || {},
+      date: ds,
+      visitors:  live ? visitorSet.size  : rec.visitors,
+      pageViews: live ? stats.pageViews  : rec.pageViews,
+      logins:    live ? stats.logins     : rec.logins,
+      signups:   live ? stats.signups    : rec.signups,
+      orders:    live ? stats.orders     : rec.orders,
+      pix:       live ? stats.pix        : rec.pix,
+      pixPaid:   live ? stats.pixPaid    : rec.pixPaid  || 0,
+      checkouts: live ? stats.checkouts  : rec.checkouts,
+      clickBuy:  live ? stats.clickBuy   : rec.clickBuy || 0,
+      clickWa:   live ? stats.clickWa    : rec.clickWa  || 0,
+      byHour:    live ? { ...dayData.byHour }    : rec.byHour    || {},
+      sources:   live ? { ...dayData.sources }   : rec.sources   || {},
+      devices:   live ? { ...dayData.devices }   : rec.devices   || {},
+      browsers:  live ? { ...dayData.browsers }  : rec.browsers  || {},
+      os:        live ? { ...dayData.os }        : rec.os        || {},
+      countries: live ? { ...dayData.countries } : rec.countries || {},
     });
   }
-  return result; // newest first
+  return result;
 }
 
-module.exports = { heartbeat, record, snap, bus, getHistory, products, lifetime };
+// ── getVisitors ───────────────────────────────────────────────────────────────
+function getVisitors({ page = 1, limit = 50, search = '', country = '' } = {}) {
+  let list = [...visitors.values()].sort((a, b) => (b.lastSeen > a.lastSeen ? 1 : -1));
+  if (search) {
+    const q = search.toLowerCase();
+    list = list.filter(v =>
+      (v.ip || '').includes(q) ||
+      (v.city || '').toLowerCase().includes(q) ||
+      (v.country || '').toLowerCase().includes(q) ||
+      (v.browser || '').toLowerCase().includes(q) ||
+      (v.utmCampaign || '').toLowerCase().includes(q)
+    );
+  }
+  if (country) list = list.filter(v => (v.countryCode || '').toUpperCase() === country.toUpperCase());
+  const total = list.length;
+  return { items: list.slice((page - 1) * limit, page * limit), total, page, pages: Math.max(1, Math.ceil(total / limit)) };
+}
+
+module.exports = { heartbeat, record, snap, bus, getHistory, getVisitors, products, lifetime, visitors };

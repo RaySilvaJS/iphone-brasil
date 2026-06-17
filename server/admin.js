@@ -711,15 +711,65 @@ router.get('/analytics', adminAuth, (req, res) => {
     Object.entries(d.sources || {}).forEach(([s, v]) => { sources[s] = (sources[s] || 0) + v; });
   });
 
+  // Aggregate devices / browsers / os / countries across period
+  const devBrowser = { devices: {}, browsers: {}, os: {}, countries: {} };
+  relevant.forEach(d => {
+    ['devices', 'browsers', 'os', 'countries'].forEach(k => {
+      Object.entries(d[k] || {}).forEach(([kk, v]) => { devBrowser[k][kk] = (devBrowser[k][kk] || 0) + v; });
+    });
+  });
+
+  // Funnel: aggregate across period
+  const funnel = {
+    visitors:  totals.visitors,
+    productViews: totals.pageViews,
+    checkouts: totals.checkouts + (relevant.reduce((a, d) => a + (d.clickBuy || 0), 0)),
+    pix:       totals.pix,
+    pixPaid:   relevant.reduce((a, d) => a + (d.pixPaid || 0), 0),
+  };
+
   res.json({
     period,
-    days:     [...relevant].reverse(), // chronological for charts
-    totals,
+    days:     [...relevant].reverse(),
+    totals:   { ...totals, pixPaid: funnel.pixPaid, clickBuy: relevant.reduce((a, d) => a + (d.clickBuy || 0), 0), clickWa: relevant.reduce((a, d) => a + (d.clickWa || 0), 0) },
     byHour,
     sources,
+    ...devBrowser,
+    funnel,
     products: Array.from(tracker.products.values()).sort((a, b) => b.views - a.views).slice(0, 20),
     lifetime: tracker.lifetime,
   });
+});
+
+// ---- Visitor profiles ----
+router.get('/analytics/visitors', adminAuth, (req, res) => {
+  const { page = 1, limit = 50, search = '', country = '' } = req.query;
+  res.json(tracker.getVisitors({ page: +page, limit: Math.min(+limit, 100), search, country }));
+});
+
+// ---- Analytics export ----
+router.get('/analytics/export', adminAuth, (req, res) => {
+  const { period = '7d', format = 'csv' } = req.query;
+  const dayCount = period === 'today' ? 1 : period === 'yesterday' ? 2 : period === '30d' ? 30 : period === 'all' ? 365 : 7;
+  const history  = tracker.getHistory(dayCount);
+  const relevant = period === 'yesterday' ? history.slice(1, 2) : history;
+  const days     = [...relevant].reverse();
+
+  if (format === 'json') {
+    res.setHeader('Content-Disposition', `attachment; filename="analytics-${period}.json"`);
+    res.setHeader('Content-Type', 'application/json');
+    return res.json({ period, exported: new Date().toISOString(), days, lifetime: tracker.lifetime });
+  }
+
+  // CSV
+  const headers = 'Data,Visitantes,Pageviews,Pedidos,PIX Gerados,PIX Pagos,Logins,Cadastros,Cliques Comprar,Cliques WhatsApp,Conversão%';
+  const rows = days.map(d => {
+    const conv = d.visitors > 0 ? (d.pix / d.visitors * 100).toFixed(1) : '0.0';
+    return [d.date, d.visitors, d.pageViews, d.orders, d.pix, d.pixPaid || 0, d.logins, d.signups, d.clickBuy || 0, d.clickWa || 0, conv].join(',');
+  });
+  res.setHeader('Content-Disposition', `attachment; filename="analytics-${period}.csv"`);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.send('﻿' + [headers, ...rows].join('\r\n')); // BOM for Excel UTF-8
 });
 
 module.exports = router;
