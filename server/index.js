@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./logger'); // Must be first — captures all console output for log viewer
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -6,6 +7,8 @@ const cors = require('cors');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const paymentRouter = require('./payment');
+const adminRouter = require('./admin');
+const { loadConfig, loadSecurity, saveSecurity } = require('./admin');
 const { initWhatsApp, sendPaymentRequest } = require('./whatsapp');
 const { v4: uuidv4 } = require('uuid');
 
@@ -62,6 +65,47 @@ const getAuthUser = (req) => {
 
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
+
+// Admin API (before maintenance middleware so panel always works)
+app.use('/api/admin', adminRouter);
+
+// Devops panel route
+app.get('/devops', (req, res) => res.sendFile(path.join(publicPath, 'devops', 'index.html')));
+
+// Maintenance mode middleware
+app.use((req, res, next) => {
+  try {
+    const cfg = loadConfig();
+    if (!cfg.maintenance) return next();
+    // Allow admin panel, admin API, and devops
+    if (req.path.startsWith('/api/admin') || req.path.startsWith('/devops')) return next();
+    // Allow valid admin tokens
+    const adminToken = req.headers['x-admin-token'] || req.query.adminToken;
+    if (adminToken && adminToken === process.env.ADMIN_TOKEN) return next();
+    // Allow admin-role users
+    try {
+      const users = JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
+      const ut = req.headers['x-auth-token'] || req.query.token;
+      if (ut && users.find(u => u.token === ut && ['admin','superadmin'].includes(u.role))) return next();
+    } catch {}
+    if (req.accepts('html') && !req.path.startsWith('/api/')) return res.sendFile(path.join(publicPath, 'maintenance.html'));
+    return res.status(503).json({ error: 'Site em manutenção. Tente novamente em breve.' });
+  } catch { next(); }
+});
+
+// IP block middleware
+app.use((req, res, next) => {
+  try {
+    const sec = loadSecurity();
+    const ip = req.ip || req.connection.remoteAddress;
+    if ((sec.blockedIPs || []).find(b => b.ip === ip)) {
+      if (req.path.startsWith('/api/')) return res.status(403).json({ error: 'Acesso bloqueado.' });
+      return res.status(403).send('Acesso bloqueado.');
+    }
+  } catch {}
+  next();
+});
+
 app.use(express.static(publicPath));
 app.use('/proofs', express.static(path.join(__dirname, 'data', 'proofs')));
 app.use('/api/payment', paymentRouter);
@@ -442,6 +486,12 @@ app.post('/api/auth/login', (req, res) => {
     ? bcrypt.compareSync(senha, storedHash)
     : storedHash === senha;
   if (!passwordOk) {
+    // Track failed login attempt
+    try {
+      const sec = loadSecurity();
+      sec.loginAttempts = [{ ip: req.ip, email, at: new Date().toISOString(), success: false }, ...(sec.loginAttempts || [])].slice(0, 500);
+      saveSecurity(sec);
+    } catch {}
     return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
   }
   if (!isBcryptHash) {
@@ -449,7 +499,14 @@ app.post('/api/auth/login', (req, res) => {
     users[idx].senha = bcrypt.hashSync(senha, 10);
   }
   users[idx].token = uuidv4();
+  users[idx].lastLogin = new Date().toISOString();
   saveUsers(users);
+  // Track successful login
+  try {
+    const sec = loadSecurity();
+    sec.loginAttempts = [{ ip: req.ip, email, at: new Date().toISOString(), success: true }, ...(sec.loginAttempts || [])].slice(0, 500);
+    saveSecurity(sec);
+  } catch {}
   const u = users[idx];
   res.json({
     success: true,
@@ -622,6 +679,8 @@ app.patch('/api/auth/addresses/:id/principal', (req, res) => {
 });
 
 // ======================================================
+
+app.get('/devops/*', (req, res) => res.sendFile(path.join(publicPath, 'devops', 'index.html')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));

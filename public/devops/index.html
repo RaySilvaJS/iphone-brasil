@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps Central</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+  --border: #30363d; --text: #e6edf3; --muted: #7d8590;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #d29922;
+  --red: #f85149; --purple: #bc8cff; --orange: #e3b341;
+  --sidebar-w: 220px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; overflow: hidden; height: 100vh; }
+
+/* ── LOGIN ── */
+#login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; background: var(--bg); }
+.login-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 380px; }
+.login-card h1 { font-size: 22px; margin-bottom: 8px; }
+.login-card p { color: var(--muted); margin-bottom: 28px; font-size: 13px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.form-group input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; }
+.form-group input:focus { border-color: var(--blue); }
+.btn-primary { width: 100%; background: var(--blue); color: #000; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+.btn-primary:hover { opacity: .85; }
+#login-error { color: var(--red); font-size: 13px; margin-top: 12px; display: none; }
+
+/* ── APP LAYOUT ── */
+#app { display: none; height: 100vh; }
+.layout { display: flex; height: 100vh; }
+
+/* ── SIDEBAR ── */
+#sidebar { width: var(--sidebar-w); background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-logo { padding: 20px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-logo .logo-text { font-size: 15px; font-weight: 700; color: var(--text); }
+.sidebar-logo .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.nav-items { flex: 1; padding: 8px 0; overflow-y: auto; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; border-radius: 6px; margin: 2px 8px; color: var(--muted); font-size: 13px; transition: all .15s; border: 1px solid transparent; user-select: none; }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: rgba(88,166,255,.1); color: var(--blue); border-color: rgba(88,166,255,.2); }
+.nav-item .ni-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 100px; padding: 1px 6px; min-width: 18px; text-align: center; }
+.sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border); }
+.sidebar-footer button { width: 100%; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 8px; cursor: pointer; font-size: 12px; transition: all .15s; }
+.sidebar-footer button:hover { border-color: var(--red); color: var(--red); }
+
+/* ── MAIN ── */
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; height: 52px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+#topbar h2 { font-size: 16px; flex: 1; }
+.topbar-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+.topbar-btn:hover { color: var(--text); border-color: var(--blue); }
+#notif-btn { position: relative; }
+#notif-count { position: absolute; top: -4px; right: -4px; background: var(--red); color: #fff; font-size: 10px; border-radius: 100px; padding: 0 4px; min-width: 16px; text-align: center; display: none; }
+
+#content { flex: 1; overflow-y: auto; padding: 24px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── CARDS & GRID ── */
+.page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+.stat-icon { font-size: 28px; flex-shrink: 0; }
+.stat-value { font-size: 20px; font-weight: 700; line-height: 1; }
+.stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
+.stat-card.ok .stat-value { color: var(--green); }
+.stat-card.warn .stat-value { color: var(--yellow); }
+.stat-card.err .stat-value { color: var(--red); }
+.stat-card.info .stat-value { color: var(--blue); }
+
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* ── BUTTONS ── */
+.btn { border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all .15s; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-blue { background: var(--blue); color: #000; }
+.btn-blue:hover:not(:disabled) { opacity: .85; }
+.btn-green { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+.btn-green:hover:not(:disabled) { background: rgba(63,185,80,.25); }
+.btn-red { background: rgba(248,81,73,.15); color: var(--red); border: 1px solid rgba(248,81,73,.3); }
+.btn-red:hover:not(:disabled) { background: rgba(248,81,73,.25); }
+.btn-yellow { background: rgba(210,153,34,.15); color: var(--yellow); border: 1px solid rgba(210,153,34,.3); }
+.btn-yellow:hover:not(:disabled) { background: rgba(210,153,34,.25); }
+.btn-ghost { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--blue); }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+/* ── STATUS BADGE ── */
+.badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 100px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+.badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.badge-green { background: rgba(63,185,80,.15); color: var(--green); }
+.badge-red { background: rgba(248,81,73,.15); color: var(--red); }
+.badge-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
+.badge-blue { background: rgba(88,166,255,.15); color: var(--blue); }
+
+/* ── TERMINAL ── */
+.terminal { background: #010409; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; line-height: 1.6; min-height: 300px; max-height: 480px; overflow-y: auto; }
+.term-line { margin-bottom: 2px; }
+.term-step { color: var(--blue); font-weight: 700; }
+.term-log { color: #8b949e; }
+.term-done { color: var(--green); font-weight: 700; }
+.term-error { color: var(--red); font-weight: 700; }
+.term-start { color: var(--yellow); }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap { background: var(--bg3); border-radius: 100px; height: 8px; overflow: hidden; margin: 6px 0; }
+.progress-bar { height: 100%; border-radius: 100px; transition: width .5s; }
+.progress-blue { background: var(--blue); }
+.progress-green { background: var(--green); }
+.progress-red { background: var(--red); }
+.progress-yellow { background: var(--yellow); }
+
+/* ── TABLES ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th { text-align: left; padding: 10px 12px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--bg3); font-size: 13px; }
+tbody tr:hover td { background: var(--bg3); }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ── LOG LIST ── */
+.log-item { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--bg3); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; align-items: flex-start; }
+.log-item:last-child { border-bottom: none; }
+.log-ts { color: var(--muted); flex-shrink: 0; width: 160px; }
+.log-level { width: 50px; flex-shrink: 0; font-weight: 700; }
+.log-level-info { color: var(--blue); }
+.log-level-error { color: var(--red); }
+.log-level-warn { color: var(--yellow); }
+.log-msg { color: var(--text); word-break: break-all; flex: 1; }
+.log-list { max-height: 500px; overflow-y: auto; padding-right: 4px; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab { padding: 8px 16px; cursor: pointer; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ── INPUT ── */
+.input { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; transition: border-color .2s; }
+.input:focus { border-color: var(--blue); }
+.input-group { display: flex; gap: 8px; margin-bottom: 16px; }
+.input-group .input { flex: 1; }
+
+/* ── CHART ── */
+.chart-container { position: relative; height: 200px; }
+
+/* ── WHATSAPP QR ── */
+.qr-box { background: #fff; border-radius: 12px; padding: 16px; display: inline-block; margin: 16px 0; }
+.wa-info-grid { display: grid; grid-template-columns: 120px 1fr; gap: 8px 16px; font-size: 13px; }
+.wa-info-grid .key { color: var(--muted); }
+.wa-info-grid .val { color: var(--text); font-weight: 500; }
+
+/* ── FILE MANAGER ── */
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 16px; flex-wrap: wrap; }
+.breadcrumb span { cursor: pointer; } .breadcrumb span:hover { color: var(--blue); }
+.breadcrumb .sep { color: var(--border); }
+.file-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background .15s; }
+.file-item:hover { background: var(--bg3); }
+.file-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+.file-name { flex: 1; font-size: 13px; }
+.file-size { color: var(--muted); font-size: 12px; }
+.file-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+.file-item:hover .file-actions { opacity: 1; }
+.file-actions button { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.file-actions button:hover { background: var(--bg3); color: var(--text); }
+
+/* ── TOGGLE ── */
+.toggle-wrap { display: flex; align-items: center; gap: 12px; }
+.toggle { width: 44px; height: 24px; background: var(--bg3); border: 1px solid var(--border); border-radius: 100px; cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0; }
+.toggle.on { background: var(--green); border-color: var(--green); }
+.toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform .2s; }
+.toggle.on::after { transform: translateX(20px); }
+
+/* ── NOTIFICATION PANEL ── */
+#notif-panel { position: fixed; top: 52px; right: 0; width: 340px; height: calc(100vh - 52px); background: var(--bg2); border-left: 1px solid var(--border); z-index: 100; transform: translateX(100%); transition: transform .25s; overflow-y: auto; }
+#notif-panel.open { transform: translateX(0); }
+.notif-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.notif-header h3 { font-size: 14px; font-weight: 600; }
+.notif-item { padding: 14px 20px; border-bottom: 1px solid var(--bg3); }
+.notif-item.unread { background: rgba(88,166,255,.05); }
+.notif-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.notif-time { font-size: 11px; color: var(--muted); }
+.empty-state { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🛠️ DevOps Central</h1>
+    <p>Painel de administração da infraestrutura</p>
+    <div class="form-group">
+      <label>Token de Administrador</label>
+      <input type="password" id="login-token" placeholder="Digite o ADMIN_TOKEN" autofocus>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div id="login-error">Token inválido. Verifique o ADMIN_TOKEN no .env</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">🛠️ DevOps Central</div>
+    <div class="logo-sub">Painel Administrativo</div>
+  </div>
+  <div class="nav-items">
+    <div class="nav-item active" data-page="dashboard"><span class="ni-icon">📊</span> Dashboard</div>
+    <div class="nav-item" data-page="whatsapp"><span class="ni-icon">💬</span> WhatsApp</div>
+    <div class="nav-item" data-page="monitor"><span class="ni-icon">🖥️</span> Monitor</div>
+    <div class="nav-item" data-page="deploy"><span class="ni-icon">🚀</span> Deploy</div>
+    <div class="nav-item" data-page="logs"><span class="ni-icon">📋</span> Logs</div>
+    <div class="nav-item" data-page="backup"><span class="ni-icon">💾</span> Backup</div>
+    <div class="nav-item" data-page="files"><span class="ni-icon">📁</span> Arquivos</div>
+    <div class="nav-item" data-page="security"><span class="ni-icon">🔒</span> Segurança</div>
+    <div class="nav-item" data-page="settings"><span class="ni-icon">⚙️</span> Config</div>
+  </div>
+  <div class="sidebar-footer">
+    <button onclick="logout()">↩ Sair</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <h2 id="page-title">Dashboard</h2>
+    <button class="topbar-btn" onclick="refreshCurrent()">↺ Atualizar</button>
+    <button class="topbar-btn" id="notif-btn" onclick="toggleNotifPanel()">
+      🔔 Notificações <span id="notif-count"></span>
+    </button>
+  </div>
+  <div id="content">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid" id="dash-stats"></div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>CPU — Últimos 60s</h3>
+          <div class="chart-container"><canvas id="cpu-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>RAM — Últimos 60s</h3>
+          <div class="chart-container"><canvas id="ram-chart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Atividade Recente</h3>
+        <div id="recent-logs" class="log-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══ WHATSAPP ═══ -->
+    <div class="page" id="page-whatsapp">
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <h3>Status da Conexão</h3>
+          <div style="text-align:center;padding:20px 0">
+            <div id="wa-status-badge" style="margin-bottom:20px"></div>
+            <div id="wa-qr-container" style="display:none">
+              <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Escaneie com o WhatsApp</p>
+              <div class="qr-box"><canvas id="wa-qr-canvas"></canvas></div>
+              <p id="wa-qr-timer" style="color:var(--muted);font-size:11px;margin-top:8px"></p>
+            </div>
+            <div id="wa-info" style="display:none">
+              <div class="wa-info-grid" id="wa-info-grid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Ações</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn btn-green" onclick="waAction('restart')">↺ Reiniciar Bot</button>
+            <button class="btn btn-yellow" onclick="waAction('disconnect')">⏏ Desconectar</button>
+            <button class="btn btn-blue" onclick="waAction('reconnect')">⚡ Reconectar</button>
+            <button class="btn btn-ghost" onclick="loadWhatsApp()">↺ Atualizar Status</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Logs do WhatsApp</h3>
+        <div id="wa-logs" class="log-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══ MONITOR ═══ -->
+    <div class="page" id="page-monitor">
+      <div class="stats-grid" id="monitor-stats"></div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>CPU em Tempo Real</h3>
+          <div class="chart-container"><canvas id="mon-cpu-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>RAM em Tempo Real</h3>
+          <div class="chart-container"><canvas id="mon-ram-chart"></canvas></div>
+        </div>
+      </div>
+      <div class="card" id="disk-card">
+        <h3>Disco</h3>
+        <div id="disk-info"></div>
+      </div>
+      <div class="card" id="sysinfo-card">
+        <h3>Informações do Sistema</h3>
+        <div id="sysinfo"></div>
+      </div>
+    </div>
+
+    <!-- ═══ DEPLOY ═══ -->
+    <div class="page" id="page-deploy">
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <h3>Informações do Sistema</h3>
+          <div id="deploy-info" class="wa-info-grid"></div>
+        </div>
+        <div class="card">
+          <h3>Último Deploy</h3>
+          <div id="last-deploy-info"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Comandos</h3>
+        <div class="btn-group">
+          <button class="btn btn-blue" id="btn-deploy" onclick="startDeploy()">🚀 Atualizar Sistema</button>
+          <button class="btn btn-yellow" onclick="sysCmd('restart-app')">↺ Reiniciar App</button>
+          <button class="btn btn-ghost" onclick="sysCmd('restart-pm2')">↺ Reiniciar PM2</button>
+          <button class="btn btn-ghost" onclick="sysCmd('restart-nginx')">↺ Reiniciar Nginx</button>
+          <button class="btn btn-ghost" onclick="sysCmd('clear-cache')">🗑 Limpar Cache</button>
+        </div>
+        <h3>Terminal</h3>
+        <div class="terminal" id="deploy-terminal"><span style="color:var(--muted)">Aguardando comando...</span></div>
+      </div>
+      <div class="card">
+        <h3>Histórico de Deploys</h3>
+        <div id="deploy-history"></div>
+      </div>
+    </div>
+
+    <!-- ═══ LOGS ═══ -->
+    <div class="page" id="page-logs">
+      <div class="tabs" id="log-tabs">
+        <div class="tab active" data-logtype="app">App</div>
+        <div class="tab" data-logtype="errors">Erros</div>
+        <div class="tab" data-logtype="whatsapp">WhatsApp</div>
+        <div class="tab" data-logtype="deploy">Deploy</div>
+      </div>
+      <div class="input-group">
+        <input class="input" id="log-search" placeholder="Pesquisar logs..." oninput="loadLogs()">
+        <button class="btn btn-ghost" onclick="loadLogs()">🔍 Filtrar</button>
+        <button class="btn btn-ghost" onclick="downloadLogs()">⬇ Download</button>
+      </div>
+      <div class="card" style="padding:0">
+        <div id="log-list" class="log-list" style="padding:8px 16px;max-height:600px"></div>
+      </div>
+    </div>
+
+    <!-- ═══ BACKUP ═══ -->
+    <div class="page" id="page-backup">
+      <div class="btn-group">
+        <button class="btn btn-blue" onclick="createBackup()" id="btn-backup">💾 Criar Backup Agora</button>
+        <button class="btn btn-ghost" onclick="loadBackups()">↺ Atualizar</button>
+      </div>
+      <div class="card">
+        <h3>Backups Disponíveis</h3>
+        <div id="backup-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══ ARQUIVOS ═══ -->
+    <div class="page" id="page-files">
+      <div class="card">
+        <div class="breadcrumb" id="file-breadcrumb"></div>
+        <div class="btn-group">
+          <button class="btn btn-ghost" onclick="loadFiles(filePath)">↺ Atualizar</button>
+          <label class="btn btn-ghost" style="cursor:pointer">
+            ⬆ Upload
+            <input type="file" id="file-upload-input" style="display:none" onchange="uploadFile(this)">
+          </label>
+        </div>
+        <div id="file-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══ SEGURANÇA ═══ -->
+    <div class="page" id="page-security">
+      <div class="tabs" id="sec-tabs">
+        <div class="tab active" data-sectab="attempts">Tentativas de Login</div>
+        <div class="tab" data-sectab="blocked">IPs Bloqueados</div>
+        <div class="tab" data-sectab="sessions">Sessões Ativas</div>
+      </div>
+      <div id="sec-attempts" class="sec-tab">
+        <div class="card" style="padding:0">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Data/Hora</th><th>Email</th><th>IP</th><th>Status</th></tr></thead>
+            <tbody id="attempts-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <div id="sec-blocked" class="sec-tab" style="display:none">
+        <div class="input-group" style="max-width:400px">
+          <input class="input" id="block-ip-input" placeholder="IP para bloquear (ex: 1.2.3.4)">
+          <button class="btn btn-red" onclick="blockIP()">Bloquear</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap"><table>
+            <thead><tr><th>IP</th><th>Motivo</th><th>Data</th><th>Ação</th></tr></thead>
+            <tbody id="blocked-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <div id="sec-sessions" class="sec-tab" style="display:none">
+        <div class="card" style="padding:0">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Nome</th><th>Email</th><th>Último Login</th><th>Ação</th></tr></thead>
+            <tbody id="sessions-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CONFIG ═══ -->
+    <div class="page" id="page-settings">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Modo Manutenção</h3>
+          <div class="toggle-wrap" style="margin-bottom:12px">
+            <div class="toggle" id="maintenance-toggle" onclick="toggleMaintenance()"></div>
+            <span id="maintenance-label" style="font-size:13px;color:var(--muted)">Desativado</span>
+          </div>
+          <p style="font-size:12px;color:var(--muted)">Quando ativo, usuários verão a página de manutenção. Administradores continuam acessando normalmente.</p>
+        </div>
+        <div class="card">
+          <h3>Informações do Sistema</h3>
+          <div id="settings-info" class="wa-info-grid"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Gerenciar Usuários</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Email</th><th>WhatsApp</th><th>Role</th><th>Cadastro</th><th>Ação</th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- NOTIF PANEL -->
+<div id="notif-panel">
+  <div class="notif-header">
+    <h3>🔔 Notificações</h3>
+    <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="markNotifsRead()">Marcar tudo lido</button>
+  </div>
+  <div id="notif-list"></div>
+</div>
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE & CONFIG
+// ═══════════════════════════════════════════════
+let adminToken = localStorage.getItem('devops_token') || '';
+let currentPage = 'dashboard';
+let currentLogType = 'app';
+let currentSecTab = 'attempts';
+let filePath = '';
+let monitorSSE = null;
+let cpuChart, ramChart, monCpuChart, monRamChart;
+const CPU_H = Array(30).fill(0), RAM_H = Array(30).fill(0);
+const LABELS = Array(30).fill('');
+
+// ═══════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════
+const api = {
+  async call(method, url, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken } };
+    if (body) opts.body = JSON.stringify(body);
+    try {
+      const r = await fetch(url, opts);
+      if (r.status === 403) { logout(); return null; }
+      return await r.json();
+    } catch (e) { console.error('API error:', e); return null; }
+  },
+  get: (u) => api.call('GET', u),
+  post: (u, b) => api.call('POST', u, b),
+  del: (u, b) => api.call('DELETE', u, b),
+  put: (u, b) => api.call('PUT', u, b)
+};
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+async function doLogin() {
+  const token = document.getElementById('login-token').value.trim();
+  if (!token) return;
+  const orig = adminToken;
+  adminToken = token;
+  const r = await api.get('/api/admin/auth/verify');
+  if (r?.ok) {
+    localStorage.setItem('devops_token', token);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } else {
+    adminToken = orig;
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('devops_token');
+  location.reload();
+}
+
+document.getElementById('login-token').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => showPage(el.dataset.page));
+});
+
+const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', settings: 'Configurações' };
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  document.querySelector(`[data-page="${name}"]`).classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[name] || name;
+  currentPage = name;
+  loadPage(name);
+}
+
+function loadPage(name) {
+  if (name === 'dashboard') loadDashboard();
+  else if (name === 'whatsapp') loadWhatsApp();
+  else if (name === 'monitor') loadMonitor();
+  else if (name === 'deploy') loadDeploy();
+  else if (name === 'logs') loadLogs();
+  else if (name === 'backup') loadBackups();
+  else if (name === 'files') loadFiles('');
+  else if (name === 'security') loadSecurity();
+  else if (name === 'settings') loadSettings();
+}
+
+function refreshCurrent() { loadPage(currentPage); }
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+const fmtDate = (d) => d ? new Date(d).toLocaleString('pt-BR') : '—';
+const fmtUptime = (s) => {
+  s = Math.floor(s);
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  return [d && `${d}d`, h && `${h}h`, `${m}m`].filter(Boolean).join(' ') || '< 1m';
+};
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ═══════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════
+function makeChart(id, color, label) {
+  const ctx = document.getElementById(id)?.getContext('2d');
+  if (!ctx) return null;
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels: [...LABELS], datasets: [{ data: Array(30).fill(0), borderColor: color, backgroundColor: color.replace(')',', 0.1)').replace('rgb','rgba'), fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+    options: { animation: false, responsive: true, maintainAspectRatio: false, interaction: { intersect: false }, scales: { y: { min: 0, max: 100, grid: { color: '#21262d' }, ticks: { color: '#7d8590', callback: v => v + '%' } }, x: { display: false } }, plugins: { legend: { display: false } } }
+  });
+}
+
+function pushChart(chart, history, val) {
+  history.push(val); history.shift();
+  chart.data.datasets[0].data = [...history];
+  chart.update('none');
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+async function loadDashboard() {
+  const [mon, wa, logs] = await Promise.all([
+    api.get('/api/admin/monitor'),
+    api.get('/api/admin/whatsapp'),
+    api.get('/api/admin/logs?type=app&limit=20')
+  ]);
+
+  if (mon) {
+    const waStatus = wa?.status === 'connected' ? 'ok' : 'warn';
+    document.getElementById('dash-stats').innerHTML = `
+      <div class="stat-card ok"><div class="stat-icon">🖥️</div><div><div class="stat-value">Online</div><div class="stat-label">Sistema</div></div></div>
+      <div class="stat-card ${waStatus}"><div class="stat-icon">💬</div><div><div class="stat-value">${wa?.status === 'connected' ? 'Online' : wa?.status || 'Offline'}</div><div class="stat-label">WhatsApp</div></div></div>
+      <div class="stat-card ${mon.cpu.percent > 80 ? 'err' : mon.cpu.percent > 60 ? 'warn' : 'info'}"><div class="stat-icon">⚡</div><div><div class="stat-value">${mon.cpu.percent}%</div><div class="stat-label">CPU</div></div></div>
+      <div class="stat-card ${mon.ram.percent > 85 ? 'err' : mon.ram.percent > 65 ? 'warn' : 'info'}"><div class="stat-icon">🧠</div><div><div class="stat-value">${mon.ram.percent}%</div><div class="stat-label">RAM</div></div></div>
+      <div class="stat-card ${mon.disk.percent > 85 ? 'err' : mon.disk.percent > 70 ? 'warn' : 'ok'}"><div class="stat-icon">💽</div><div><div class="stat-value">${mon.disk.percent}%</div><div class="stat-label">Disco</div></div></div>
+      <div class="stat-card info"><div class="stat-icon">⏱️</div><div><div class="stat-value">${fmtUptime(mon.uptime.app)}</div><div class="stat-label">Uptime App</div></div></div>
+    `;
+    pushChart(cpuChart, CPU_H, mon.cpu.percent);
+    pushChart(ramChart, RAM_H, mon.ram.percent);
+  }
+
+  if (logs) {
+    document.getElementById('recent-logs').innerHTML = logs.slice(0,15).map(l => `
+      <div class="log-item">
+        <span class="log-ts">${new Date(l.ts).toLocaleTimeString('pt-BR')}</span>
+        <span class="log-level log-level-${l.level}">${l.level.toUpperCase()}</span>
+        <span class="log-msg">${esc(l.msg)}</span>
+      </div>`).join('') || '<div class="empty-state">Sem logs recentes</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// WHATSAPP
+// ═══════════════════════════════════════════════
+let waRefreshTimer = null;
+async function loadWhatsApp() {
+  const wa = await api.get('/api/admin/whatsapp');
+  if (!wa) return;
+
+  const statusMap = { connected: ['badge-green','Conectado'], qr: ['badge-yellow','Aguardando QR'], connecting: ['badge-yellow','Conectando...'], reconnecting: ['badge-yellow','Reconectando...'], disconnected: ['badge-red','Desconectado'] };
+  const [cls, label] = statusMap[wa.status] || ['badge-red', wa.status || 'Desconhecido'];
+  document.getElementById('wa-status-badge').innerHTML = `<span class="badge ${cls}" style="font-size:18px;padding:8px 20px">${label}</span>`;
+
+  const qrContainer = document.getElementById('wa-qr-container');
+  const waInfo = document.getElementById('wa-info');
+
+  if (wa.status === 'qr' && wa.qr) {
+    qrContainer.style.display = 'block';
+    waInfo.style.display = 'none';
+    try {
+      QRCode.toCanvas(document.getElementById('wa-qr-canvas'), wa.qr, { width: 220, margin: 1 });
+    } catch (e) { console.error('QR error:', e); }
+    const genAt = wa.qrAt ? new Date(wa.qrAt) : new Date();
+    document.getElementById('wa-qr-timer').textContent = `QR gerado às ${genAt.toLocaleTimeString('pt-BR')} — expira em 60s`;
+    if (!waRefreshTimer) waRefreshTimer = setInterval(() => { if (currentPage === 'whatsapp') loadWhatsApp(); }, 15000);
+  } else {
+    qrContainer.style.display = 'none';
+    clearInterval(waRefreshTimer); waRefreshTimer = null;
+    if (wa.status === 'connected') {
+      waInfo.style.display = 'block';
+      document.getElementById('wa-info-grid').innerHTML = `
+        <span class="key">Telefone</span><span class="val">${esc(wa.phone || '—')}</span>
+        <span class="key">Nome</span><span class="val">${esc(wa.name || '—')}</span>
+        <span class="key">Conectado em</span><span class="val">${fmtDate(wa.connectedAt)}</span>
+        <span class="key">Reconexões</span><span class="val">${wa.reconnects || 0}</span>
+      `;
+    } else { waInfo.style.display = 'none'; }
+  }
+
+  const wlogs = await api.get('/api/admin/logs?type=whatsapp&limit=30');
+  if (wlogs) {
+    document.getElementById('wa-logs').innerHTML = wlogs.map(l => `
+      <div class="log-item">
+        <span class="log-ts">${new Date(l.ts).toLocaleTimeString('pt-BR')}</span>
+        <span class="log-level log-level-${l.level}">${l.level.toUpperCase()}</span>
+        <span class="log-msg">${esc(l.msg)}</span>
+      </div>`).join('') || '<div class="empty-state">Sem logs do WhatsApp</div>';
+  }
+}
+
+async function waAction(action) {
+  const r = await api.post(`/api/admin/whatsapp/${action}`);
+  alert(r?.ok ? 'Ação executada com sucesso.' : (r?.error || 'Erro ao executar ação.'));
+  setTimeout(loadWhatsApp, 2000);
+}
+
+// ═══════════════════════════════════════════════
+// MONITOR
+// ═══════════════════════════════════════════════
+function loadMonitor() {
+  if (monitorSSE) monitorSSE.close();
+
+  monitorSSE = new EventSource(`/api/admin/monitor/stream?adminToken=${encodeURIComponent(adminToken)}`);
+  monitorSSE.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    pushChart(monCpuChart, [], d.cpu); // update inline
+    document.getElementById('monitor-stats').innerHTML = `
+      <div class="stat-card info"><div class="stat-icon">⚡</div><div><div class="stat-value">${d.cpu}%</div><div class="stat-label">CPU</div></div></div>
+      <div class="stat-card info"><div class="stat-icon">🧠</div><div><div class="stat-value">${d.ram}%</div><div class="stat-label">RAM (${d.ramUsed})</div></div></div>
+    `;
+    // Update charts
+    if (monCpuChart) { const h = monCpuChart.data.datasets[0].data; h.push(d.cpu); h.shift(); monCpuChart.update('none'); }
+    if (monRamChart) { const h = monRamChart.data.datasets[0].data; h.push(d.ram); h.shift(); monRamChart.update('none'); }
+  };
+
+  api.get('/api/admin/monitor').then(mon => {
+    if (!mon) return;
+    document.getElementById('disk-info').innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Uso do Disco</span><span style="color:var(--muted)">${mon.disk.usedFmt} / ${mon.disk.totalFmt}</span></div>
+      <div class="progress-wrap"><div class="progress-bar ${mon.disk.percent > 85 ? 'progress-red' : 'progress-blue'}" style="width:${mon.disk.percent}%"></div></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Livre: ${mon.disk.freeFmt} — Utilizado: ${mon.disk.percent}%</div>
+    `;
+    document.getElementById('sysinfo').innerHTML = `
+      <div class="wa-info-grid">
+        <span class="key">Plataforma</span><span class="val">${mon.platform}</span>
+        <span class="key">Arquitetura</span><span class="val">${mon.arch}</span>
+        <span class="key">CPU Modelo</span><span class="val">${esc(mon.cpu.model)}</span>
+        <span class="key">Cores</span><span class="val">${mon.cpu.cores}</span>
+        <span class="key">Uptime Servidor</span><span class="val">${fmtUptime(mon.uptime.server)}</span>
+        <span class="key">Uptime App</span><span class="val">${fmtUptime(mon.uptime.app)}</span>
+        <span class="key">Load Avg</span><span class="val">${mon.load.map(l => l.toFixed(2)).join(' / ')}</span>
+      </div>
+    `;
+  });
+}
+
+// ═══════════════════════════════════════════════
+// DEPLOY
+// ═══════════════════════════════════════════════
+async function loadDeploy() {
+  const info = await api.get('/api/admin/system/info');
+  if (!info) return;
+  document.getElementById('deploy-info').innerHTML = `
+    <span class="key">Versão</span><span class="val">${info.version}</span>
+    <span class="key">Node.js</span><span class="val">${info.nodeVersion}</span>
+    <span class="key">Plataforma</span><span class="val">${info.platform}</span>
+    <span class="key">Uptime</span><span class="val">${fmtUptime(info.appUptime)}</span>
+    <span class="key">PID</span><span class="val">${info.pid}</span>
+  `;
+  const ld = info.lastDeploy;
+  document.getElementById('last-deploy-info').innerHTML = ld ? `
+    <div class="wa-info-grid">
+      <span class="key">Data</span><span class="val">${fmtDate(ld.at)}</span>
+      <span class="key">Por</span><span class="val">${esc(ld.by)}</span>
+      <span class="key">Status</span><span class="val"><span class="badge ${ld.status === 'success' ? 'badge-green' : 'badge-red'}">${ld.status}</span></span>
+      ${ld.error ? `<span class="key">Erro</span><span class="val" style="color:var(--red)">${esc(ld.error)}</span>` : ''}
+    </div>
+  ` : '<p style="color:var(--muted);font-size:13px">Nenhum deploy realizado.</p>';
+
+  document.getElementById('deploy-history').innerHTML = (info.deployHistory || []).length ? `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr><th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Data</th><th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Por</th><th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Status</th></tr></thead>
+      <tbody>${info.deployHistory.map(d => `<tr><td style="padding:8px;font-size:13px">${fmtDate(d.at)}</td><td style="padding:8px;font-size:13px">${esc(d.by)}</td><td style="padding:8px"><span class="badge ${d.status === 'success' ? 'badge-green' : 'badge-red'}">${d.status}</span></td></tr>`).join('')}</tbody>
+    </table>` : '<p style="color:var(--muted);font-size:13px">Sem histórico.</p>';
+}
+
+async function startDeploy() {
+  if (!confirm('Confirma o deploy?\n\nExecutará: git pull, npm install e deploy.sh')) return;
+  const btn = document.getElementById('btn-deploy');
+  const term = document.getElementById('deploy-terminal');
+  btn.disabled = true;
+  term.innerHTML = '';
+
+  try {
+    const resp = await fetch('/api/admin/system/deploy', { method: 'POST', headers: { 'X-Admin-Token': adminToken } });
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const ln of lines) {
+        if (!ln.startsWith('data: ')) continue;
+        try {
+          const { type, data } = JSON.parse(ln.slice(6));
+          const cls = { step: 'term-step', log: 'term-log', done: 'term-done', error: 'term-error', start: 'term-start' }[type] || 'term-log';
+          term.innerHTML += `<div class="term-line ${cls}">${esc(String(data))}</div>`;
+          term.scrollTop = term.scrollHeight;
+        } catch {}
+      }
+    }
+  } catch (e) {
+    term.innerHTML += `<div class="term-line term-error">Erro de conexão: ${esc(e.message)}</div>`;
+  }
+  btn.disabled = false;
+  setTimeout(loadDeploy, 500);
+}
+
+async function sysCmd(cmd) {
+  const labels = { 'restart-app': 'Reiniciar aplicação?', 'restart-pm2': 'Reiniciar PM2?', 'restart-nginx': 'Reiniciar Nginx?', 'clear-cache': 'Limpar cache?' };
+  if (!confirm(labels[cmd] || cmd)) return;
+  const r = await api.post(`/api/admin/system/${cmd}`);
+  const term = document.getElementById('deploy-terminal');
+  term.innerHTML += `<div class="term-line ${r?.ok ? 'term-done' : 'term-error'}">[${cmd}] ${esc(r?.message || r?.output || r?.error || 'Executado.')}</div>`;
+  term.scrollTop = term.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════
+// LOGS
+// ═══════════════════════════════════════════════
+document.querySelectorAll('#log-tabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#log-tabs .tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    currentLogType = t.dataset.logtype;
+    loadLogs();
+  });
+});
+
+async function loadLogs() {
+  const q = document.getElementById('log-search').value.trim();
+  const logs = await api.get(`/api/admin/logs?type=${currentLogType}&limit=200${q ? '&q=' + encodeURIComponent(q) : ''}`);
+  if (!logs) return;
+  document.getElementById('log-list').innerHTML = logs.length ? logs.map(l => `
+    <div class="log-item">
+      <span class="log-ts">${new Date(l.ts).toLocaleString('pt-BR')}</span>
+      <span class="log-level log-level-${l.level}">${l.level.toUpperCase()}</span>
+      <span class="log-msg">${esc(l.msg)}</span>
+    </div>`).join('') : '<div class="empty-state">Nenhum log encontrado.</div>';
+}
+
+function downloadLogs() {
+  window.open(`/api/admin/logs/download?type=${currentLogType}&adminToken=${encodeURIComponent(adminToken)}`, '_blank');
+}
+
+// ═══════════════════════════════════════════════
+// BACKUP
+// ═══════════════════════════════════════════════
+async function loadBackups() {
+  const list = await api.get('/api/admin/backup/list');
+  if (!list) return;
+  const el = document.getElementById('backup-list');
+  el.innerHTML = list.length ? `<table style="width:100%;border-collapse:collapse">
+    <thead><tr><th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">Nome</th><th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">Tamanho</th><th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">Data</th><th style="padding:10px 12px;border-bottom:1px solid var(--border)"></th></tr></thead>
+    <tbody>${list.map(b => `<tr>
+      <td style="padding:10px 12px;font-size:13px">${esc(b.name)}</td>
+      <td style="padding:10px 12px;font-size:13px;color:var(--muted)">${b.sizeFmt}</td>
+      <td style="padding:10px 12px;font-size:13px;color:var(--muted)">${fmtDate(b.createdAt)}</td>
+      <td style="padding:10px 12px;display:flex;gap:6px;justify-content:flex-end">
+        <a href="/api/admin/backup/${encodeURIComponent(b.name)}?adminToken=${encodeURIComponent(adminToken)}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none">⬇ Baixar</a>
+        <button class="btn btn-red" style="font-size:11px;padding:4px 10px" onclick="deleteBackup('${esc(b.name)}')">🗑</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>` : '<div class="empty-state">Nenhum backup disponível.</div>';
+}
+
+async function createBackup() {
+  const btn = document.getElementById('btn-backup');
+  btn.disabled = true; btn.textContent = '⏳ Criando backup...';
+  const r = await api.post('/api/admin/backup');
+  btn.disabled = false; btn.textContent = '💾 Criar Backup Agora';
+  if (r?.ok) { alert(`Backup criado: ${r.name}${r.warning ? '\n⚠️ ' + r.warning : ''}`); loadBackups(); }
+  else alert('Erro: ' + (r?.error || 'Falha ao criar backup.'));
+}
+
+async function deleteBackup(name) {
+  if (!confirm(`Excluir backup ${name}?`)) return;
+  const r = await api.del(`/api/admin/backup/${encodeURIComponent(name)}`);
+  if (r?.ok) loadBackups();
+  else alert('Erro: ' + (r?.error || 'Falha ao excluir.'));
+}
+
+// ═══════════════════════════════════════════════
+// FILE MANAGER
+// ═══════════════════════════════════════════════
+const fileIcons = { dir: '📁', js: '📄', json: '📋', html: '🌐', css: '🎨', md: '📝', txt: '📝', png: '🖼', jpg: '🖼', jpeg: '🖼', gif: '🖼', svg: '🖼', pdf: '📕', zip: '📦', gz: '📦', sh: '⚙️', env: '🔑' };
+
+async function loadFiles(p) {
+  filePath = p || '';
+  const data = await api.get(`/api/admin/files?path=${encodeURIComponent(filePath)}`);
+  if (!data) return;
+
+  const parts = data.path.split('/').filter(Boolean);
+  let crumb = `<span class="sep">/</span><span onclick="loadFiles('')">raiz</span>`;
+  let built = '';
+  parts.forEach(p => { built += (built ? '/' : '') + p; const pb = built; crumb += `<span class="sep">/</span><span onclick="loadFiles('${esc(pb)}')">${esc(p)}</span>`; });
+  document.getElementById('file-breadcrumb').innerHTML = crumb;
+
+  document.getElementById('file-list').innerHTML = data.entries.length
+    ? data.entries.map(f => `
+      <div class="file-item" ondblclick="${f.type === 'dir' ? `loadFiles('${esc((filePath ? filePath + '/' : '') + f.name)}')` : ''}">
+        <span class="file-icon">${fileIcons[f.type === 'dir' ? 'dir' : f.ext] || '📄'}</span>
+        <span class="file-name">${esc(f.name)}</span>
+        <span class="file-size">${f.type === 'dir' ? '—' : f.sizeFmt}</span>
+        <div class="file-actions">
+          ${f.type === 'file' ? `<button title="Baixar" onclick="dlFile('${esc((filePath ? filePath + '/' : '') + f.name)}')">⬇</button>` : ''}
+          <button title="Renomear" onclick="renameFile('${esc((filePath ? filePath + '/' : '') + f.name)}','${esc(f.name)}')">✏️</button>
+          <button title="Excluir" style="color:var(--red)" onclick="delFile('${esc((filePath ? filePath + '/' : '') + f.name)}')">🗑</button>
+        </div>
+      </div>`).join('')
+    : '<div class="empty-state">Diretório vazio</div>';
+}
+
+function dlFile(p) {
+  window.open(`/api/admin/files/download?path=${encodeURIComponent(p)}&adminToken=${encodeURIComponent(adminToken)}`, '_blank');
+}
+
+async function renameFile(fullPath, oldName) {
+  const newName = prompt('Novo nome:', oldName);
+  if (!newName || newName === oldName) return;
+  const r = await api.put('/api/admin/files/rename', { from: fullPath, to: newName });
+  if (r?.ok) loadFiles(filePath); else alert('Erro: ' + (r?.error || 'Falha ao renomear.'));
+}
+
+async function delFile(fullPath) {
+  if (!confirm(`Excluir "${fullPath}"?`)) return;
+  const r = await api.del('/api/admin/files', { path: fullPath });
+  if (r?.ok) loadFiles(filePath); else alert('Erro: ' + (r?.error || 'Falha ao excluir.'));
+}
+
+async function uploadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    const r = await api.post('/api/admin/files/upload', { targetPath: filePath, name: file.name, data: base64 });
+    if (r?.ok) { loadFiles(filePath); alert(`Upload concluído: ${r.name}`); }
+    else alert('Erro: ' + (r?.error || 'Falha no upload.'));
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ═══════════════════════════════════════════════
+// SECURITY
+// ═══════════════════════════════════════════════
+document.querySelectorAll('#sec-tabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#sec-tabs .tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.sec-tab').forEach(x => x.style.display = 'none');
+    t.classList.add('active');
+    currentSecTab = t.dataset.sectab;
+    document.getElementById(`sec-${currentSecTab}`).style.display = 'block';
+  });
+});
+
+async function loadSecurity() {
+  const sec = await api.get('/api/admin/security');
+  if (!sec) return;
+
+  document.getElementById('attempts-tbody').innerHTML = (sec.loginAttempts || []).slice(0,100).map(a => `
+    <tr>
+      <td>${fmtDate(a.at)}</td>
+      <td>${esc(a.email || '—')}</td>
+      <td><code style="font-size:12px">${esc(a.ip || '—')}</code></td>
+      <td><span class="badge ${a.success ? 'badge-green' : 'badge-red'}">${a.success ? 'Sucesso' : 'Falhou'}</span></td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Nenhum registro</td></tr>';
+
+  document.getElementById('blocked-tbody').innerHTML = (sec.blockedIPs || []).map(b => `
+    <tr>
+      <td><code style="font-size:12px">${esc(b.ip)}</code></td>
+      <td>${esc(b.reason || '—')}</td>
+      <td>${fmtDate(b.at)}</td>
+      <td><button class="btn btn-green" style="font-size:11px;padding:4px 10px" onclick="unblockIP('${esc(b.ip)}')">Desbloquear</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Nenhum IP bloqueado</td></tr>';
+
+  document.getElementById('sessions-tbody').innerHTML = (sec.activeSessions || []).map(s => `
+    <tr>
+      <td>${esc(s.nome)}</td>
+      <td>${esc(s.email)}</td>
+      <td>${fmtDate(s.lastLogin)}</td>
+      <td><button class="btn btn-red" style="font-size:11px;padding:4px 10px" onclick="endSession('${esc(s.id)}')">Encerrar</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Nenhuma sessão ativa</td></tr>';
+}
+
+async function blockIP() {
+  const ip = document.getElementById('block-ip-input').value.trim();
+  if (!ip) return;
+  const r = await api.post('/api/admin/security/block', { ip });
+  if (r?.ok) { document.getElementById('block-ip-input').value = ''; loadSecurity(); }
+  else alert('Erro: ' + (r?.error || 'Falha.'));
+}
+
+async function unblockIP(ip) {
+  if (!confirm(`Desbloquear ${ip}?`)) return;
+  const r = await api.del(`/api/admin/security/block/${encodeURIComponent(ip)}`);
+  if (r?.ok) loadSecurity(); else alert(r?.error || 'Erro.');
+}
+
+async function endSession(id) {
+  if (!confirm('Encerrar sessão deste usuário?')) return;
+  const r = await api.del(`/api/admin/security/session/${id}`);
+  if (r?.ok) loadSecurity(); else alert(r?.error || 'Erro.');
+}
+
+// ═══════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════
+async function loadSettings() {
+  const [maint, info, users] = await Promise.all([
+    api.get('/api/admin/maintenance'),
+    api.get('/api/admin/system/info'),
+    api.get('/api/admin/users')
+  ]);
+
+  if (maint) {
+    const tog = document.getElementById('maintenance-toggle');
+    const lbl = document.getElementById('maintenance-label');
+    tog.className = 'toggle' + (maint.maintenance ? ' on' : '');
+    lbl.textContent = maint.maintenance ? 'Ativado — site em manutenção' : 'Desativado';
+  }
+
+  if (info) {
+    document.getElementById('settings-info').innerHTML = `
+      <span class="key">Versão</span><span class="val">${info.version}</span>
+      <span class="key">Node.js</span><span class="val">${info.nodeVersion}</span>
+      <span class="key">Plataforma</span><span class="val">${info.platform}</span>
+      <span class="key">PID</span><span class="val">${info.pid}</span>
+    `;
+  }
+
+  if (users) {
+    document.getElementById('users-tbody').innerHTML = users.map(u => `
+      <tr>
+        <td>${esc(u.nome)}</td>
+        <td>${esc(u.email)}</td>
+        <td>${esc(u.whatsapp || '—')}</td>
+        <td>
+          <select style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;font-size:12px" onchange="setRole('${esc(u.id)}', this.value)">
+            <option value="user" ${u.role === 'user' ? 'selected' : ''}>Usuário</option>
+            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+            <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Super Admin</option>
+          </select>
+        </td>
+        <td style="color:var(--muted);font-size:12px">${fmtDate(u.createdAt)}</td>
+        <td><span class="badge ${u.active ? 'badge-green' : 'badge-red'}">${u.active ? 'Ativo' : 'Inativo'}</span></td>
+      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Nenhum usuário</td></tr>';
+  }
+}
+
+async function toggleMaintenance() {
+  const r = await api.post('/api/admin/maintenance/toggle');
+  if (r) {
+    const tog = document.getElementById('maintenance-toggle');
+    const lbl = document.getElementById('maintenance-label');
+    tog.className = 'toggle' + (r.maintenance ? ' on' : '');
+    lbl.textContent = r.maintenance ? 'Ativado — site em manutenção' : 'Desativado';
+  }
+}
+
+async function setRole(id, role) {
+  const r = await api.put(`/api/admin/users/${id}/role`, { role });
+  if (!r?.ok) alert(r?.error || 'Erro ao alterar role.');
+}
+
+// ═══════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════
+function toggleNotifPanel() {
+  document.getElementById('notif-panel').classList.toggle('open');
+  loadNotifications();
+}
+
+async function loadNotifications() {
+  const notifs = await api.get('/api/admin/notifications');
+  if (!notifs) return;
+  const unread = notifs.filter(n => !n.read).length;
+  const cnt = document.getElementById('notif-count');
+  if (unread > 0) { cnt.textContent = unread; cnt.style.display = 'block'; } else { cnt.style.display = 'none'; }
+  document.getElementById('notif-list').innerHTML = notifs.length
+    ? notifs.map(n => `<div class="notif-item ${n.read ? '' : 'unread'}"><div class="notif-title">${esc(n.title || 'Notificação')}</div><div style="font-size:12px;color:var(--muted);margin:4px 0">${esc(n.message || '')}</div><div class="notif-time">${fmtDate(n.at)}</div></div>`).join('')
+    : '<div class="empty-state">Sem notificações</div>';
+}
+
+async function markNotifsRead() {
+  await api.post('/api/admin/notifications/read-all');
+  loadNotifications();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  // Init charts
+  Chart.defaults.color = '#7d8590';
+  cpuChart = makeChart('cpu-chart', 'rgb(88,166,255)', 'CPU');
+  ramChart = makeChart('ram-chart', 'rgb(63,185,80)', 'RAM');
+  monCpuChart = makeChart('mon-cpu-chart', 'rgb(88,166,255)', 'CPU');
+  monRamChart = makeChart('mon-ram-chart', 'rgb(63,185,80)', 'RAM');
+
+  // Load initial page
+  loadDashboard();
+  loadNotifications();
+
+  // Auto-refresh dashboard every 10s
+  setInterval(() => { if (currentPage === 'dashboard') loadDashboard(); }, 10000);
+  setInterval(loadNotifications, 30000);
+}
+
+// Auto-login if token saved
+if (adminToken) {
+  api.get('/api/admin/auth/verify').then(r => {
+    if (r?.ok) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      init();
+    } else {
+      localStorage.removeItem('devops_token');
+      adminToken = '';
+    }
+  });
+}
+</script>
+</body>
+</html>
