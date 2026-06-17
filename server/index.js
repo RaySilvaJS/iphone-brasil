@@ -13,6 +13,7 @@ const { initWhatsApp, sendPaymentRequest } = require('./whatsapp');
 const { v4: uuidv4 } = require('uuid');
 const tracker = require('./tracker');
 const audit = require('./audit');
+const alerts = require('./alerts');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -592,9 +593,48 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(publicPath, 'admin.html'));
 });
 
+// ===================== AUTH RATE LIMITING =====================
+
+const _authWindows = new Map(); // ip+route → [timestamps]
+
+function authRateLimit(maxAttempts, windowMs) {
+  return (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const key = ip + req.path;
+    const now = Date.now();
+    const window = (_authWindows.get(key) || []).filter(t => now - t < windowMs);
+    if (window.length >= maxAttempts) {
+      const retryAfterSec = Math.ceil((windowMs - (now - window[0])) / 1000);
+      res.set('Retry-After', retryAfterSec);
+      // Record brute-force alert
+      try {
+        const sec = loadSecurity();
+        if (!sec.loginAttempts) sec.loginAttempts = {};
+        sec.loginAttempts[ip] = (sec.loginAttempts[ip] || 0) + 1;
+        saveSecurity(sec);
+        if (sec.loginAttempts[ip] >= 10) alerts.fire('brute_force', 'Força bruta detectada', `IP ${ip} bloqueado após ${sec.loginAttempts[ip]} tentativas em ${req.path}`, alerts.loadAlerts());
+      } catch {}
+      return res.status(429).json({ error: `Muitas tentativas. Tente novamente em ${retryAfterSec}s.` });
+    }
+    window.push(now);
+    _authWindows.set(key, window);
+    next();
+  };
+}
+
+// Cleanup stale entries every 10 minutes
+setInterval(() => {
+  const cutoff = Date.now() - 15 * 60 * 1000;
+  for (const [k, times] of _authWindows) {
+    const pruned = times.filter(t => t > cutoff);
+    if (pruned.length === 0) _authWindows.delete(k);
+    else _authWindows.set(k, pruned);
+  }
+}, 10 * 60 * 1000);
+
 // ===================== AUTH ROUTES =====================
 
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', authRateLimit(5, 15 * 60 * 1000), (req, res) => {
   const { nome, cpf, whatsapp, email, senha } = req.body || {};
   if (!nome || !cpf || !whatsapp || !email || !senha) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
@@ -633,7 +673,7 @@ app.post('/api/auth/register', (req, res) => {
   res.json({ success: true, message: 'Cadastro realizado com sucesso.' });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   const { email, senha } = req.body || {};
   if (!email || !senha) {
     return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
@@ -869,4 +909,5 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.error('Erro ao conectar ao WhatsApp:', error);
   }
+  alerts.start();
 });

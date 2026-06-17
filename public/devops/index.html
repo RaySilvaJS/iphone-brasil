@@ -380,6 +380,8 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="files"><span class="ni-icon">📁</span> Arquivos</div>
     <div class="nav-item" data-page="security"><span class="ni-icon">🔒</span> Segurança</div>
     <div class="nav-item" data-page="audit"><span class="ni-icon">📜</span> Auditoria</div>
+    <div class="nav-item" data-page="alerts"><span class="ni-icon">🔔</span> Alertas</div>
+    <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
     <div class="nav-item" data-page="settings"><span class="ni-icon">⚙️</span> Config</div>
   </div>
   <div class="sidebar-footer">
@@ -701,6 +703,101 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </div>
 
+    <!-- ═══ ALERTAS ═══ -->
+    <div class="page" id="page-alerts">
+      <div class="grid-2" style="margin-bottom:16px">
+        <!-- Telegram config -->
+        <div class="card">
+          <h3>Telegram</h3>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Bot Token</label>
+            <input class="input" id="tg-token" type="password" placeholder="1234567890:ABCdef..." style="width:100%">
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Chat ID</label>
+            <input class="input" id="tg-chatid" placeholder="-1001234567890 ou @seu_grupo" style="width:100%">
+          </div>
+          <div class="toggle-wrap" style="margin-bottom:16px">
+            <div class="toggle" id="tg-toggle" onclick="toggleTelegram()"></div>
+            <span id="tg-label" style="font-size:13px;color:var(--muted)">Desativado</span>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-blue" onclick="saveAlertConfig()">💾 Salvar</button>
+            <button class="btn btn-ghost" onclick="testTelegram()">📨 Testar</button>
+          </div>
+          <div id="tg-result" style="font-size:12px;margin-top:10px"></div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bg3)">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Como configurar:</p>
+            <ol style="font-size:12px;color:var(--muted);padding-left:18px;line-height:1.8">
+              <li>Crie um bot com <code style="color:var(--blue)">@BotFather</code> no Telegram</li>
+              <li>Copie o token gerado acima</li>
+              <li>Adicione o bot ao seu grupo ou canal</li>
+              <li>Use <code style="color:var(--blue)">@userinfobot</code> para descobrir o Chat ID</li>
+            </ol>
+          </div>
+        </div>
+        <!-- Alert history -->
+        <div class="card">
+          <h3 style="display:flex;justify-content:space-between;align-items:center">
+            Histórico de Alertas
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="clearAlertHistory()">🗑 Limpar</button>
+          </h3>
+          <div id="alerts-history" style="max-height:340px;overflow-y:auto"></div>
+        </div>
+      </div>
+      <!-- Rules -->
+      <div class="card">
+        <h3>Regras de Alerta</h3>
+        <div id="alerts-rules"></div>
+        <div style="margin-top:16px">
+          <button class="btn btn-blue" onclick="saveAlertConfig()">💾 Salvar Configurações</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PEDIDOS ═══ -->
+    <div class="page" id="page-orders">
+      <!-- Filters -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+        <select class="input" id="order-filter-status" style="width:160px" onchange="loadOrders()">
+          <option value="all">Todos os status</option>
+          <option value="pending">Pendente</option>
+          <option value="paid">Pago</option>
+          <option value="cancelled">Cancelado</option>
+        </select>
+        <input class="input" id="order-filter-search" placeholder="Buscar por ID, telefone, produto..." style="flex:1;min-width:200px" oninput="loadOrdersDebounced()">
+        <input class="input" id="order-filter-from" type="date" onchange="loadOrders()" style="width:145px">
+        <input class="input" id="order-filter-to" type="date" onchange="loadOrders()" style="width:145px">
+        <button class="btn btn-ghost" onclick="loadOrders()">↺ Atualizar</button>
+        <span id="orders-count" style="color:var(--muted);font-size:12px;margin-left:auto"></span>
+      </div>
+      <!-- Stats mini -->
+      <div class="stats-grid" id="orders-mini-stats" style="margin-bottom:16px"></div>
+      <!-- Table -->
+      <div class="card" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>ID</th><th>Produto</th><th>Valor</th><th>Cliente</th><th>WhatsApp</th><th>Status</th><th>Data</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="orders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Pagination -->
+      <div id="orders-pagination" style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap"></div>
+    </div>
+
+    <!-- DRAWER: order detail -->
+    <div id="order-drawer" style="position:fixed;top:0;right:0;width:min(480px,100vw);height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:300;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:700">Detalhes do Pedido</h3>
+        <button class="btn btn-ghost" onclick="closeOrderDrawer()" style="padding:6px 10px">✕</button>
+      </div>
+      <div id="order-drawer-content"></div>
+    </div>
+    <div id="order-drawer-overlay" onclick="closeOrderDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299"></div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -782,7 +879,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', settings: 'Configurações' };
+const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', settings: 'Configurações' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -816,6 +913,8 @@ function loadPage(name) {
   else if (name === 'files') loadFiles('');
   else if (name === 'security') loadSecurity();
   else if (name === 'audit') loadAudit();
+  else if (name === 'alerts') loadAlerts();
+  else if (name === 'orders') loadOrders();
   else if (name === 'settings') loadSettings();
 }
 
@@ -1582,6 +1681,259 @@ async function loadAudit() {
       <td style="padding:8px;font-size:11px">${detail}</td>
     </tr>`;
   }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// ALERTAS
+// ═══════════════════════════════════════════════
+let _alertsCfg = null;
+let _tgEnabled = false;
+
+async function loadAlerts() {
+  const cfg = await api.get('/api/admin/alerts');
+  if (!cfg) return;
+  _alertsCfg = cfg;
+  _tgEnabled = cfg.telegram?.enabled || false;
+
+  // Telegram fields
+  document.getElementById('tg-token').value = cfg.telegram?.botToken || '';
+  document.getElementById('tg-chatid').value = cfg.telegram?.chatId || '';
+  const tog = document.getElementById('tg-toggle');
+  const lbl = document.getElementById('tg-label');
+  tog.className = 'toggle' + (_tgEnabled ? ' on' : '');
+  lbl.textContent = _tgEnabled ? 'Ativado' : 'Desativado';
+
+  // Rules
+  renderAlertRules(cfg.rules || []);
+
+  // History
+  renderAlertHistory(cfg.history || []);
+}
+
+function toggleTelegram() {
+  _tgEnabled = !_tgEnabled;
+  const tog = document.getElementById('tg-toggle');
+  const lbl = document.getElementById('tg-label');
+  tog.className = 'toggle' + (_tgEnabled ? ' on' : '');
+  lbl.textContent = _tgEnabled ? 'Ativado' : 'Desativado';
+}
+
+function renderAlertRules(rules) {
+  const el = document.getElementById('alerts-rules');
+  el.innerHTML = `<div style="display:grid;gap:10px">` + rules.map((r, i) => `
+    <div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--bg3);border-radius:8px;flex-wrap:wrap">
+      <div class="toggle" id="rule-toggle-${i}" onclick="toggleRule(${i})" class="toggle ${r.enabled ? 'on' : ''}"
+           style="flex-shrink:0;${r.enabled ? 'background:var(--green);border-color:var(--green)' : ''}">
+        <style>#rule-toggle-${i}::after{transform:${r.enabled ? 'translateX(20px)' : 'none'}}</style>
+      </div>
+      <span style="flex:1;font-size:13px;font-weight:500">${esc(r.label)}</span>
+      <span style="font-size:11px;color:var(--muted)">Cooldown: ${r.cooldownMin}min</span>
+      <span class="badge ${r.enabled ? 'badge-green' : 'badge-red'}" style="font-size:10px">${r.enabled ? 'Ativo' : 'Inativo'}</span>
+    </div>`).join('') + `</div>`;
+}
+
+function toggleRule(i) {
+  if (!_alertsCfg) return;
+  _alertsCfg.rules[i].enabled = !_alertsCfg.rules[i].enabled;
+  renderAlertRules(_alertsCfg.rules);
+}
+
+async function saveAlertConfig() {
+  if (!_alertsCfg) return;
+  _alertsCfg.telegram = {
+    enabled: _tgEnabled,
+    botToken: document.getElementById('tg-token').value.trim(),
+    chatId: document.getElementById('tg-chatid').value.trim()
+  };
+  const r = await api.put('/api/admin/alerts', { telegram: _alertsCfg.telegram, rules: _alertsCfg.rules });
+  const el = document.getElementById('tg-result');
+  el.textContent = r?.ok ? '✓ Configurações salvas.' : '✕ Erro ao salvar.';
+  el.style.color = r?.ok ? 'var(--green)' : 'var(--red)';
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+async function testTelegram() {
+  const r = await api.post('/api/admin/alerts/test');
+  const el = document.getElementById('tg-result');
+  el.textContent = r?.ok ? '✓ ' + (r.message || 'Enviado!') : '✕ ' + (r?.error || 'Falha.');
+  el.style.color = r?.ok ? 'var(--green)' : 'var(--red)';
+}
+
+async function clearAlertHistory() {
+  if (!confirm('Limpar histórico de alertas?')) return;
+  const r = await api.del('/api/admin/alerts/history');
+  if (r?.ok) { if (_alertsCfg) { _alertsCfg.history = []; renderAlertHistory([]); } }
+}
+
+function renderAlertHistory(history) {
+  const el = document.getElementById('alerts-history');
+  if (!history.length) { el.innerHTML = '<div class="empty-state" style="padding:20px">Nenhum alerta disparado</div>'; return; }
+  el.innerHTML = history.map(h => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--bg3);font-size:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-weight:600;color:var(--yellow)">${esc(h.label)}</span>
+        <span style="color:var(--muted);font-size:11px">${new Date(h.at).toLocaleString('pt-BR')}</span>
+      </div>
+      <span style="color:var(--muted)">${esc(h.message)}</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// PEDIDOS
+// ═══════════════════════════════════════════════
+let _ordersPage = 1;
+let _ordersTotal = 0;
+let _ordersDebounceTimer = null;
+
+function loadOrdersDebounced() {
+  clearTimeout(_ordersDebounceTimer);
+  _ordersDebounceTimer = setTimeout(() => { _ordersPage = 1; loadOrders(); }, 400);
+}
+
+async function loadOrders(page) {
+  if (page) _ordersPage = page;
+  const status = document.getElementById('order-filter-status')?.value || 'all';
+  const search = document.getElementById('order-filter-search')?.value || '';
+  const dateFrom = document.getElementById('order-filter-from')?.value || '';
+  const dateTo   = document.getElementById('order-filter-to')?.value || '';
+
+  const params = new URLSearchParams({ page: _ordersPage, limit: 30 });
+  if (status !== 'all') params.set('status', status);
+  if (search) params.set('search', search);
+  if (dateFrom) params.set('dateFrom', dateFrom);
+  if (dateTo)   params.set('dateTo', dateTo);
+
+  const [data, stats] = await Promise.all([
+    api.get('/api/admin/orders?' + params),
+    api.get('/api/admin/orders/stats')
+  ]);
+  if (!data) return;
+
+  _ordersTotal = data.total;
+  document.getElementById('orders-count').textContent = `${data.total} pedido${data.total !== 1 ? 's' : ''} encontrado${data.total !== 1 ? 's' : ''}`;
+
+  // Mini stats
+  if (stats) {
+    document.getElementById('orders-mini-stats').innerHTML = `
+      <div class="stat-card info"><div class="stat-icon">📋</div><div><div class="stat-value">${stats.todayTotal}</div><div class="stat-label">Hoje</div></div></div>
+      <div class="stat-card warn"><div class="stat-icon">⏳</div><div><div class="stat-value">${stats.pending}</div><div class="stat-label">Pendentes</div></div></div>
+      <div class="stat-card ok"><div class="stat-icon">✅</div><div><div class="stat-value">${stats.paid}</div><div class="stat-label">Pagos</div></div></div>
+      <div class="stat-card err"><div class="stat-icon">✕</div><div><div class="stat-value">${stats.cancelled}</div><div class="stat-label">Cancelados</div></div></div>
+      <div class="stat-card info"><div class="stat-icon">📦</div><div><div class="stat-value">${stats.total}</div><div class="stat-label">Total Geral</div></div></div>
+    `;
+  }
+
+  // Table
+  const STATUS_BADGE = {
+    pending:   'badge-yellow',
+    paid:      'badge-green',
+    cancelled: 'badge-red'
+  };
+  const STATUS_LABEL = { pending: '⏳ Pendente', paid: '✅ Pago', cancelled: '✕ Cancelado' };
+
+  document.getElementById('orders-tbody').innerHTML = data.items.length
+    ? data.items.map(o => `<tr>
+        <td><code style="font-size:11px;cursor:pointer;color:var(--blue)" onclick="openOrderDrawer('${esc(o.id)}')" title="${esc(o.id)}">${esc((o.id||'').slice(0,8))}…</code></td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.product||'')}">${esc(o.product || '—')}</td>
+        <td style="white-space:nowrap">${o.amount ? 'R$ ' + Number(o.amount).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—'}</td>
+        <td>${esc(o.clientName || o.clientEmail || '—')}</td>
+        <td>${o.clientPhone ? `<a href="https://wa.me/${(o.clientPhone||'').replace(/\D/g,'')}?text=Oi+atendimento" target="_blank" style="color:var(--green);text-decoration:none">📱 ${esc(o.clientPhone)}</a>` : '—'}</td>
+        <td><span class="badge ${STATUS_BADGE[o.status]||'badge-blue'}">${STATUS_LABEL[o.status]||esc(o.status||'?')}</span></td>
+        <td style="white-space:nowrap;color:var(--muted);font-size:12px">${o.createdAt ? new Date(o.createdAt).toLocaleString('pt-BR') : '—'}</td>
+        <td>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px" onclick="openOrderDrawer('${esc(o.id)}')">Ver</button>
+            ${o.status === 'pending' ? `<button class="btn btn-green" style="font-size:11px;padding:3px 8px" onclick="setOrderStatus('${esc(o.id)}','paid')">Pago</button>` : ''}
+            ${o.status !== 'cancelled' ? `<button class="btn btn-red" style="font-size:11px;padding:3px 8px" onclick="setOrderStatus('${esc(o.id)}','cancelled')">Cancelar</button>` : ''}
+          </div>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Nenhum pedido encontrado</td></tr>';
+
+  // Pagination
+  renderOrdersPagination(data.page, data.pages);
+}
+
+function renderOrdersPagination(current, total) {
+  const el = document.getElementById('orders-pagination');
+  if (total <= 1) { el.innerHTML = ''; return; }
+  let html = '';
+  const prev = current > 1;
+  const next = current < total;
+  if (prev) html += `<button class="btn btn-ghost" onclick="loadOrders(${current-1})">← Anterior</button>`;
+  const start = Math.max(1, current - 2);
+  const end   = Math.min(total, current + 2);
+  for (let i = start; i <= end; i++) {
+    html += `<button class="btn ${i === current ? 'btn-blue' : 'btn-ghost'}" onclick="loadOrders(${i})">${i}</button>`;
+  }
+  if (next) html += `<button class="btn btn-ghost" onclick="loadOrders(${current+1})">Próxima →</button>`;
+  el.innerHTML = html;
+}
+
+async function setOrderStatus(id, status) {
+  const labels = { paid: 'marcar como PAGO', cancelled: 'CANCELAR' };
+  if (!confirm(`Confirma ${labels[status] || status} o pedido ${id.slice(0,8)}?`)) return;
+  const r = await api.call('PATCH', `/api/admin/orders/${id}`, { status });
+  if (r?.ok) {
+    loadOrders();
+    // Update drawer if open
+    const drawer = document.getElementById('order-drawer');
+    if (drawer.style.transform !== 'translateX(100%)') openOrderDrawer(id);
+  } else alert(r?.error || 'Erro ao atualizar pedido.');
+}
+
+async function openOrderDrawer(id) {
+  document.getElementById('order-drawer').style.transform = 'translateX(0)';
+  document.getElementById('order-drawer-overlay').style.display = 'block';
+  document.getElementById('order-drawer-content').innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px">Carregando...</div>';
+
+  const data = await api.get('/api/admin/orders?search=' + encodeURIComponent(id) + '&limit=1');
+  const o = data?.items?.[0];
+  if (!o) { document.getElementById('order-drawer-content').innerHTML = '<div style="color:var(--red)">Pedido não encontrado.</div>'; return; }
+
+  const STATUS_BADGE = { pending: 'badge-yellow', paid: 'badge-green', cancelled: 'badge-red' };
+  const STATUS_LABEL = { pending: '⏳ Pendente', paid: '✅ Pago', cancelled: '✕ Cancelado' };
+  const fmtAmt = (v) => v ? 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—';
+
+  document.getElementById('order-drawer-content').innerHTML = `
+    <div style="margin-bottom:16px">
+      <span class="badge ${STATUS_BADGE[o.status]||'badge-blue'}" style="font-size:13px;padding:6px 16px">${STATUS_LABEL[o.status]||o.status}</span>
+    </div>
+    <div class="wa-info-grid" style="margin-bottom:20px;font-size:13px">
+      <span class="key">ID</span><span class="val" style="font-family:monospace;font-size:11px;word-break:break-all">${esc(o.id)}</span>
+      <span class="key">Produto</span><span class="val">${esc(o.product||'—')}</span>
+      <span class="key">Valor</span><span class="val" style="color:var(--green);font-weight:700">${fmtAmt(o.amount)}</span>
+      <span class="key">Cliente</span><span class="val">${esc(o.clientName||o.clientEmail||'—')}</span>
+      <span class="key">E-mail</span><span class="val">${esc(o.clientEmail||'—')}</span>
+      <span class="key">WhatsApp</span><span class="val">${o.clientPhone ? `<a href="https://wa.me/${(o.clientPhone).replace(/\D/g,'')}?text=Oi+atendimento" target="_blank" style="color:var(--green)">${esc(o.clientPhone)}</a>` : '—'}</span>
+      <span class="key">CEP</span><span class="val">${esc(o.cep||'—')}</span>
+      <span class="key">Criado em</span><span class="val">${o.createdAt ? new Date(o.createdAt).toLocaleString('pt-BR') : '—'}</span>
+      <span class="key">PIX Copia-Cola</span><span class="val" style="font-family:monospace;font-size:10px;word-break:break-all;color:var(--muted)">${esc(o.qrCode ? o.qrCode.slice(0,60)+'…' : '—')}</span>
+    </div>
+    <div style="margin-bottom:20px">
+      <div class="btn-group">
+        ${o.status === 'pending' ? `<button class="btn btn-green" onclick="setOrderStatus('${esc(o.id)}','paid')">✅ Marcar como Pago</button>` : ''}
+        ${o.status !== 'cancelled' ? `<button class="btn btn-red" onclick="setOrderStatus('${esc(o.id)}','cancelled')">✕ Cancelar Pedido</button>` : ''}
+        ${o.clientPhone ? `<a href="https://wa.me/${(o.clientPhone).replace(/\D/g,'')}?text=Oi+atendimento" target="_blank" class="btn btn-ghost">💬 Abrir WhatsApp</a>` : ''}
+      </div>
+    </div>
+    ${o.logs?.length ? `
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Histórico do Pedido</div>
+      <div class="log-list" style="max-height:260px;overflow-y:auto">
+        ${o.logs.map(l => `<div class="log-item">
+          <span class="log-ts">${new Date(l.timestamp).toLocaleTimeString('pt-BR')}</span>
+          <span class="log-level log-level-info">${esc(l.type||'LOG')}</span>
+          <span class="log-msg">${esc(l.details||l.status||'')}</span>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+function closeOrderDrawer() {
+  document.getElementById('order-drawer').style.transform = 'translateX(100%)';
+  document.getElementById('order-drawer-overlay').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════

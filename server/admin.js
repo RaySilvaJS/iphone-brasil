@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const logger = require('./logger');
 const tracker = require('./tracker');
 const audit = require('./audit');
+const alerts = require('./alerts');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(__dirname, 'data');
@@ -142,9 +143,41 @@ router.post('/system/deploy', adminAuth, (req, res) => {
 
   (async () => {
     const cfg = loadConfig();
-    const record = { id: uuidv4(), at: new Date().toISOString(), by: req.adminUser?.nome || 'admin' };
+    const record = { id: uuidv4(), at: new Date().toISOString(), by: req.adminUser?.email || req.adminUser?.nome || 'admin' };
     try {
       send('start', 'Iniciando deploy...');
+
+      // ── Backup automático pré-deploy ───────────────────────────────────────
+      send('step', '▶ Criando backup pré-deploy...');
+      try {
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const tarName = `pre-deploy_${stamp}.tar.gz`;
+        const tarPath = path.join(BACKUPS, tarName);
+        await new Promise((res2, rej2) => {
+          exec(`tar -czf "${tarPath}" -C "${ROOT}" server/data 2>&1`, (err, out) => {
+            if (err) {
+              // JSON fallback
+              try {
+                const data = {};
+                ['payments.json','users.json','products.json','config.json','security.json'].forEach(f => {
+                  const fp = path.join(DATA, f);
+                  if (fs.existsSync(fp)) { try { data[f] = JSON.parse(fs.readFileSync(fp, 'utf-8')); } catch {} }
+                });
+                fs.writeFileSync(path.join(BACKUPS, `pre-deploy_${stamp}.json`), JSON.stringify(data, null, 2));
+                send('log', `⚠ tar indisponível — backup JSON criado: pre-deploy_${stamp}.json`);
+              } catch { send('log', '⚠ Backup pré-deploy falhou (não crítico, deploy continua)'); }
+            } else {
+              send('log', `✓ Backup criado: ${tarName}`);
+            }
+            res2();
+          });
+        });
+        record.preDeployBackup = tarName;
+      } catch (backupErr) {
+        send('log', `⚠ Erro no backup pré-deploy: ${backupErr.message} (deploy continua)`);
+      }
+      // ──────────────────────────────────────────────────────────────────────
+
       await runCmd('git pull origin main', 'git', ['pull', 'origin', 'main']);
       await runCmd('npm install', 'npm', ['install', '--omit=dev']);
       if (fs.existsSync(path.join(ROOT, 'deploy.sh'))) {
@@ -565,6 +598,84 @@ router.get('/orders/stats', adminAuth, (req, res) => {
 router.get('/audit', adminAuth, (req, res) => {
   const { limit = 200, type } = req.query;
   res.json(audit.get(parseInt(limit), type || null));
+});
+
+// ---- Alerts ----
+router.get('/alerts', adminAuth, (req, res) => {
+  res.json(alerts.loadAlerts());
+});
+
+router.put('/alerts', adminAuth, (req, res) => {
+  try {
+    const current = alerts.loadAlerts();
+    const { telegram, rules } = req.body;
+    if (telegram !== undefined) current.telegram = telegram;
+    if (rules !== undefined) current.rules = rules;
+    alerts.saveAlerts(current);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/alerts/test', adminAuth, async (req, res) => {
+  const cfg = alerts.loadAlerts();
+  if (!cfg.telegram?.enabled || !cfg.telegram.botToken || !cfg.telegram.chatId) {
+    return res.status(400).json({ error: 'Telegram não configurado ou desativado.' });
+  }
+  const ok = await alerts.sendTelegram(cfg.telegram.botToken, cfg.telegram.chatId,
+    '✅ <b>Teste de alerta</b>\n\nO sistema de alertas está funcionando corretamente!\n\n<i>JessiPhones DevOps</i>');
+  res.json({ ok, message: ok ? 'Mensagem enviada com sucesso!' : 'Falha ao enviar. Verifique o token e chat ID.' });
+});
+
+router.delete('/alerts/history', adminAuth, (req, res) => {
+  const cfg = alerts.loadAlerts();
+  cfg.history = [];
+  alerts.saveAlerts(cfg);
+  res.json({ ok: true });
+});
+
+// ---- Pedidos (orders full list) ----
+router.get('/orders', adminAuth, (req, res) => {
+  try {
+    let payments = JSON.parse(fs.readFileSync(path.join(DATA, 'payments.json'), 'utf-8'));
+    const { status, search, dateFrom, dateTo, page = 1, limit = 30 } = req.query;
+
+    if (status && status !== 'all') payments = payments.filter(p => p.status === status);
+    if (dateFrom) payments = payments.filter(p => (p.createdAt || '') >= dateFrom);
+    if (dateTo)   payments = payments.filter(p => (p.createdAt || '') <= dateTo + 'T23:59:59Z');
+    if (search) {
+      const s = search.toLowerCase();
+      payments = payments.filter(p =>
+        (p.id || '').toLowerCase().includes(s) ||
+        (p.clientPhone || '').includes(s) ||
+        (p.product || '').toLowerCase().includes(s) ||
+        (p.clientName || '').toLowerCase().includes(s) ||
+        (p.clientEmail || '').toLowerCase().includes(s)
+      );
+    }
+
+    payments = payments.sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1);
+    const total = payments.length;
+    const pageNum = Math.max(1, parseInt(page));
+    const pageSize = Math.min(100, Math.max(1, parseInt(limit)));
+    const items = payments.slice((pageNum - 1) * pageSize, pageNum * pageSize);
+
+    res.json({ items, total, page: pageNum, pages: Math.ceil(total / pageSize) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/orders/:id', adminAuth, (req, res) => {
+  try {
+    const payments = JSON.parse(fs.readFileSync(path.join(DATA, 'payments.json'), 'utf-8'));
+    const idx = payments.findIndex(p => p.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    const allowed = ['status', 'adminNote'];
+    allowed.forEach(f => { if (req.body[f] !== undefined) payments[idx][f] = req.body[f]; });
+    if (!payments[idx].logs) payments[idx].logs = [];
+    payments[idx].logs.push({ type: 'admin_action', admin: req.adminUser?.email || 'devops', details: `Status alterado para ${req.body.status || '?'} pelo painel.`, timestamp: new Date().toISOString() });
+    fs.writeFileSync(path.join(DATA, 'payments.json'), JSON.stringify(payments, null, 2));
+    audit.append('order_status_change', req.adminUser?.email || 'devops', req.ip, { orderId: req.params.id, status: req.body.status });
+    res.json({ ok: true, order: payments[idx] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;

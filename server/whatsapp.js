@@ -5,8 +5,9 @@ const fs = require('fs');
 
 const paymentsPath = path.join(__dirname, 'data', 'payments.json');
 const WHATSAPP_GROUP_ID = process.env.WHATSAPP_GROUP_ID;
-// Lazy require to avoid circular dependency during startup
+// Lazy requires to avoid circular dependency during startup
 const getTracker = () => { try { return require('./tracker'); } catch { return null; } };
+const getAlerts  = () => { try { return require('./alerts');  } catch { return null; } };
 
 const loadPayments = () => {
   try { return JSON.parse(fs.readFileSync(paymentsPath, 'utf-8')); } catch { return []; }
@@ -127,6 +128,7 @@ const initWhatsApp = async () => {
       state.status = 'disconnected';
       state.lastSeen = new Date().toISOString();
       state.disconnects++;
+      try { getAlerts()?.trackWaStatus('disconnected'); } catch {}
       state.lastDisconnectReason = reason;
       state.lastError = lastDisconnect?.error?.message || null;
 
@@ -151,6 +153,7 @@ const initWhatsApp = async () => {
       state.connectedAt = new Date().toISOString();
       state.lastError = null;
       _reconnectDelay = 5000; // reset backoff on successful connection
+      try { getAlerts()?.trackWaStatus('connected'); } catch {}
 
       if (wasQr) state.lastQrScannedAt = new Date().toISOString();
 
