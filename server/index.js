@@ -426,6 +426,268 @@ app.post('/api/admin/upload', requireAdmin, (req, res) => {
   res.json({ success: true, url: '/uploads/' + finalName });
 });
 
+// ==================== CATALOG MANAGER ====================
+
+const CATALOG_BACKUPS_DIR  = path.join(__dirname, 'data', 'backups', 'catalogs');
+const CATALOG_HISTORY_FILE = path.join(__dirname, 'data', 'catalog-history.json');
+if (!fs.existsSync(CATALOG_BACKUPS_DIR)) fs.mkdirSync(CATALOG_BACKUPS_DIR, { recursive: true });
+
+const CATALOG_LABELS = {
+  iphones: 'iPhones', android: 'Androids', consoles: 'Consoles',
+  smartwatches: 'Smartwatches', acessorios: 'Acessórios', informatica: 'Informática'
+};
+
+function loadCatalogHistory() {
+  try { return JSON.parse(fs.readFileSync(CATALOG_HISTORY_FILE, 'utf-8')); } catch { return []; }
+}
+function saveCatalogHistory(h) {
+  try { fs.writeFileSync(CATALOG_HISTORY_FILE, JSON.stringify(h, null, 2)); } catch {}
+}
+
+function analyzeCatalog(items) {
+  if (!Array.isArray(items)) return null;
+  const noImage = items.filter(p => !p.images || (Array.isArray(p.images) && p.images.length === 0)).length;
+  const noPrice = items.filter(p => !p.price || p.price === 0).length;
+  const promos  = items.filter(p => p.isPromo).length;
+  const isNew   = items.filter(p => p.isNew || p.condition === 'Novo').length;
+  const byCondition = {};
+  items.forEach(p => {
+    const c = p.condition || 'Desconhecido';
+    byCondition[c] = (byCondition[c] || 0) + 1;
+  });
+  return { total: items.length, noImage, noPrice, promos, isNew, byCondition };
+}
+
+// List all catalogs with stats
+app.get('/api/admin/catalogs', requireAdmin, (req, res) => {
+  const result = Object.entries(CATALOG_FILES).map(([key, filename]) => {
+    const filePath = path.join(catalogDataPath, filename);
+    try {
+      const stat  = fs.statSync(filePath);
+      const items = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      const stats = analyzeCatalog(items);
+      // Count backups
+      const backupDir = path.join(CATALOG_BACKUPS_DIR, key);
+      const backupCount = fs.existsSync(backupDir) ? fs.readdirSync(backupDir).filter(f => f.endsWith('.json')).length : 0;
+      return { key, label: CATALOG_LABELS[key] || key, filename, size: stat.size, modifiedAt: stat.mtime.toISOString(), ...stats, backupCount };
+    } catch (e) {
+      return { key, label: CATALOG_LABELS[key] || key, filename, size: 0, modifiedAt: null, total: 0, noImage: 0, noPrice: 0, promos: 0, isNew: 0, byCondition: {}, backupCount: 0, error: e.message };
+    }
+  });
+  res.json(result);
+});
+
+// Catalog summary for dashboard
+app.get('/api/admin/catalogs/summary', requireAdmin, (req, res) => {
+  const result = {};
+  let grandTotal = 0;
+  for (const [key, filename] of Object.entries(CATALOG_FILES)) {
+    try {
+      const items = JSON.parse(fs.readFileSync(path.join(catalogDataPath, filename), 'utf-8'));
+      result[key] = { label: CATALOG_LABELS[key] || key, count: Array.isArray(items) ? items.length : 0 };
+      grandTotal += result[key].count;
+    } catch { result[key] = { label: CATALOG_LABELS[key] || key, count: 0 }; }
+  }
+  res.json({ catalogs: result, total: grandTotal });
+});
+
+// Import history
+app.get('/api/admin/catalogs/history', requireAdmin, (req, res) => {
+  res.json(loadCatalogHistory());
+});
+
+// List backups for a catalog
+app.get('/api/admin/catalogs/:key/backups', requireAdmin, (req, res) => {
+  const key = req.params.key;
+  if (!CATALOG_FILES[key]) return res.status(400).json({ error: 'Catálogo inválido.' });
+  const backupDir = path.join(CATALOG_BACKUPS_DIR, key);
+  if (!fs.existsSync(backupDir)) return res.json([]);
+  try {
+    const files = fs.readdirSync(backupDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        const fp   = path.join(backupDir, f);
+        const stat = fs.statSync(fp);
+        let count  = 0;
+        try { count = JSON.parse(fs.readFileSync(fp, 'utf-8')).length; } catch {}
+        return { name: f, size: stat.size, createdAt: stat.mtime.toISOString(), count };
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    res.json(files);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Upload and replace a catalog
+app.post('/api/admin/catalogs/:key/upload', requireAdmin, (req, res) => {
+  const key    = req.params.key;
+  const by     = req.adminUser?.email || req.adminUser?.nome || 'devops';
+  const ip     = req.ip || req.connection?.remoteAddress || '?';
+  const t0     = Date.now();
+
+  const filename = CATALOG_FILES[key];
+  if (!filename) return res.status(400).json({ error: 'Catálogo inválido.' });
+
+  const { content } = req.body || {};
+  if (!content) return res.status(400).json({ error: 'Campo "content" obrigatório.' });
+
+  // --- Validate JSON ---
+  let newItems;
+  try {
+    newItems = JSON.parse(content);
+  } catch (e) {
+    // Try to give a useful error message
+    const msg = e.message || 'JSON inválido.';
+    const match = msg.match(/position (\d+)/);
+    let lineHint = '';
+    if (match) {
+      const pos  = parseInt(match[1]);
+      const lines = content.slice(0, pos).split('\n');
+      lineHint = ` (linha ${lines.length}, coluna ${lines[lines.length - 1].length + 1})`;
+    }
+    return res.status(400).json({ error: `JSON inválido${lineHint}: ${msg}`, validation: false });
+  }
+  if (!Array.isArray(newItems))  return res.status(400).json({ error: 'O arquivo deve conter um array JSON.', validation: false });
+  if (newItems.length === 0)     return res.status(400).json({ error: 'Array vazio. Nenhum produto encontrado.', validation: false });
+
+  const filePath = path.join(catalogDataPath, filename);
+
+  // --- Read current file for diff + backup ---
+  let oldItems = [];
+  let oldSize  = 0;
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    oldSize   = Buffer.byteLength(raw, 'utf-8');
+    oldItems  = JSON.parse(raw);
+  } catch {}
+
+  // --- Create backup ---
+  const stamp     = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const backupDir = path.join(CATALOG_BACKUPS_DIR, key);
+  if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+  const backupName = `${key}-${stamp}.json`;
+  const backupPath = path.join(backupDir, backupName);
+  let backupOk = false;
+  try {
+    if (oldItems.length) {
+      fs.copyFileSync(filePath, backupPath);
+      backupOk = true;
+    }
+    // Prune backups older than 30 or more than 50
+    const bFiles = fs.readdirSync(backupDir).filter(f => f.endsWith('.json'))
+      .map(f => ({ f, mt: fs.statSync(path.join(backupDir, f)).mtimeMs }))
+      .sort((a, b) => b.mt - a.mt);
+    bFiles.slice(50).forEach(({ f }) => { try { fs.unlinkSync(path.join(backupDir, f)); } catch {} });
+  } catch (e) {
+    console.warn('[CATALOG] Backup falhou:', e.message);
+  }
+
+  // --- Write new file ---
+  const newContent = JSON.stringify(newItems, null, 2);
+  const newSize    = Buffer.byteLength(newContent, 'utf-8');
+  try {
+    fs.writeFileSync(filePath, newContent, 'utf-8');
+  } catch (e) {
+    return res.status(500).json({ error: `Falha ao gravar arquivo: ${e.message}` });
+  }
+
+  // --- Clear cache ---
+  delete _catalogCache[filename];
+
+  // --- Analyze new catalog ---
+  const newStats = analyzeCatalog(newItems);
+  const elapsed  = ((Date.now() - t0) / 1000).toFixed(2);
+  const diff     = newItems.length - oldItems.length;
+
+  // --- Save history entry ---
+  const histEntry = {
+    id:        Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    at:        new Date().toISOString(),
+    by,
+    ip,
+    key,
+    label:     CATALOG_LABELS[key] || key,
+    filename,
+    oldCount:  oldItems.length,
+    newCount:  newItems.length,
+    diff,
+    oldSize,
+    newSize,
+    backupFile: backupOk ? backupName : null,
+    elapsed,
+    stats: newStats,
+    status: 'success',
+  };
+  const history = loadCatalogHistory();
+  history.unshift(histEntry);
+  if (history.length > 200) history.length = 200;
+  saveCatalogHistory(history);
+
+  audit.append('catalog_upload', by, ip, { key, filename, oldCount: oldItems.length, newCount: newItems.length, diff, backupFile: backupName });
+  console.log(`[CATALOG] Upload OK | key=${key} | items: ${oldItems.length}→${newItems.length} | by=${by}`);
+
+  res.json({
+    ok: true,
+    report: {
+      filename,
+      label:       CATALOG_LABELS[key] || key,
+      oldCount:    oldItems.length,
+      newCount:    newItems.length,
+      diff,
+      oldSize,
+      newSize,
+      elapsed,
+      backupFile:  backupOk ? backupName : null,
+      stats:       newStats,
+    }
+  });
+});
+
+// Restore a backup
+app.post('/api/admin/catalogs/:key/restore', requireAdmin, (req, res) => {
+  const key    = req.params.key;
+  const by     = req.adminUser?.email || req.adminUser?.nome || 'devops';
+  const ip     = req.ip || req.connection?.remoteAddress || '?';
+  const { backupFile } = req.body || {};
+  if (!CATALOG_FILES[key]) return res.status(400).json({ error: 'Catálogo inválido.' });
+  if (!backupFile)         return res.status(400).json({ error: 'backupFile obrigatório.' });
+
+  const filename   = CATALOG_FILES[key];
+  const backupDir  = path.join(CATALOG_BACKUPS_DIR, key);
+  const backupPath = path.join(backupDir, backupFile);
+
+  // Path traversal guard
+  if (!backupPath.startsWith(backupDir)) return res.status(400).json({ error: 'Arquivo inválido.' });
+  if (!fs.existsSync(backupPath))        return res.status(404).json({ error: 'Backup não encontrado.' });
+
+  const filePath = path.join(catalogDataPath, filename);
+  let restoredItems = [];
+  try {
+    const raw    = fs.readFileSync(backupPath, 'utf-8');
+    restoredItems = JSON.parse(raw);
+    // Backup current before restoring
+    const stamp   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const preBk   = path.join(backupDir, `${key}-pre-restore-${stamp}.json`);
+    try { fs.copyFileSync(filePath, preBk); } catch {}
+    fs.writeFileSync(filePath, raw, 'utf-8');
+    delete _catalogCache[filename];
+  } catch (e) {
+    return res.status(500).json({ error: `Falha ao restaurar: ${e.message}` });
+  }
+
+  const histEntry = {
+    id: Date.now().toString(36), at: new Date().toISOString(), by, ip, key,
+    label: CATALOG_LABELS[key] || key, filename,
+    oldCount: null, newCount: restoredItems.length, diff: null,
+    backupFile, status: 'restored',
+  };
+  const history = loadCatalogHistory();
+  history.unshift(histEntry);
+  if (history.length > 200) history.length = 200;
+  saveCatalogHistory(history);
+  audit.append('catalog_restore', by, ip, { key, backupFile });
+  res.json({ ok: true, newCount: restoredItems.length });
+});
+
 // ==================== END ADMIN ====================
 
 app.post('/api/products/:id/sold', (req, res) => {

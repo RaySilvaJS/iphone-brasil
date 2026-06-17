@@ -388,6 +388,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="audit"><span class="ni-icon">📜</span> Auditoria</div>
     <div class="nav-item" data-page="alerts"><span class="ni-icon">🔔</span> Alertas</div>
     <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
+    <div class="nav-item" data-page="catalogs"><span class="ni-icon">📦</span> Catálogos</div>
     <div class="nav-item" data-page="analytics"><span class="ni-icon">📊</span> Analytics</div>
     <div class="nav-item" data-page="settings"><span class="ni-icon">⚙️</span> Config</div>
   </div>
@@ -454,6 +455,17 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="card" style="padding:16px">
           <h3 style="margin-bottom:12px">Pedidos</h3>
           <div id="dash-orders"></div>
+        </div>
+      </div>
+
+      <!-- Catalog summary -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>Produtos nos Catálogos</h3>
+          <button class="btn btn-ghost" style="font-size:11px" onclick="navigateTo('catalogs')">Gerenciar →</button>
+        </div>
+        <div id="dash-catalogs-summary">
+          <div class="empty-state" style="padding:12px">Carregando...</div>
         </div>
       </div>
 
@@ -805,6 +817,56 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
     <div id="order-drawer-overlay" onclick="closeOrderDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299"></div>
 
+    <!-- CATALOGS PAGE -->
+    <div class="page" id="page-catalogs">
+      <!-- Header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+        <div id="catalogs-summary-text" style="font-size:13px;color:var(--muted)">Carregando catálogos...</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="loadCatalogs()">↺ Atualizar</button>
+          <button class="btn btn-ghost" onclick="loadCatalogHistoryTab()">📜 Histórico</button>
+        </div>
+      </div>
+
+      <!-- Catalog cards grid -->
+      <div id="catalogs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:22px"></div>
+
+      <!-- History section (hidden by default) -->
+      <div id="catalog-history-section" style="display:none">
+        <div class="card">
+          <div class="card-title" style="display:flex;justify-content:space-between">
+            <span>Histórico de Importações</span>
+            <button class="btn btn-ghost" style="font-size:11px" onclick="document.getElementById('catalog-history-section').style.display='none'">✕ Fechar</button>
+          </div>
+          <div style="overflow-x:auto;margin-top:12px">
+            <table class="table" style="font-size:12px">
+              <thead><tr><th>Data</th><th>Usuário</th><th>Catálogo</th><th>Antes</th><th>Depois</th><th>Diferença</th><th>Status</th><th>Backup</th></tr></thead>
+              <tbody id="catalog-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup drawer -->
+      <div id="catalog-backup-drawer" style="position:fixed;top:0;right:0;width:min(440px,100vw);height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:300;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 style="font-size:15px;font-weight:700" id="catalog-backup-title">Backups</h3>
+          <button class="btn btn-ghost" onclick="closeCatalogBackup()" style="padding:6px 10px">✕</button>
+        </div>
+        <div id="catalog-backup-content"></div>
+      </div>
+      <div id="catalog-backup-overlay" onclick="closeCatalogBackup()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299"></div>
+
+      <!-- Upload report modal -->
+      <div id="catalog-report-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
+        <div style="background:var(--bg2);border-radius:12px;padding:28px;max-width:480px;width:100%;border:1px solid var(--border);max-height:90vh;overflow-y:auto">
+          <div id="catalog-report-content"></div>
+          <button class="btn btn-blue" style="width:100%;margin-top:16px" onclick="document.getElementById('catalog-report-modal').style.display='none'">Fechar</button>
+        </div>
+      </div>
+
+    </div>
+
     <!-- ANALYTICS PAGE -->
     <div class="page" id="page-analytics">
 
@@ -1033,7 +1095,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', analytics: 'Analytics & Estatísticas', settings: 'Configurações' };
+const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -1069,6 +1131,7 @@ function loadPage(name) {
   else if (name === 'audit') loadAudit();
   else if (name === 'alerts') loadAlerts();
   else if (name === 'orders') loadOrders();
+  else if (name === 'catalogs') loadCatalogs();
   else if (name === 'analytics') loadAnalytics();
   else if (name === 'settings') loadSettings();
 }
@@ -1234,11 +1297,12 @@ async function loadDashboard() {
   // Connect tracker SSE if not already connected
   connectTrackerSSE();
 
-  const [mon, wa, logs, orders] = await Promise.all([
+  const [mon, wa, logs, orders, catalogSum] = await Promise.all([
     api.get('/api/admin/monitor'),
     api.get('/api/admin/whatsapp'),
     api.get('/api/admin/logs?type=app&limit=20'),
-    api.get('/api/admin/orders/stats')
+    api.get('/api/admin/orders/stats'),
+    api.get('/api/admin/catalogs/summary')
   ]);
 
   if (mon) {
@@ -1270,6 +1334,28 @@ async function loadDashboard() {
         <span>Pagos: <b style="color:var(--green)">${o.paid}</b></span>
         <span>Cancelados: <b style="color:var(--red)">${o.cancelled}</b></span>
       </div>`;
+  }
+
+  // Catalog summary card
+  const catEl = document.getElementById('dash-catalogs-summary');
+  if (catEl) {
+    if (catalogSum && catalogSum.catalogs) {
+      const ICONS = { iphones:'📱', android:'🤖', consoles:'🎮', smartwatches:'⌚', acessorios:'🎧', informatica:'💻' };
+      const rows = Object.entries(catalogSum.catalogs).map(([key, info]) =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg3);font-size:13px">
+          <span>${ICONS[key] || '📦'} ${esc(info.label)}</span>
+          <span style="font-weight:600;color:var(--blue)">${info.count.toLocaleString('pt-BR')}</span>
+        </div>`
+      ).join('');
+      catEl.innerHTML = `
+        ${rows}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 2px;font-size:13px;font-weight:700">
+          <span style="color:var(--muted)">Total Geral</span>
+          <span style="color:var(--green)">${catalogSum.total.toLocaleString('pt-BR')} produtos</span>
+        </div>`;
+    } else {
+      catEl.innerHTML = '<div class="empty-state" style="padding:12px">Nenhum catálogo encontrado</div>';
+    }
   }
 
   if (logs) {
@@ -2094,6 +2180,259 @@ async function openOrderDrawer(id) {
 function closeOrderDrawer() {
   document.getElementById('order-drawer').style.transform = 'translateX(100%)';
   document.getElementById('order-drawer-overlay').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════
+// CATALOGS MANAGER
+// ═══════════════════════════════════════════════
+const CATALOG_LABELS = { iphones:'iPhones', android:'Androids', consoles:'Consoles', smartwatches:'Smartwatches', acessorios:'Acessórios', informatica:'Informática' };
+const CATALOG_ICONS  = { iphones:'📱', android:'🤖', consoles:'🎮', smartwatches:'⌚', acessorios:'🎧', informatica:'💻' };
+
+function fmtSize(bytes) {
+  if (!bytes) return '0 B';
+  const k = 1024, s = ['B','KB','MB','GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + s[i];
+}
+
+async function loadCatalogs() {
+  const list = await api.get('/api/admin/catalogs');
+  if (!list) return;
+
+  const total = list.reduce((a, c) => a + (c.total || 0), 0);
+  document.getElementById('catalogs-summary-text').innerHTML =
+    `<b style="color:var(--text)">${list.length} catálogos</b> · <b style="color:var(--blue)">${total.toLocaleString('pt-BR')} produtos no total</b>`;
+
+  document.getElementById('catalogs-grid').innerHTML = list.map(c => {
+    const icon = CATALOG_ICONS[c.key] || '📦';
+    const mod  = c.modifiedAt ? new Date(c.modifiedAt).toLocaleString('pt-BR') : '—';
+    const noImgPct  = c.total > 0 ? Math.round(c.noImage  / c.total * 100) : 0;
+    const noPricePct= c.total > 0 ? Math.round(c.noPrice  / c.total * 100) : 0;
+    const conds = Object.entries(c.byCondition || {}).map(([k,v]) => `${k}: ${v}`).join(' · ');
+    return `
+    <div class="card" style="position:relative">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <span style="font-size:28px">${icon}</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700">${esc(c.label)}</div>
+          <div style="font-size:11px;color:var(--muted)">${esc(c.filename)}</div>
+        </div>
+        <span class="badge badge-blue" style="font-size:12px;padding:4px 10px">${c.total} produtos</span>
+      </div>
+
+      <div class="wa-info-grid" style="font-size:12px;margin-bottom:14px">
+        <span class="key">Tamanho</span><span class="val">${fmtSize(c.size)}</span>
+        <span class="key">Modificado</span><span class="val">${mod}</span>
+        <span class="key">Sem imagem</span><span class="val ${noImgPct>10?'color:var(--yellow)':''}">${c.noImage} (${noImgPct}%)</span>
+        <span class="key">Sem preço</span><span class="val ${noPricePct>5?'color:var(--red)':''}">${c.noPrice} (${noPricePct}%)</span>
+        <span class="key">Promoções</span><span class="val">${c.promos || 0}</span>
+        <span class="key">Backups</span><span class="val">${c.backupCount || 0}</span>
+        ${conds ? `<span class="key">Condições</span><span class="val" style="color:var(--muted)">${esc(conds)}</span>` : ''}
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn btn-blue" style="cursor:pointer;font-size:12px;position:relative">
+          ⬆ Atualizar Arquivo
+          <input type="file" accept=".json" style="position:absolute;inset:0;opacity:0;cursor:pointer"
+            onchange="uploadCatalog('${c.key}', this)">
+        </label>
+        <button class="btn btn-ghost" style="font-size:12px" onclick="openCatalogBackups('${c.key}')">
+          🕐 Backups (${c.backupCount || 0})
+        </button>
+      </div>
+      ${c.error ? `<div style="color:var(--red);font-size:11px;margin-top:8px">Erro: ${esc(c.error)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function uploadCatalog(key, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const label = CATALOG_LABELS[key] || key;
+
+  // Client-side validation
+  if (!file.name.endsWith('.json')) {
+    alert('Selecione um arquivo .json válido.');
+    input.value = '';
+    return;
+  }
+  if (file.size > 30 * 1024 * 1024) {
+    alert('Arquivo muito grande (máx. 30MB).');
+    input.value = '';
+    return;
+  }
+
+  // Show loading state on the button
+  const btn = input.closest('label');
+  const origText = btn.innerHTML;
+  btn.style.opacity = '0.6';
+  btn.style.pointerEvents = 'none';
+
+  let content;
+  try {
+    content = await file.text();
+  } catch (e) {
+    alert('Erro ao ler o arquivo: ' + e.message);
+    btn.style.opacity = ''; btn.style.pointerEvents = '';
+    input.value = '';
+    return;
+  }
+
+  // Client-side JSON validation (gives better error messages)
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch (e) {
+    const msg = e.message || 'JSON inválido';
+    const match = msg.match(/position (\d+)/);
+    let lineHint = '';
+    if (match) {
+      const pos = parseInt(match[1]);
+      const before = content.slice(0, pos).split('\n');
+      lineHint = `\nLinha ${before.length}, coluna ${before[before.length-1].length+1}`;
+    }
+    alert('JSON inválido:\n' + msg + lineHint);
+    btn.style.opacity = ''; btn.style.pointerEvents = '';
+    input.value = '';
+    return;
+  }
+  if (!Array.isArray(parsed)) {
+    alert('O arquivo deve conter um array JSON (lista de produtos).');
+    btn.style.opacity = ''; btn.style.pointerEvents = '';
+    input.value = '';
+    return;
+  }
+  if (parsed.length === 0) {
+    alert('Array vazio. Nenhum produto encontrado no arquivo.');
+    btn.style.opacity = ''; btn.style.pointerEvents = '';
+    input.value = '';
+    return;
+  }
+
+  if (!confirm(`Substituir catálogo "${label}" (${parsed.length} produtos encontrados)?\n\nUm backup do arquivo atual será criado automaticamente.`)) {
+    btn.style.opacity = ''; btn.style.pointerEvents = '';
+    input.value = '';
+    return;
+  }
+
+  // Update button to show progress
+  btn.innerHTML = '⏳ Enviando...<input type="file" style="display:none">';
+
+  const t0   = Date.now();
+  const result = await api.post(`/api/admin/catalogs/${key}/upload`, { content, originalName: file.name });
+  btn.innerHTML = origText;
+  btn.style.opacity = ''; btn.style.pointerEvents = '';
+  input.value = '';
+
+  if (!result?.ok) {
+    alert('Erro ao importar:\n' + (result?.error || 'Erro desconhecido'));
+    return;
+  }
+
+  // Show report
+  const r   = result.report;
+  const diff = r.diff >= 0 ? '+' + r.diff : String(r.diff);
+  const modal = document.getElementById('catalog-report-modal');
+  document.getElementById('catalog-report-content').innerHTML = `
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:32px;margin-bottom:8px">✅</div>
+      <div style="font-size:18px;font-weight:800;color:var(--green)">Importação Concluída!</div>
+    </div>
+    <div class="wa-info-grid" style="font-size:13px;margin-bottom:16px">
+      <span class="key">Arquivo</span>        <span class="val"><b>${esc(r.filename)}</b></span>
+      <span class="key">Catálogo</span>       <span class="val">${esc(r.label)}</span>
+      <span class="key">Produtos antes</span> <span class="val">${r.oldCount}</span>
+      <span class="key">Produtos agora</span> <span class="val"><b style="color:var(--green)">${r.newCount}</b></span>
+      <span class="key">Diferença</span>      <span class="val"><b style="color:${r.diff>=0?'var(--green)':'var(--red)'}">${diff} produtos</b></span>
+      <span class="key">Tamanho antes</span>  <span class="val">${fmtSize(r.oldSize)}</span>
+      <span class="key">Tamanho agora</span>  <span class="val">${fmtSize(r.newSize)}</span>
+      <span class="key">Processamento</span>  <span class="val">${r.elapsed}s</span>
+      <span class="key">Backup criado</span>  <span class="val">${r.backupFile ? '✅ ' + esc(r.backupFile) : '—'}</span>
+    </div>
+    ${r.stats ? `
+    <div style="background:var(--bg3);border-radius:8px;padding:12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:8px;color:var(--text)">Análise do Catálogo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div>Sem imagem: <b>${r.stats.noImage}</b></div>
+        <div>Sem preço: <b>${r.stats.noPrice}</b></div>
+        <div>Promoções: <b>${r.stats.promos}</b></div>
+        <div>Condição Novo: <b>${r.stats.isNew}</b></div>
+      </div>
+    </div>` : ''}
+  `;
+  modal.style.display = 'flex';
+  loadCatalogs(); // Refresh the grid
+}
+
+async function openCatalogBackups(key) {
+  document.getElementById('catalog-backup-title').textContent = 'Backups — ' + (CATALOG_LABELS[key] || key);
+  document.getElementById('catalog-backup-content').innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Carregando...</div>';
+  document.getElementById('catalog-backup-drawer').style.transform = 'translateX(0)';
+  document.getElementById('catalog-backup-overlay').style.display = 'block';
+
+  const backups = await api.get(`/api/admin/catalogs/${key}/backups`);
+  if (!backups) { document.getElementById('catalog-backup-content').innerHTML = '<div style="color:var(--red)">Erro ao carregar backups.</div>'; return; }
+
+  if (!backups.length) {
+    document.getElementById('catalog-backup-content').innerHTML = '<div class="empty-state" style="padding:20px">Nenhum backup encontrado.<br><small>O backup é criado automaticamente ao atualizar o arquivo.</small></div>';
+    return;
+  }
+
+  document.getElementById('catalog-backup-content').innerHTML = backups.map(b => `
+    <div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:4px">${esc(b.name)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
+        ${new Date(b.createdAt).toLocaleString('pt-BR')} · ${b.count} produtos · ${fmtSize(b.size)}
+      </div>
+      <button class="btn btn-ghost" style="font-size:12px" onclick="restoreCatalogBackup('${esc(key)}','${esc(b.name)}',${b.count})">
+        ↩ Restaurar esta versão
+      </button>
+    </div>`).join('');
+}
+
+function closeCatalogBackup() {
+  document.getElementById('catalog-backup-drawer').style.transform = 'translateX(100%)';
+  document.getElementById('catalog-backup-overlay').style.display = 'none';
+}
+
+async function restoreCatalogBackup(key, backupFile, count) {
+  const label = CATALOG_LABELS[key] || key;
+  if (!confirm(`Restaurar o catálogo "${label}" para a versão:\n${backupFile}\n(${count} produtos)\n\nO estado atual será salvo como backup antes da restauração.`)) return;
+  const r = await api.post(`/api/admin/catalogs/${key}/restore`, { backupFile });
+  if (r?.ok) {
+    alert(`✅ Catálogo "${label}" restaurado com sucesso!\n${r.newCount} produtos carregados.`);
+    closeCatalogBackup();
+    loadCatalogs();
+  } else {
+    alert('Erro ao restaurar: ' + (r?.error || 'Erro desconhecido'));
+  }
+}
+
+async function loadCatalogHistoryTab() {
+  const sec = document.getElementById('catalog-history-section');
+  sec.style.display = sec.style.display === 'none' ? '' : 'none';
+  if (sec.style.display === 'none') return;
+
+  const history = await api.get('/api/admin/catalogs/history');
+  if (!history) return;
+
+  document.getElementById('catalog-history-tbody').innerHTML = history.length
+    ? history.map(h => {
+        const diff = h.diff === null ? '—' : (h.diff >= 0 ? '+' + h.diff : String(h.diff));
+        const status = h.status === 'success' ? '<span class="badge badge-green">Sucesso</span>' : '<span class="badge badge-blue">Restaurado</span>';
+        return `<tr>
+          <td style="white-space:nowrap;font-size:11px">${new Date(h.at).toLocaleString('pt-BR')}</td>
+          <td style="font-size:12px">${esc(h.by)}</td>
+          <td>${CATALOG_ICONS[h.key]||'📦'} ${esc(h.label)}</td>
+          <td style="text-align:center">${h.oldCount ?? '—'}</td>
+          <td style="text-align:center"><b>${h.newCount ?? '—'}</b></td>
+          <td style="text-align:center;color:${h.diff>=0?'var(--green)':h.diff<0?'var(--red)':'var(--muted)'};font-weight:700">${diff}</td>
+          <td>${status}</td>
+          <td style="font-size:10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.backupFile||'—')}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Nenhuma importação registrada</td></tr>';
 }
 
 // ═══════════════════════════════════════════════
