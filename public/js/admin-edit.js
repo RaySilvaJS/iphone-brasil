@@ -5,6 +5,8 @@
   if (!window._adminSession) return;
 
   const TOKEN = window._adminSession.token;
+  // DevOps master token (set when user logged into /devops)
+  const DEVOPS_TOKEN = localStorage.getItem('devops_token') || null;
   const CATALOGS = {
     iphones: 'iPhones', android: 'Android', consoles: 'Consoles',
     smartwatches: 'Smartwatches', acessorios: 'Acessórios', informatica: 'Informática'
@@ -12,11 +14,11 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  const api = (method, url, body) => fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json', 'X-Auth-Token': TOKEN },
-    body: body ? JSON.stringify(body) : undefined
-  }).then(r => r.json());
+  const api = (method, url, body) => {
+    const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': TOKEN };
+    if (DEVOPS_TOKEN) headers['X-Admin-Token'] = DEVOPS_TOKEN;
+    return fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined }).then(r => r.json());
+  };
 
   const showToast = (msg, err) => {
     const t = document.createElement('div');

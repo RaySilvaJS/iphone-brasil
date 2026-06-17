@@ -230,7 +230,18 @@ router.get('/monitor/stream', adminAuth, (req, res) => {
 router.get('/whatsapp', adminAuth, (req, res) => {
   try {
     const wa = require('./whatsapp');
-    res.json(wa.getWhatsAppState ? wa.getWhatsAppState() : { status: 'unknown' });
+    const waState = wa.getWhatsAppState ? wa.getWhatsAppState() : { status: 'unknown' };
+    const mem = process.memoryUsage();
+    res.json({
+      ...waState,
+      process: {
+        pid: process.pid,
+        uptime: process.uptime(),
+        rss: mem.rss,
+        heapUsed: mem.heapUsed,
+        heapTotal: mem.heapTotal
+      }
+    });
   } catch (e) { res.json({ status: 'error', error: e.message }); }
 });
 
@@ -238,7 +249,15 @@ router.post('/whatsapp/restart', adminAuth, async (req, res) => {
   try {
     const wa = require('./whatsapp');
     if (wa.restartWhatsApp) await wa.restartWhatsApp();
-    res.json({ ok: true });
+    res.json({ ok: true, message: 'WhatsApp reiniciado.' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/whatsapp/reconnect', adminAuth, async (req, res) => {
+  try {
+    const wa = require('./whatsapp');
+    if (wa.restartWhatsApp) await wa.restartWhatsApp();
+    res.json({ ok: true, message: 'Reconectando WhatsApp...' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -246,8 +265,42 @@ router.post('/whatsapp/disconnect', adminAuth, async (req, res) => {
   try {
     const wa = require('./whatsapp');
     if (wa.disconnectWhatsApp) await wa.disconnectWhatsApp();
-    res.json({ ok: true });
+    res.json({ ok: true, message: 'WhatsApp desconectado.' });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/whatsapp/clear-session', adminAuth, async (req, res) => {
+  try {
+    const wa = require('./whatsapp');
+    if (wa.clearSession) await wa.clearSession();
+    res.json({ ok: true, message: 'Sessão limpa. Aguarde o novo QR Code.' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ---- PM2 Status ----
+router.get('/pm2/status', adminAuth, (req, res) => {
+  exec('pm2 jlist 2>&1', (err, out) => {
+    if (err && !out) return res.json({ ok: false, error: 'PM2 não disponível.', processes: [] });
+    try {
+      const list = JSON.parse(out);
+      res.json({
+        ok: true,
+        processes: list.map(p => ({
+          name: p.name,
+          id: p.pm_id,
+          status: p.pm2_env?.status,
+          pid: p.pid,
+          uptime: p.pm2_env?.pm_uptime,
+          restarts: p.pm2_env?.restart_time,
+          cpu: p.monit?.cpu,
+          memory: p.monit?.memory,
+          version: p.pm2_env?.version
+        }))
+      });
+    } catch {
+      res.json({ ok: false, error: 'Resposta PM2 inválida (não está rodando via PM2?)', processes: [] });
+    }
+  });
 });
 
 // ---- Logs ----

@@ -419,13 +419,17 @@ tbody tr:last-child td { border-bottom: none; }
 
     <!-- ═══ WHATSAPP ═══ -->
     <div class="page" id="page-whatsapp">
+      <!-- Stats row -->
+      <div class="stats-grid" id="wa-stats" style="margin-bottom:16px"></div>
+
+      <!-- Status + Detalhes -->
       <div class="grid-2" style="margin-bottom:16px">
         <div class="card">
           <h3>Status da Conexão</h3>
-          <div style="text-align:center;padding:20px 0">
-            <div id="wa-status-badge" style="margin-bottom:20px"></div>
+          <div style="text-align:center;padding:16px 0">
+            <div id="wa-status-badge" style="margin-bottom:16px"></div>
             <div id="wa-qr-container" style="display:none">
-              <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Escaneie com o WhatsApp</p>
+              <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Escaneie com o WhatsApp para conectar</p>
               <div class="qr-box"><canvas id="wa-qr-canvas"></canvas></div>
               <p id="wa-qr-timer" style="color:var(--muted);font-size:11px;margin-top:8px"></p>
             </div>
@@ -435,15 +439,34 @@ tbody tr:last-child td { border-bottom: none; }
           </div>
         </div>
         <div class="card">
+          <h3>Detalhes</h3>
+          <div class="wa-info-grid" id="wa-details-grid" style="font-size:12px"></div>
+        </div>
+      </div>
+
+      <!-- Ações + Processo -->
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
           <h3>Ações</h3>
           <div style="display:flex;flex-direction:column;gap:10px">
-            <button class="btn btn-green" onclick="waAction('restart')">↺ Reiniciar Bot</button>
-            <button class="btn btn-yellow" onclick="waAction('disconnect')">⏏ Desconectar</button>
-            <button class="btn btn-blue" onclick="waAction('reconnect')">⚡ Reconectar</button>
+            <button class="btn btn-green" id="wa-btn-restart" onclick="waAction('restart','Reiniciar WhatsApp (mantém sessão)?')">↺ Reiniciar WhatsApp</button>
+            <button class="btn btn-blue" id="wa-btn-reconnect" onclick="waAction('reconnect','Reconectar?')">⚡ Reconectar</button>
+            <button class="btn btn-yellow" id="wa-btn-qr" onclick="waAction('clear-session','Limpar sessão e gerar novo QR Code?\n\nIsso desconectará o WhatsApp atual e exigirá nova leitura do QR Code.')">📷 Novo QR Code (limpar sessão)</button>
+            <button class="btn btn-red" id="wa-btn-disconnect" onclick="waAction('disconnect','Desconectar (logout)?\n\nIsso fará logout da conta. Um novo QR será necessário para reconectar.')">⏏ Desconectar (logout)</button>
             <button class="btn btn-ghost" onclick="loadWhatsApp()">↺ Atualizar Status</button>
           </div>
         </div>
+        <div class="card">
+          <h3>Processo Node.js</h3>
+          <div class="wa-info-grid" id="wa-process-grid" style="font-size:12px"></div>
+          <div style="margin-top:16px" id="wa-pm2-section">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">PM2</div>
+            <div id="wa-pm2-grid"></div>
+          </div>
+        </div>
       </div>
+
+      <!-- Logs -->
       <div class="card">
         <h3>Logs do WhatsApp</h3>
         <div id="wa-logs" class="log-list"></div>
@@ -797,55 +820,130 @@ async function loadDashboard() {
 // WHATSAPP
 // ═══════════════════════════════════════════════
 let waRefreshTimer = null;
+const fmtBytes = (b) => { if (!b) return '0 B'; const k=1024,s=['B','KB','MB','GB']; const i=Math.floor(Math.log(b)/Math.log(k)); return (b/Math.pow(k,i)).toFixed(1)+' '+s[i]; };
+
 async function loadWhatsApp() {
-  const wa = await api.get('/api/admin/whatsapp');
+  const [wa, wlogs, pm2] = await Promise.all([
+    api.get('/api/admin/whatsapp'),
+    api.get('/api/admin/logs?type=whatsapp&limit=50'),
+    api.get('/api/admin/pm2/status')
+  ]);
   if (!wa) return;
 
-  const statusMap = { connected: ['badge-green','Conectado'], qr: ['badge-yellow','Aguardando QR'], connecting: ['badge-yellow','Conectando...'], reconnecting: ['badge-yellow','Reconectando...'], disconnected: ['badge-red','Desconectado'] };
+  // ── Status badge ──────────────────────────────
+  const statusMap = {
+    connected:    ['badge-green',  '● Conectado'],
+    qr:           ['badge-yellow', '⏳ Aguardando QR'],
+    connecting:   ['badge-yellow', '⏳ Conectando...'],
+    reconnecting: ['badge-yellow', '↺ Reconectando...'],
+    disconnected: ['badge-red',    '✕ Desconectado']
+  };
   const [cls, label] = statusMap[wa.status] || ['badge-red', wa.status || 'Desconhecido'];
-  document.getElementById('wa-status-badge').innerHTML = `<span class="badge ${cls}" style="font-size:18px;padding:8px 20px">${label}</span>`;
+  document.getElementById('wa-status-badge').innerHTML = `<span class="badge ${cls}" style="font-size:16px;padding:8px 20px">${label}</span>`;
 
+  // ── Stats row ─────────────────────────────────
+  const uptimeSecs = wa.connectedAt ? (Date.now() - new Date(wa.connectedAt).getTime()) / 1000 : 0;
+  const reconnDelay = wa.reconnectDelay ? `${wa.reconnectDelay/1000}s` : '—';
+  document.getElementById('wa-stats').innerHTML = `
+    <div class="stat-card ${wa.status==='connected'?'ok':'warn'}"><div class="stat-icon">💬</div><div><div class="stat-value">${wa.status==='connected'?'Online':wa.status==='reconnecting'?'↺':'Offline'}</div><div class="stat-label">Status</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">⏱️</div><div><div class="stat-value">${wa.status==='connected'?fmtUptime(uptimeSecs):'—'}</div><div class="stat-label">Uptime Bot</div></div></div>
+    <div class="stat-card ${wa.reconnects>10?'warn':'info'}"><div class="stat-icon">↺</div><div><div class="stat-value">${wa.reconnects||0}</div><div class="stat-label">Reconexões</div></div></div>
+    <div class="stat-card ${wa.disconnects>10?'warn':'info'}"><div class="stat-icon">⚡</div><div><div class="stat-value">${wa.disconnects||0}</div><div class="stat-label">Desconexões</div></div></div>
+    <div class="stat-card info"><div class="stat-icon">🧠</div><div><div class="stat-value">${fmtBytes(wa.process?.heapUsed||0)}</div><div class="stat-label">Heap Usado</div></div></div>
+    <div class="stat-card ${wa.hasReconnectTimer?'warn':'ok'}"><div class="stat-icon">⏲️</div><div><div class="stat-value">${wa.hasReconnectTimer?reconnDelay:'—'}</div><div class="stat-label">Próx. Reconexão</div></div></div>
+  `;
+
+  // ── QR code / info ────────────────────────────
   const qrContainer = document.getElementById('wa-qr-container');
   const waInfo = document.getElementById('wa-info');
 
   if (wa.status === 'qr' && wa.qr) {
     qrContainer.style.display = 'block';
     waInfo.style.display = 'none';
-    try {
-      QRCode.toCanvas(document.getElementById('wa-qr-canvas'), wa.qr, { width: 220, margin: 1 });
-    } catch (e) { console.error('QR error:', e); }
+    try { QRCode.toCanvas(document.getElementById('wa-qr-canvas'), wa.qr, { width: 220, margin: 1 }); } catch {}
     const genAt = wa.qrAt ? new Date(wa.qrAt) : new Date();
-    document.getElementById('wa-qr-timer').textContent = `QR gerado às ${genAt.toLocaleTimeString('pt-BR')} — expira em 60s`;
-    if (!waRefreshTimer) waRefreshTimer = setInterval(() => { if (currentPage === 'whatsapp') loadWhatsApp(); }, 15000);
+    document.getElementById('wa-qr-timer').textContent = `QR gerado às ${genAt.toLocaleTimeString('pt-BR')} — expira em ~60s`;
+    if (!waRefreshTimer) waRefreshTimer = setInterval(() => { if (currentPage === 'whatsapp') loadWhatsApp(); }, 10000);
   } else {
     qrContainer.style.display = 'none';
     clearInterval(waRefreshTimer); waRefreshTimer = null;
     if (wa.status === 'connected') {
       waInfo.style.display = 'block';
       document.getElementById('wa-info-grid').innerHTML = `
-        <span class="key">Telefone</span><span class="val">${esc(wa.phone || '—')}</span>
-        <span class="key">Nome</span><span class="val">${esc(wa.name || '—')}</span>
+        <span class="key">Telefone</span><span class="val">${esc(wa.phone||'—')}</span>
+        <span class="key">Nome</span><span class="val">${esc(wa.name||'—')}</span>
         <span class="key">Conectado em</span><span class="val">${fmtDate(wa.connectedAt)}</span>
-        <span class="key">Reconexões</span><span class="val">${wa.reconnects || 0}</span>
       `;
     } else { waInfo.style.display = 'none'; }
   }
 
-  const wlogs = await api.get('/api/admin/logs?type=whatsapp&limit=30');
+  // ── Detalhes ──────────────────────────────────
+  document.getElementById('wa-details-grid').innerHTML = `
+    <span class="key">Telefone</span><span class="val">${esc(wa.phone||'—')}</span>
+    <span class="key">Nome</span><span class="val">${esc(wa.name||'—')}</span>
+    <span class="key">Conectado em</span><span class="val">${fmtDate(wa.connectedAt)}</span>
+    <span class="key">Última desconex.</span><span class="val">${fmtDate(wa.lastSeen)}</span>
+    <span class="key">Motivo desconex.</span><span class="val" style="color:${wa.lastDisconnectReason&&wa.lastDisconnectReason!=='manual-logout'?'var(--yellow)':'inherit'}">${esc(wa.lastDisconnectReason||'—')}</span>
+    <span class="key">Último erro</span><span class="val" style="color:var(--red);word-break:break-all">${esc(wa.lastError||'—')}</span>
+    <span class="key">Último QR gerado</span><span class="val">${fmtDate(wa.qrAt)}</span>
+    <span class="key">Último QR lido</span><span class="val">${fmtDate(wa.lastQrScannedAt)}</span>
+    <span class="key">Iniciado em</span><span class="val">${fmtDate(wa.startedAt)}</span>
+    <span class="key">Inicializando</span><span class="val">${wa.isInitializing?'<span style="color:var(--yellow)">Sim</span>':'Não'}</span>
+  `;
+
+  // ── Processo Node.js ──────────────────────────
+  const p = wa.process || {};
+  document.getElementById('wa-process-grid').innerHTML = `
+    <span class="key">PID</span><span class="val">${p.pid||'—'}</span>
+    <span class="key">Uptime processo</span><span class="val">${p.uptime?fmtUptime(p.uptime):'—'}</span>
+    <span class="key">Memória RSS</span><span class="val">${fmtBytes(p.rss||0)}</span>
+    <span class="key">Heap Usado</span><span class="val">${fmtBytes(p.heapUsed||0)}</span>
+    <span class="key">Heap Total</span><span class="val">${fmtBytes(p.heapTotal||0)}</span>
+  `;
+
+  // ── PM2 ───────────────────────────────────────
+  if (pm2?.ok && pm2.processes?.length) {
+    document.getElementById('wa-pm2-grid').innerHTML = pm2.processes.map(proc => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bg3);font-size:12px;">
+        <span style="font-weight:600">${esc(proc.name)}</span>
+        <span class="badge ${proc.status==='online'?'badge-green':proc.status==='stopping'?'badge-yellow':'badge-red'}">${esc(proc.status||'?')}</span>
+        <span style="color:var(--muted)">↺ ${proc.restarts||0}</span>
+        <span style="color:var(--muted)">${fmtBytes(proc.memory||0)}</span>
+        <span style="color:var(--muted)">${proc.cpu||0}% CPU</span>
+      </div>`).join('');
+  } else {
+    document.getElementById('wa-pm2-grid').innerHTML = `<span style="color:var(--muted);font-size:12px">${pm2?.error||'PM2 não detectado ou rodando sem PM2.'}</span>`;
+  }
+
+  // ── Logs ──────────────────────────────────────
   if (wlogs) {
-    document.getElementById('wa-logs').innerHTML = wlogs.map(l => `
+    document.getElementById('wa-logs').innerHTML = wlogs.length ? wlogs.map(l => `
       <div class="log-item">
         <span class="log-ts">${new Date(l.ts).toLocaleTimeString('pt-BR')}</span>
         <span class="log-level log-level-${l.level}">${l.level.toUpperCase()}</span>
         <span class="log-msg">${esc(l.msg)}</span>
-      </div>`).join('') || '<div class="empty-state">Sem logs do WhatsApp</div>';
+      </div>`).join('') : '<div class="empty-state">Sem logs do WhatsApp</div>';
   }
 }
 
-async function waAction(action) {
+async function waAction(action, confirmMsg) {
+  if (confirmMsg && !confirm(confirmMsg)) return;
+  const btns = ['wa-btn-restart','wa-btn-reconnect','wa-btn-qr','wa-btn-disconnect'];
+  btns.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
   const r = await api.post(`/api/admin/whatsapp/${action}`);
-  alert(r?.ok ? 'Ação executada com sucesso.' : (r?.error || 'Erro ao executar ação.'));
-  setTimeout(loadWhatsApp, 2000);
+  btns.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = false; });
+  if (r) {
+    const term = document.getElementById('deploy-terminal');
+    if (term && currentPage === 'deploy') {
+      term.innerHTML += `<div class="term-line ${r.ok?'term-done':'term-error'}">[whatsapp/${action}] ${esc(r.message||r.error||'Executado.')}</div>`;
+    }
+  }
+  // Auto-refresh: for QR actions, poll faster
+  const isFast = ['clear-session','restart','reconnect'].includes(action);
+  if (isFast) {
+    if (!waRefreshTimer) waRefreshTimer = setInterval(() => { if (currentPage === 'whatsapp') loadWhatsApp(); }, 5000);
+  }
+  setTimeout(loadWhatsApp, 1500);
 }
 
 // ═══════════════════════════════════════════════

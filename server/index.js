@@ -64,11 +64,47 @@ const getAuthUser = (req) => {
 };
 
 const requireAdmin = (req, res, next) => {
-  const token = req.headers['x-auth-token'];
-  if (!token) return res.status(401).json({ error: 'Não autenticado.' });
-  const users = loadUsers();
-  const user = users.find(u => u.token === token && ['admin', 'superadmin'].includes(u.role));
-  if (!user) return res.status(403).json({ error: 'Acesso negado.' });
+  const ip = req.ip || req.connection?.remoteAddress || '?';
+  const method = req.method;
+  const url = req.originalUrl;
+
+  // 1) ADMIN_TOKEN master key (X-Admin-Token header or query param)
+  const adminToken = req.headers['x-admin-token'] || req.query.adminToken;
+  if (adminToken) {
+    const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+    if (ADMIN_TOKEN && adminToken === ADMIN_TOKEN) {
+      req.adminUser = { email: 'devops-master', role: 'superadmin' };
+      console.log(`[ADMIN-AUTH] OK via ADMIN_TOKEN | ${method} ${url} | ip=${ip}`);
+      return next();
+    }
+    console.warn(`[ADMIN-AUTH] X-Admin-Token inválido | ${method} ${url} | ip=${ip}`);
+    return res.status(403).json({ error: 'Token de administrador inválido.', hint: 'Verifique ADMIN_TOKEN no .env' });
+  }
+
+  // 2) User auth token (X-Auth-Token) with admin/superadmin role
+  const userToken = req.headers['x-auth-token'] || req.query.token;
+  if (!userToken) {
+    console.warn(`[ADMIN-AUTH] Sem token | ${method} ${url} | ip=${ip}`);
+    return res.status(401).json({ error: 'Autenticação necessária.', hint: 'Envie X-Auth-Token ou X-Admin-Token' });
+  }
+
+  let users;
+  try { users = loadUsers(); } catch (e) {
+    console.error(`[ADMIN-AUTH] Falha ao carregar users.json: ${e.message}`);
+    return res.status(500).json({ error: 'Erro interno ao verificar autenticação.' });
+  }
+
+  const user = users.find(u => u.token === userToken);
+  if (!user) {
+    console.warn(`[ADMIN-AUTH] Token não encontrado | ${method} ${url} | ip=${ip} | token_prefix=${userToken.slice(0,8)}...`);
+    return res.status(403).json({ error: 'Sessão inválida ou expirada.', hint: 'Faça login novamente.' });
+  }
+  if (!['admin', 'superadmin'].includes(user.role)) {
+    console.warn(`[ADMIN-AUTH] Sem permissão | ${method} ${url} | user=${user.email} | role=${user.role || 'user'} | ip=${ip}`);
+    return res.status(403).json({ error: 'Acesso negado.', hint: `Sua conta (${user.email}) não tem permissão de admin. Role atual: ${user.role || 'user'}` });
+  }
+
+  console.log(`[ADMIN-AUTH] OK | ${method} ${url} | user=${user.email} | role=${user.role} | ip=${ip}`);
   req.adminUser = user;
   next();
 };
@@ -282,13 +318,29 @@ const CATALOG_EDIT_FIELDS = ['name','model','price','priceOriginal','condition',
 
 app.patch('/api/admin/catalog/:catalogKey/:productId', requireAdmin, (req, res) => {
   const { catalogKey, productId } = req.params;
+  const by = req.adminUser?.email || 'unknown';
+
   const filename = CATALOG_FILES[catalogKey];
-  if (!filename) return res.status(400).json({ error: 'Catálogo inválido.' });
+  if (!filename) {
+    console.warn(`[CATALOG-EDIT] Catálogo inválido: "${catalogKey}" | by=${by}`);
+    return res.status(400).json({ error: `Catálogo inválido: "${catalogKey}". Válidos: ${Object.keys(CATALOG_FILES).join(', ')}` });
+  }
+
   const filePath = path.join(catalogDataPath, filename);
   let catalog;
-  try { catalog = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch { return res.status(500).json({ error: 'Erro ao ler catálogo.' }); }
+  try {
+    catalog = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch (e) {
+    console.error(`[CATALOG-EDIT] Falha ao ler ${filename}: ${e.message}`);
+    return res.status(500).json({ error: `Falha ao ler catálogo: ${e.message}` });
+  }
+
   const idx = catalog.findIndex(p => String(p.id) === String(productId));
-  if (idx === -1) return res.status(404).json({ error: 'Produto não encontrado.' });
+  if (idx === -1) {
+    console.warn(`[CATALOG-EDIT] Produto não encontrado: id="${productId}" em "${catalogKey}" | by=${by}`);
+    return res.status(404).json({ error: `Produto "${productId}" não encontrado no catálogo "${catalogKey}".` });
+  }
+
   const before = { ...catalog[idx] };
   CATALOG_EDIT_FIELDS.forEach(field => {
     if (field in req.body) {
@@ -296,15 +348,25 @@ app.patch('/api/admin/catalog/:catalogKey/:productId', requireAdmin, (req, res) 
         ? Number(req.body[field]) : req.body[field];
     }
   });
+
   const diff = {};
   CATALOG_EDIT_FIELDS.forEach(k => {
     if (k in req.body && JSON.stringify(before[k]) !== JSON.stringify(catalog[idx][k])) diff[k] = { from: before[k], to: catalog[idx][k] };
   });
+
   if (!catalog[idx]._history) catalog[idx]._history = [];
-  if (Object.keys(diff).length) catalog[idx]._history.unshift({ at: new Date().toISOString(), by: req.adminUser.email, changes: diff });
+  if (Object.keys(diff).length) catalog[idx]._history.unshift({ at: new Date().toISOString(), by, changes: diff });
   catalog[idx]._history = catalog[idx]._history.slice(0, 50);
   delete _catalogCache[filename];
-  try { fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), 'utf-8'); } catch { return res.status(500).json({ error: 'Erro ao salvar.' }); }
+
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), 'utf-8');
+  } catch (e) {
+    console.error(`[CATALOG-EDIT] Falha ao gravar ${filename}: ${e.message}`);
+    return res.status(500).json({ error: `Falha ao salvar produto: ${e.message}` });
+  }
+
+  console.log(`[CATALOG-EDIT] OK | id="${productId}" | catálogo="${catalogKey}" | campos=${Object.keys(diff).join(',') || 'nenhum'} | by=${by}`);
   res.json({ success: true, product: catalog[idx] });
 });
 
