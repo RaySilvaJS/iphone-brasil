@@ -7,7 +7,8 @@
     "email": "rs2508018@gmail.com",
     "senha": "uyj32e5hjH5EuEK",
     "token": null,
-    "createdAt": "2026-06-08T17:53:17.218Z"
+    "createdAt": "2026-06-08T17:53:17.218Z",
+    "role": "admin"
   },
   {
     "id": "f979367a-4a2e-491a-95e0-ab894138da85",

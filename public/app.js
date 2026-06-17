@@ -354,7 +354,7 @@ const _buildProductCardHTML = (product) => {
   const precoFinal = precoOriginal * (1 - descontoHoje / 100);
   const isIphone = !!(product.name && product.name.toLowerCase().includes('iphone'));
 
-  return `<section class="olx-adcard">
+  return `<section class="olx-adcard" data-product-id="${product.id}">
 
   <div class="olx-adcard__media">
 

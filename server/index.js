@@ -63,6 +63,16 @@ const getAuthUser = (req) => {
   return users.find(u => u.token === token) || null;
 };
 
+const requireAdmin = (req, res, next) => {
+  const token = req.headers['x-auth-token'];
+  if (!token) return res.status(401).json({ error: 'Não autenticado.' });
+  const users = loadUsers();
+  const user = users.find(u => u.token === token && ['admin', 'superadmin'].includes(u.role));
+  if (!user) return res.status(403).json({ error: 'Acesso negado.' });
+  req.adminUser = user;
+  next();
+};
+
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 
@@ -111,7 +121,7 @@ app.use('/proofs', express.static(path.join(__dirname, 'data', 'proofs')));
 app.use('/api/payment', paymentRouter);
 
 // Rotas Administrativas - Movidas para cima para garantir prioridade
-app.post('/api/admin/product', (req, res) => {
+app.post('/api/admin/product', requireAdmin, (req, res) => {
   const products = loadProducts();
   const { id, name, model, price, condition, color, stock, storage, images, specs, description } = req.body;
   if (!id || !name) {
@@ -146,7 +156,7 @@ app.post('/api/admin/product', (req, res) => {
   res.json({ success: true, product: newProduct });
 });
 
-app.put('/api/admin/product/:id', (req, res) => {
+app.put('/api/admin/product/:id', requireAdmin, (req, res) => {
   console.log(`Recebendo atualização para o produto: ${req.params.id}`);
   const products = loadProducts();
   const index = products.findIndex((item) => item.id === req.params.id);
@@ -265,6 +275,90 @@ app.get('/api/catalog/product/:id', (req, res) => {
   }
   res.status(404).json({ error: 'Produto não encontrado', id });
 });
+
+// ==================== ADMIN CATALOG ENDPOINTS ====================
+
+const CATALOG_EDIT_FIELDS = ['name','model','price','priceOriginal','condition','color','storage','stock','description','images','specs','isPromo','promoPercent','promoBadge','seller','rating','mlUrl','archived','isNew'];
+
+app.patch('/api/admin/catalog/:catalogKey/:productId', requireAdmin, (req, res) => {
+  const { catalogKey, productId } = req.params;
+  const filename = CATALOG_FILES[catalogKey];
+  if (!filename) return res.status(400).json({ error: 'Catálogo inválido.' });
+  const filePath = path.join(catalogDataPath, filename);
+  let catalog;
+  try { catalog = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch { return res.status(500).json({ error: 'Erro ao ler catálogo.' }); }
+  const idx = catalog.findIndex(p => String(p.id) === String(productId));
+  if (idx === -1) return res.status(404).json({ error: 'Produto não encontrado.' });
+  const before = { ...catalog[idx] };
+  CATALOG_EDIT_FIELDS.forEach(field => {
+    if (field in req.body) {
+      catalog[idx][field] = ['price','priceOriginal','promoPercent','stock'].includes(field)
+        ? Number(req.body[field]) : req.body[field];
+    }
+  });
+  const diff = {};
+  CATALOG_EDIT_FIELDS.forEach(k => {
+    if (k in req.body && JSON.stringify(before[k]) !== JSON.stringify(catalog[idx][k])) diff[k] = { from: before[k], to: catalog[idx][k] };
+  });
+  if (!catalog[idx]._history) catalog[idx]._history = [];
+  if (Object.keys(diff).length) catalog[idx]._history.unshift({ at: new Date().toISOString(), by: req.adminUser.email, changes: diff });
+  catalog[idx]._history = catalog[idx]._history.slice(0, 50);
+  delete _catalogCache[filename];
+  try { fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), 'utf-8'); } catch { return res.status(500).json({ error: 'Erro ao salvar.' }); }
+  res.json({ success: true, product: catalog[idx] });
+});
+
+app.post('/api/admin/catalog/:catalogKey', requireAdmin, (req, res) => {
+  const { catalogKey } = req.params;
+  const filename = CATALOG_FILES[catalogKey];
+  if (!filename) return res.status(400).json({ error: 'Catálogo inválido.' });
+  const filePath = path.join(catalogDataPath, filename);
+  let catalog;
+  try { catalog = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch { return res.status(500).json({ error: 'Erro ao ler catálogo.' }); }
+  const { id, name, price } = req.body;
+  if (!id || !name) return res.status(400).json({ error: 'ID e nome são obrigatórios.' });
+  if (catalog.find(p => String(p.id) === String(id))) return res.status(400).json({ error: 'ID já existe neste catálogo.' });
+  const newProd = { id: String(id), images: [] };
+  CATALOG_EDIT_FIELDS.forEach(f => { if (req.body[f] !== undefined) newProd[f] = req.body[f]; });
+  newProd.name = name;
+  newProd.price = Number(price) || 0;
+  catalog.unshift(newProd);
+  delete _catalogCache[filename];
+  try { fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), 'utf-8'); } catch { return res.status(500).json({ error: 'Erro ao salvar.' }); }
+  res.json({ success: true, product: newProd });
+});
+
+app.post('/api/admin/catalog/:catalogKey/:productId/duplicate', requireAdmin, (req, res) => {
+  const { catalogKey, productId } = req.params;
+  const filename = CATALOG_FILES[catalogKey];
+  if (!filename) return res.status(400).json({ error: 'Catálogo inválido.' });
+  const filePath = path.join(catalogDataPath, filename);
+  let catalog;
+  try { catalog = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch { return res.status(500).json({ error: 'Erro ao ler catálogo.' }); }
+  const src = catalog.find(p => String(p.id) === String(productId));
+  if (!src) return res.status(404).json({ error: 'Produto não encontrado.' });
+  const clone = { ...src, id: 'dup_' + Date.now(), name: src.name + ' (Cópia)', _history: [] };
+  catalog.unshift(clone);
+  delete _catalogCache[filename];
+  try { fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), 'utf-8'); } catch { return res.status(500).json({ error: 'Erro ao salvar.' }); }
+  res.json({ success: true, product: clone });
+});
+
+app.post('/api/admin/upload', requireAdmin, (req, res) => {
+  const { dataUrl, filename } = req.body || {};
+  if (!dataUrl) return res.status(400).json({ error: 'dataUrl obrigatório.' });
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return res.status(400).json({ error: 'Formato inválido.' });
+  const safeName = ((filename || 'img') + '').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const finalName = Date.now() + '_' + safeName;
+  const uploadDir = path.join(publicPath, 'uploads');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  try { fs.writeFileSync(path.join(uploadDir, finalName), Buffer.from(match[2], 'base64')); }
+  catch { return res.status(500).json({ error: 'Erro ao salvar arquivo.' }); }
+  res.json({ success: true, url: '/uploads/' + finalName });
+});
+
+// ==================== END ADMIN ====================
 
 app.post('/api/products/:id/sold', (req, res) => {
   const products = loadProducts();
@@ -511,14 +605,14 @@ app.post('/api/auth/login', (req, res) => {
   res.json({
     success: true,
     token: u.token,
-    user: { id: u.id, nome: u.nome, email: u.email, whatsapp: u.whatsapp, cpf: u.cpf }
+    user: { id: u.id, nome: u.nome, email: u.email, whatsapp: u.whatsapp, cpf: u.cpf, role: u.role || 'user' }
   });
 });
 
 app.get('/api/auth/me', (req, res) => {
   const u = getAuthUser(req);
   if (!u) return res.status(401).json({ error: 'Não autenticado.' });
-  res.json({ success: true, user: { id: u.id, nome: u.nome, email: u.email, whatsapp: u.whatsapp, cpf: u.cpf } });
+  res.json({ success: true, user: { id: u.id, nome: u.nome, email: u.email, whatsapp: u.whatsapp, cpf: u.cpf, role: u.role || 'user' } });
 });
 
 app.put('/api/auth/profile', (req, res) => {
