@@ -162,8 +162,14 @@
     let images = [...initialImages];
     let current = 0;
 
-    const heroImg    = document.getElementById('hero-img');
-    const thumbsEl   = document.getElementById('gallery-thumbs');
+    const heroImg  = document.getElementById('hero-img');
+    const thumbsEl = document.getElementById('gallery-thumbs');
+
+    // Preload all gallery images into browser cache to eliminate switch delay
+    const preload = (srcs) => srcs.forEach(src => { const img = new Image(); img.src = src; });
+    preload(images);
+
+    let _goToTimer = null;
 
     const renderThumbs = () => {
       if (!thumbsEl) return;
@@ -179,7 +185,14 @@
 
     const goTo = (i) => {
       current = (i + images.length) % images.length;
-      if (heroImg) heroImg.src = images[current];
+      if (heroImg) {
+        heroImg.style.opacity = '0';
+        clearTimeout(_goToTimer);
+        _goToTimer = setTimeout(() => {
+          heroImg.src = images[current];
+          heroImg.style.opacity = '1';
+        }, 80);
+      }
       if (thumbsEl) thumbsEl.querySelectorAll('.thumb-btn').forEach((t, idx) =>
         t.classList.toggle('active', idx === current));
     };
@@ -195,8 +208,15 @@
     window._galleryUpdate = (newImages) => {
       if (!newImages?.length) return;
       images = [...newImages];
+      preload(images);
       current = 0;
-      if (heroImg) heroImg.src = images[0];
+      if (heroImg) {
+        heroImg.style.opacity = '0';
+        setTimeout(() => {
+          heroImg.src = images[0];
+          heroImg.style.opacity = '1';
+        }, 80);
+      }
       renderThumbs();
     };
   };

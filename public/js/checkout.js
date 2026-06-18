@@ -143,10 +143,34 @@ document.addEventListener('DOMContentLoaded', () => {
   renderOrderItems();
   loadAddresses();
 
+  const _cepViaCepCache = new Map();
+
   cepInput.addEventListener('input', (e) => {
     let v = e.target.value.replace(/\D/g, '');
     if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
     e.target.value = v;
+
+    const digits = v.replace(/\D/g, '');
+    if (digits.length < 8) { cepMsg.textContent = ''; return; }
+
+    // Auto-trigger frete calculation when CEP is complete
+    calcBtn.click();
+
+    // Show city/state confirmation from ViaCEP (best-effort, non-blocking)
+    if (_cepViaCepCache.has(digits)) {
+      const d = _cepViaCepCache.get(digits);
+      if (d && !d.erro) cepMsg.textContent = `${d.localidade} / ${d.uf}`;
+    } else {
+      fetch('https://viacep.com.br/ws/' + digits + '/json/')
+        .then(r => r.json())
+        .then(d => {
+          _cepViaCepCache.set(digits, d);
+          if (!d.erro && cepInput.value.replace(/\D/g,'') === digits) {
+            cepMsg.textContent = `${d.localidade} / ${d.uf}`;
+          }
+        })
+        .catch(() => {});
+    }
   });
 
   calcBtn.addEventListener('click', () => {

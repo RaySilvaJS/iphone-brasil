@@ -1075,25 +1075,65 @@ document.addEventListener('click', function(e) {
     } catch(e) {}
   };
 
-  window.buscarCEP = async function() {
-    const cep = document.getElementById('af-cep').value.replace(/\D/g,'');
-    if (cep.length !== 8) { alert('CEP inválido. Informe 8 dígitos.'); return; }
+  const _cepCache = new Map();
+
+  function _fillAddressFromViaCep(d) {
+    if (d.logradouro) document.getElementById('af-rua').value = d.logradouro;
+    if (d.bairro)     document.getElementById('af-bairro').value = d.bairro;
+    if (d.localidade) document.getElementById('af-cidade').value = d.localidade;
+    if (d.uf)         document.getElementById('af-estado').value = d.uf;
+    if (d.complemento) document.getElementById('af-complemento').value = d.complemento;
+    document.getElementById('af-numero').focus();
+  }
+
+  window.buscarCEP = async function(silent = false) {
+    const cepEl  = document.getElementById('af-cep');
+    const cep    = cepEl.value.replace(/\D/g, '');
+    const fb     = document.getElementById('addr-form-feedback');
+    const btn    = document.querySelector('[onclick="buscarCEP()"]');
+
+    if (cep.length !== 8) {
+      if (!silent) {
+        showFeedback(fb, 'CEP inválido. Informe 8 dígitos.', 'error');
+      }
+      return;
+    }
+
+    if (_cepCache.has(cep)) {
+      const cached = _cepCache.get(cep);
+      if (cached.erro) {
+        showFeedback(fb, 'CEP não encontrado. Verifique e tente novamente.', 'error');
+      } else {
+        _fillAddressFromViaCep(cached);
+        if (!silent) showFeedback(fb, 'Endereço preenchido automaticamente.', 'success');
+      }
+      return;
+    }
+
+    if (btn) { btn.textContent = 'Buscando...'; btn.disabled = true; }
+    cepEl.disabled = true;
+
     try {
       const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
       const d = await r.json();
-      if (d.erro) { alert('CEP não encontrado.'); return; }
-      document.getElementById('af-rua').value = d.logradouro || '';
-      document.getElementById('af-bairro').value = d.bairro || '';
-      document.getElementById('af-cidade').value = d.localidade || '';
-      document.getElementById('af-estado').value = d.uf || '';
-      document.getElementById('af-numero').focus();
+      _cepCache.set(cep, d);
+      if (d.erro) {
+        showFeedback(fb, 'CEP não encontrado. Verifique e tente novamente.', 'error');
+        return;
+      }
+      _fillAddressFromViaCep(d);
+      if (!silent) showFeedback(fb, 'Endereço preenchido automaticamente.', 'success');
     } catch(e) {
-      alert('Não foi possível buscar o CEP. Verifique sua conexão.');
+      if (!silent) showFeedback(fb, 'Não foi possível buscar o CEP. Verifique sua conexão.', 'error');
+    } finally {
+      if (btn) { btn.textContent = 'Buscar CEP'; btn.disabled = false; }
+      cepEl.disabled = false;
     }
   };
 
   document.getElementById('af-cep').addEventListener('input', function() {
     this.value = formatCEPInput(this.value);
+    if (this.value.replace(/\D/g, '').length === 8) buscarCEP(true);
   });
 
   document.getElementById('addr-form').addEventListener('submit', async function(e) {
