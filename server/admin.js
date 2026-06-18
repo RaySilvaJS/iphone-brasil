@@ -9,6 +9,7 @@ const logger = require('./logger');
 const tracker = require('./tracker');
 const audit = require('./audit');
 const alerts = require('./alerts');
+const { sendToClient } = require('./whatsapp');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(__dirname, 'data');
@@ -633,6 +634,87 @@ router.delete('/alerts/history', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// ── PIX CONFIG ──────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+
+router.get('/pix-config', adminAuth, (req, res) => {
+  const cfg = loadConfig();
+  res.json(cfg.pixConfig || {});
+});
+
+router.post('/pix-config', adminAuth, (req, res) => {
+  const { pixKey, pixKeyType, receiverName, receiverCity } = req.body;
+  const cfg = loadConfig();
+  cfg.pixConfig = {
+    pixKey:       (pixKey       || '').trim(),
+    pixKeyType:   (pixKeyType   || 'chave_aleatoria').trim(),
+    receiverName: (receiverName || 'Jessi iPhones').trim(),
+    receiverCity: (receiverCity || 'Rio de Janeiro').trim()
+  };
+  saveConfig(cfg);
+  audit.append('pix_config_updated', req.adminUser?.email || 'devops', req.ip, { pixKeyType: cfg.pixConfig.pixKeyType });
+  res.json({ ok: true, pixConfig: cfg.pixConfig });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── DASHBOARD FINANCEIRO ────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+
+router.get('/financial/dashboard', adminAuth, (req, res) => {
+  try {
+    const payments = JSON.parse(fs.readFileSync(path.join(DATA, 'payments.json'), 'utf-8'));
+    const today    = new Date().toISOString().slice(0, 10);
+
+    const todayPay = payments.filter(p => (p.createdAt || '').startsWith(today));
+    const paid     = payments.filter(p => p.status === 'paid');
+    const refused  = payments.filter(p => p.status === 'refused');
+    const pending  = payments.filter(p => ['pending', 'awaiting_validation'].includes(p.status));
+
+    const sumAmount = (list) => list.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    const totalReceived = sumAmount(paid);
+    const totalPending  = sumAmount(pending);
+    const ticketMedio   = paid.length > 0 ? totalReceived / paid.length : 0;
+
+    res.json({
+      today: {
+        pixGenerated:        todayPay.length,
+        proofsSent:          todayPay.filter(p => p.proofs && p.proofs.length > 0).length,
+        approved:            todayPay.filter(p => p.status === 'paid').length,
+        refused:             todayPay.filter(p => p.status === 'refused').length,
+        revenue:             sumAmount(todayPay.filter(p => p.status === 'paid'))
+      },
+      overall: {
+        pixGenerated:        payments.filter(p => p.qrCode).length,
+        proofsSent:          payments.filter(p => p.proofs && p.proofs.length > 0).length,
+        approved:            paid.length,
+        refused:             refused.length,
+        pending:             pending.length,
+        awaitingValidation:  payments.filter(p => p.status === 'awaiting_validation').length,
+        totalReceived,
+        totalPending,
+        ticketMedio
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Lista pedidos pendentes de aprovação (com comprovante)
+router.get('/financial/pending-approval', adminAuth, (req, res) => {
+  try {
+    const payments = JSON.parse(fs.readFileSync(path.join(DATA, 'payments.json'), 'utf-8'));
+    const list = payments
+      .filter(p => p.status === 'awaiting_validation')
+      .sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1);
+    res.json(list);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ---- Pedidos (orders full list) ----
 router.get('/orders', adminAuth, (req, res) => {
   try {
@@ -663,17 +745,67 @@ router.get('/orders', adminAuth, (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.patch('/orders/:id', adminAuth, (req, res) => {
+router.patch('/orders/:id', adminAuth, async (req, res) => {
   try {
     const payments = JSON.parse(fs.readFileSync(path.join(DATA, 'payments.json'), 'utf-8'));
     const idx = payments.findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: 'Pedido não encontrado.' });
-    const allowed = ['status', 'adminNote'];
+
+    const prevStatus = payments[idx].status;
+    const newStatus  = req.body.status;
+    const note       = req.body.adminNote || req.body.refuseReason || '';
+
+    const allowed = ['status', 'adminNote', 'refuseReason'];
     allowed.forEach(f => { if (req.body[f] !== undefined) payments[idx][f] = req.body[f]; });
     if (!payments[idx].logs) payments[idx].logs = [];
-    payments[idx].logs.push({ type: 'admin_action', admin: req.adminUser?.email || 'devops', details: `Status alterado para ${req.body.status || '?'} pelo painel.`, timestamp: new Date().toISOString() });
+    payments[idx].logs.push({
+      type: 'admin_action',
+      admin: req.adminUser?.email || 'devops',
+      details: `Status: ${prevStatus} → ${newStatus || '?'}${note ? ' | ' + note : ''}`,
+      timestamp: new Date().toISOString()
+    });
+
+    // Timestamps
+    if (newStatus === 'paid')    payments[idx].paidAt    = new Date().toISOString();
+    if (newStatus === 'refused') payments[idx].refusedAt = new Date().toISOString();
+
     fs.writeFileSync(path.join(DATA, 'payments.json'), JSON.stringify(payments, null, 2));
-    audit.append('order_status_change', req.adminUser?.email || 'devops', req.ip, { orderId: req.params.id, status: req.body.status });
+    audit.append('order_status_change', req.adminUser?.email || 'devops', req.ip, { orderId: req.params.id, status: newStatus });
+
+    // Notifica cliente via WhatsApp
+    const order        = payments[idx];
+    const clientPhone  = order.clientPhone;
+    const shortDisplay = order.shortId ? `#${order.shortId}` : order.id.slice(0, 8);
+    const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    if (clientPhone && newStatus && newStatus !== prevStatus) {
+      if (newStatus === 'paid') {
+        sendToClient(clientPhone, [
+          '✅ *Pagamento Aprovado!*',
+          '',
+          `Olá${order.clientName ? ', ' + order.clientName : ''}!`,
+          `Seu pedido ${shortDisplay} foi *confirmado com sucesso*.`,
+          '',
+          `📦 Produto: ${order.productName || order.productId}`,
+          `💰 Valor: ${fmtBRL(order.amount)}`,
+          '',
+          'Seu pedido está sendo preparado para envio. Obrigado pela compra! 🎉'
+        ].join('\n')).catch(() => {});
+      } else if (newStatus === 'refused') {
+        const reason = order.refuseReason || note || 'Motivo não informado';
+        sendToClient(clientPhone, [
+          '❌ *Pagamento Recusado*',
+          '',
+          `Olá${order.clientName ? ', ' + order.clientName : ''}!`,
+          `Infelizmente o comprovante do pedido ${shortDisplay} *não foi aprovado*.`,
+          '',
+          `📋 Motivo: ${reason}`,
+          '',
+          'Entre em contato ou envie um novo comprovante válido.'
+        ].join('\n')).catch(() => {});
+      }
+    }
+
     res.json({ ok: true, order: payments[idx] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

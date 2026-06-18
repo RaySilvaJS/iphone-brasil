@@ -53,6 +53,62 @@
             <div class="catalog-grid" id="admin-product-list"></div>
           </div>
         </section>
+        <!-- FINANCEIRO: Config PIX -->
+        <section class="section-block">
+          <div class="section-heading">
+            <span>Financeiro</span>
+            <h2>Configuração do PIX</h2>
+            <p>Defina a chave Pix que será usada para gerar o QR Code automaticamente em cada pedido.</p>
+          </div>
+          <div class="catalog-filter glass-card" style="max-width:480px;">
+            <label>Tipo da Chave
+              <select id="pix-key-type">
+                <option value="chave_aleatoria">Chave Aleatória (UUID)</option>
+                <option value="cpf">CPF</option>
+                <option value="cnpj">CNPJ</option>
+                <option value="email">E-mail</option>
+                <option value="telefone">Telefone (+55...)</option>
+              </select>
+            </label>
+            <label>Chave Pix<input id="pix-key-value" type="text" placeholder="Cole a chave Pix aqui"/></label>
+            <label>Nome do Recebedor (max. 25 chars)<input id="pix-receiver-name" type="text" placeholder="Jessi iPhones" maxlength="25"/></label>
+            <label>Cidade do Recebedor (max. 15 chars)<input id="pix-receiver-city" type="text" placeholder="Rio de Janeiro" maxlength="15"/></label>
+            <button class="button button-primary" onclick="savePixConfig()">Salvar Configuração PIX</button>
+            <p id="pix-feedback" style="color:#b5b2ff;margin-top:10px;"></p>
+          </div>
+        </section>
+
+        <!-- FINANCEIRO: Dashboard -->
+        <section class="section-block">
+          <div class="section-heading">
+            <span>Financeiro</span>
+            <h2>Dashboard Financeiro</h2>
+            <p>Métricas de PIX gerados, comprovantes e pagamentos em tempo real.</p>
+          </div>
+          <div id="financial-dashboard" class="catalog-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;"></div>
+        </section>
+
+        <!-- FINANCEIRO: Aprovação de pagamentos -->
+        <section class="section-block">
+          <div class="section-heading">
+            <span>Financeiro</span>
+            <h2>Aprovação de Pagamentos</h2>
+            <p>Pedidos aguardando validação do comprovante.</p>
+          </div>
+          <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <select id="orders-filter" style="padding:8px 12px;border-radius:7px;border:1px solid #333;background:#1a1a2e;color:#fff;font-size:13px;" onchange="loadFinancialOrders()">
+              <option value="awaiting_validation">Aguardando validação</option>
+              <option value="all">Todos os pedidos</option>
+              <option value="paid">Pagos</option>
+              <option value="refused">Recusados</option>
+              <option value="pending">Pendentes</option>
+            </select>
+            <button class="button button-secondary" style="font-size:12px;padding:8px 14px;" onclick="loadFinancialOrders()">Atualizar</button>
+          </div>
+          <div id="financial-orders" class="catalog-grid" style="grid-template-columns:1fr;gap:12px;"></div>
+        </section>
+
+        <!-- Comprovantes (legado) -->
         <section class="section-block">
           <div class="section-heading">
             <span>Comprovantes</span>
@@ -63,6 +119,21 @@
         </section>
       </main>
     </div>
+
+    <!-- Modal recusar -->
+    <div id="refuse-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;">
+      <div style="background:#1a1a2e;border-radius:12px;padding:24px;width:min(460px,90%);display:grid;gap:14px;">
+        <h3 style="margin:0;color:#fff;font-size:1.1rem;">Recusar Pagamento</h3>
+        <p style="margin:0;color:#aaa;font-size:.875rem;">Informe o motivo (opcional — o cliente receberá no WhatsApp).</p>
+        <input id="refuse-reason-input" type="text" placeholder="Ex.: Comprovante ilegível, valor incorreto..."
+               style="padding:12px 14px;border-radius:8px;border:1px solid #333;background:#0d0d1a;color:#fff;font-size:14px;width:100%;box-sizing:border-box;"/>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="button button-secondary" onclick="closeRefuseModal()">Cancelar</button>
+          <button class="button button-primary" style="background:#DC2626;" onclick="confirmRefuse()">Confirmar Recusa</button>
+        </div>
+      </div>
+    </div>
+
     <script src="admin.js"></script>
   </body>
 </html>

@@ -266,6 +266,34 @@
     }
     .success-panel a:hover { background: var(--blue-dark); }
 
+    /* REFUSED */
+    .refused-panel {
+      display: none;
+      background: #FFF5F5;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .refused-panel h2 { margin: 0 0 10px; color: #DC2626; font-size: 1.3rem; }
+    .refused-panel p  { margin: 0 0 16px; color: var(--text-2); }
+    .refused-panel .reason-box {
+      background: #FEE2E2; border: 1px solid #FECACA; border-radius: 8px;
+      padding: 10px 14px; font-size: .875rem; color: #7F1D1D; margin-bottom: 16px;
+      text-align: left;
+    }
+    .refused-panel a {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: var(--blue); color: white;
+      padding: 13px 22px; border-radius: 10px;
+      font-weight: 700; font-size: .9rem; transition: background .2s;
+    }
+    .refused-panel a:hover { background: var(--blue-dark); }
+
+    /* STATUS badge extra */
+    .payment-status.refused { background: #FEE2E2; border-color: #FECACA; color: #DC2626; }
+
     /* PROOF UPLOAD */
     .proof-button {
       width: 100%; max-width: 280px; margin: 0 auto;
@@ -469,6 +497,18 @@
       <div style="margin-bottom:12px;"><svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
       <h2>Pagamento Confirmado!</h2>
       <p>Obrigado pela sua compra. Seu pedido foi confirmado com sucesso e será enviado em breve.</p>
+      <a href="/"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Voltar à loja</a>
+    </div>
+
+    <!-- REFUSED -->
+    <div id="refused-message" class="refused-panel" style="display:none;">
+      <div style="margin-bottom:12px;"><svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+      <h2>Comprovante Recusado</h2>
+      <p>Infelizmente o comprovante enviado não foi aprovado pela nossa equipe.</p>
+      <div id="refuse-reason-box" class="reason-box" style="display:none;">
+        <strong>Motivo:</strong> <span id="refuse-reason-text"></span>
+      </div>
+      <p style="font-size:.875rem;color:var(--text-2);">Entre em contato com nossa equipe ou envie um novo comprovante válido.</p>
       <a href="/"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Voltar à loja</a>
     </div>
   </div>

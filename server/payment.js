@@ -4,16 +4,23 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { getSocket, sendPaymentRequest } = require('./whatsapp');
+const { generatePix } = require('./pix');
 const tracker = require('./tracker');
 const audit = require('./audit');
 
 const paymentsPath = path.join(__dirname, 'data', 'payments.json');
-const usersPath = path.join(__dirname, 'data', 'users.json');
-const proofsDir = path.join(__dirname, 'data', 'proofs');
+const usersPath    = path.join(__dirname, 'data', 'users.json');
+const configPath   = path.join(__dirname, 'data', 'config.json');
+const proofsDir    = path.join(__dirname, 'data', 'proofs');
 
-const loadUsers = () => {
-  try { return JSON.parse(fs.readFileSync(usersPath, 'utf-8')); } catch (e) { return []; }
-};
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const loadUsers    = () => { try { return JSON.parse(fs.readFileSync(usersPath,    'utf-8')); } catch { return []; } };
+const loadPayments = () => { try { return JSON.parse(fs.readFileSync(paymentsPath, 'utf-8')); } catch { return []; } };
+const savePayments = (p) => fs.writeFileSync(paymentsPath, JSON.stringify(p, null, 2), 'utf-8');
+const loadConfig   = () => { try { return JSON.parse(fs.readFileSync(configPath,   'utf-8')); } catch { return {}; } };
+
+const formatBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const getAuthUser = (req) => {
   const token = req.headers['x-auth-token'] || req.query.token;
@@ -21,125 +28,134 @@ const getAuthUser = (req) => {
   return loadUsers().find(u => u.token === token) || null;
 };
 
-if (!fs.existsSync(proofsDir)) {
-  fs.mkdirSync(proofsDir, { recursive: true });
-}
-
-// Garante que o arquivo de pagamentos exista
-const dataDir = path.dirname(paymentsPath);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-if (!fs.existsSync(paymentsPath)) {
-  fs.writeFileSync(paymentsPath, '[]', 'utf-8');
-}
-
-// Carrega os pagamentos existentes
-const loadPayments = () => {
-  try {
-    const file = fs.readFileSync(paymentsPath, 'utf-8');
-    return JSON.parse(file);
-  } catch (error) {
-    console.error('Erro ao carregar pagamentos:', error);
-    return [];
+// Simple admin check used only within this router
+const isAdmin = (req) => {
+  const adminToken = req.headers['x-admin-token'] || req.query.adminToken;
+  if (adminToken && process.env.ADMIN_TOKEN && adminToken === process.env.ADMIN_TOKEN) return true;
+  const ut = req.headers['x-auth-token'] || req.query.token;
+  if (ut) {
+    const u = loadUsers().find(u => u.token === ut);
+    if (u && ['admin', 'superadmin'].includes(u.role)) return true;
   }
+  return false;
 };
 
-// Salva os pagamentos
-const savePayments = (payments) => {
-  fs.writeFileSync(paymentsPath, JSON.stringify(payments, null, 2), 'utf-8');
+// Gera shortId único (PED + 5 dígitos), sem colisão
+const generateShortId = (payments) => {
+  let id;
+  do { id = 'PED' + String(Math.floor(10000 + Math.random() * 90000)); }
+  while (payments.some(p => p.shortId === id));
+  return id;
 };
 
-const formatBRL = (value) => {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-};
+// ── Init de diretórios/arquivos ───────────────────────────────────────────────
 
-// Gera um novo ID de pagamento
+if (!fs.existsSync(proofsDir)) fs.mkdirSync(proofsDir, { recursive: true });
+if (!fs.existsSync(path.dirname(paymentsPath))) fs.mkdirSync(path.dirname(paymentsPath), { recursive: true });
+if (!fs.existsSync(paymentsPath)) fs.writeFileSync(paymentsPath, '[]', 'utf-8');
+
+// ── Rotas ─────────────────────────────────────────────────────────────────────
+
+// Gera um novo pedido com PIX automático
 router.post('/generate', async (req, res) => {
   const user = getAuthUser(req);
-  if (!user) {
-    return res.status(401).json({ success: false, error: 'Você precisa estar logado para finalizar a compra.' });
-  }
+  if (!user) return res.status(401).json({ success: false, error: 'Você precisa estar logado para finalizar a compra.' });
 
   const enderecos = user.enderecos || [];
-  if (enderecos.length === 0) {
-    return res.status(400).json({ success: false, error: 'Cadastre um endereço de entrega antes de finalizar a compra.' });
-  }
+  if (enderecos.length === 0) return res.status(400).json({ success: false, error: 'Cadastre um endereço de entrega antes de finalizar a compra.' });
 
   const { productId, amount, productName, addressId } = req.body;
-  if (!productId || !amount) {
-    return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
-  }
+  if (!productId || !amount) return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
 
   const address = enderecos.find(a => a.id === addressId) || enderecos.find(a => a.principal) || enderecos[0];
 
-  const paymentId = uuidv4();
   const payments = loadPayments();
+  const paymentId = uuidv4();
+  const shortId   = generateShortId(payments);
+
+  // ── Gera PIX automático se a chave estiver configurada ────────────────────
+  const cfg    = loadConfig();
+  const pixCfg = cfg.pixConfig || {};
+  let pixCode  = null;
+
+  if (pixCfg.pixKey) {
+    try {
+      pixCode = generatePix({
+        key:         pixCfg.pixKey,
+        name:        (pixCfg.receiverName || 'Jessi iPhones').substring(0, 25),
+        city:        (pixCfg.receiverCity || 'Rio de Janeiro').substring(0, 15),
+        amount,
+        txid:        shortId,
+        description: (productName || productId).substring(0, 72)
+      });
+    } catch (e) {
+      console.error('[PIX] Erro ao gerar código:', e.message);
+    }
+  }
 
   const newPayment = {
     id: paymentId,
+    shortId,
     productId,
     productName,
     amount,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    qrCode: null,
-    clientId: req.ip,
-    userId: user.id,
-    clientPhone: user.whatsapp || null,
-    groupMessageId: null,
+    status:          'pending',
+    createdAt:       new Date().toISOString(),
+    qrCode:          pixCode,
+    clientId:        req.ip,
+    userId:          user.id,
+    clientName:      user.nome || null,
+    clientEmail:     user.email || null,
+    clientPhone:     user.whatsapp || null,
+    groupMessageId:  null,
+    proofGroupMessageId: null,
     address,
-    proofs: [],
-    logs: []
+    proofs:          [],
+    logs:            []
   };
 
   payments.push(newPayment);
 
-  // Notifica o grupo e vincula o ID da mensagem ao pedido
+  // ── Notifica o grupo WhatsApp ─────────────────────────────────────────────
   const sock = getSocket();
   if (sock) {
-    const messageId = await sendPaymentRequest(sock, paymentId, productName || productId, amount, user.whatsapp);
+    const messageId = await sendPaymentRequest(sock, paymentId, shortId, productName || productId, amount, user.whatsapp, pixCode);
     newPayment.groupMessageId = messageId;
     newPayment.logs.push({
       timestamp: new Date().toISOString(),
-      type: 'order_created',
-      details: messageId
-        ? `Notificação enviada ao grupo WhatsApp. MessageID: ${messageId}`
+      type:      'order_created',
+      details:   messageId
+        ? `Notificação enviada ao grupo. MessageID: ${messageId}`
         : 'Pedido criado sem notificação WhatsApp (socket offline)'
     });
   } else {
     newPayment.logs.push({
       timestamp: new Date().toISOString(),
-      type: 'order_created',
+      type:    'order_created',
       details: 'Pedido criado sem notificação WhatsApp (socket offline)'
     });
   }
 
   savePayments(payments);
   tracker.record('order_created', { productId, productName, amount });
-  audit.append('order_created', user.email, req.ip, { paymentId, productName, amount });
-  res.json({ success: true, paymentId });
+  if (pixCode) tracker.record('pix_generated', { productId, amount });
+  audit.append('order_created', user.email, req.ip, { paymentId, shortId, productName, amount, pixGenerated: !!pixCode });
+
+  res.json({ success: true, paymentId, shortId });
 });
 
-// Atualiza o status do pagamento
+// Atualiza status (uso interno / legacy)
 router.post('/update', (req, res) => {
   const { paymentId, status } = req.body;
   const payments = loadPayments();
-  const payment = payments.find(p => p.id === paymentId);
-  
-  if (!payment) {
-    return res.status(404).json({ success: false, error: 'Pagamento não encontrado' });
-  }
-  
+  const payment  = payments.find(p => p.id === paymentId);
+  if (!payment) return res.status(404).json({ success: false, error: 'Pagamento não encontrado' });
   payment.status = status;
   savePayments(payments);
-  
   res.json({ success: true });
 });
 
+// Upload de comprovante
 router.post('/proof', async (req, res) => {
   const { paymentId, customerName, customerPhone, productName, amount, fileName, mimeType, fileData } = req.body;
   if (!paymentId || !fileName || !mimeType || !fileData) {
@@ -147,18 +163,16 @@ router.post('/proof', async (req, res) => {
   }
 
   const payments = loadPayments();
-  const payment = payments.find(p => p.id === paymentId);
-  if (!payment) {
-    return res.status(404).json({ success: false, error: 'Pagamento não encontrado.' });
-  }
+  const payment  = payments.find(p => p.id === paymentId);
+  if (!payment) return res.status(404).json({ success: false, error: 'Pagamento não encontrado.' });
 
   if (payment.proofs && payment.proofs.length > 0) {
     return res.status(409).json({ success: false, error: 'Comprovante já enviado para este pedido.' });
   }
 
-  const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const safeFileName   = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const storedFileName = `${paymentId}_${Date.now()}_${safeFileName}`;
-  const filePath = path.join(proofsDir, storedFileName);
+  const filePath       = path.join(proofsDir, storedFileName);
 
   try {
     fs.writeFileSync(filePath, Buffer.from(fileData, 'base64'));
@@ -168,12 +182,12 @@ router.post('/proof', async (req, res) => {
   }
 
   const proofRecord = {
-    id: uuidv4(),
+    id:           uuidv4(),
     fileName,
     storedFileName,
     mimeType,
-    uploadedAt: new Date().toISOString(),
-    customerName: customerName || 'Não informado',
+    uploadedAt:   new Date().toISOString(),
+    customerName:  customerName  || 'Não informado',
     customerPhone: customerPhone || 'Não informado'
   };
 
@@ -182,20 +196,59 @@ router.post('/proof', async (req, res) => {
   payment.status = 'awaiting_validation';
   savePayments(payments);
 
+  // ── Notifica grupo WhatsApp com o comprovante ─────────────────────────────
   const sock = getSocket();
   if (sock) {
     try {
-      const caption = `NOVO COMPROVANTE DE PAGAMENTO\n\nID: ${paymentId}\nCliente: ${customerName || 'Não informado'}\nTelefone: ${customerPhone || 'Não informado'}\nPedido: ${productName || payment.productName || payment.productId}\nValor: ${formatBRL(amount || payment.amount)}\nData/Hora: ${new Date().toLocaleString('pt-BR')}`;
-      const media = {
-        mimetype: mimeType,
-        fileName,
-        url: `data:${mimeType};base64,${fileData}`
-      };
+      const shortDisplay = payment.shortId ? `#${payment.shortId}` : payment.id.slice(0, 8);
+      const caption = [
+        '━━━━━━━━━━━━━━━',
+        '💰 NOVO COMPROVANTE',
+        '',
+        `Pedido: ${shortDisplay}`,
+        `Cliente: ${customerName || 'Não informado'}`,
+        `Telefone: ${customerPhone || 'Não informado'}`,
+        `Produto: ${productName || payment.productName || payment.productId}`,
+        `Valor: ${formatBRL(amount || payment.amount)}`,
+        `Data/Hora: ${new Date().toLocaleString('pt-BR')}`,
+        '',
+        '↩️ Responda esta mensagem:',
+        'APROVADO — confirmar pagamento',
+        'RECUSADO [motivo] — recusar',
+        'REENVIAR — pedir novo comprovante',
+        '━━━━━━━━━━━━━━━'
+      ].join('\n');
 
+      let sent;
       if (mimeType.startsWith('image/')) {
-        await sock.sendMessage(process.env.WHATSAPP_GROUP_ID, { image: media, caption });
+        sent = await sock.sendMessage(process.env.WHATSAPP_GROUP_ID, {
+          image: { url: `data:${mimeType};base64,${fileData}` },
+          caption
+        });
       } else {
-        await sock.sendMessage(process.env.WHATSAPP_GROUP_ID, { document: media, caption });
+        sent = await sock.sendMessage(process.env.WHATSAPP_GROUP_ID, {
+          document: { url: `data:${mimeType};base64,${fileData}` },
+          mimetype: mimeType,
+          fileName,
+          caption
+        });
+      }
+
+      // Salva o ID da mensagem do comprovante para reply do admin
+      const proofMsgId = sent?.key?.id || null;
+      if (proofMsgId) {
+        const all = loadPayments();
+        const idx = all.findIndex(p => p.id === paymentId);
+        if (idx !== -1) {
+          all[idx].proofGroupMessageId = proofMsgId;
+          all[idx].logs = all[idx].logs || [];
+          all[idx].logs.push({
+            timestamp: new Date().toISOString(),
+            type:    'proof_sent_to_group',
+            details: `Comprovante enviado ao grupo. MessageID: ${proofMsgId}`
+          });
+          savePayments(all);
+        }
       }
     } catch (error) {
       console.error('Erro ao enviar comprovante para o WhatsApp:', error);
@@ -207,28 +260,27 @@ router.post('/proof', async (req, res) => {
   res.json({ success: true, status: 'awaiting_validation' });
 });
 
-// Obtém o status do pagamento
+// Status do pagamento (polling do cliente)
 router.get('/status/:id', (req, res) => {
   const payments = loadPayments();
-  const payment = payments.find(p => p.id === req.params.id);
-  
-  if (!payment) {
-    return res.status(404).json({ success: false, error: 'Pagamento não encontrado' });
-  }
-  
+  const payment  = payments.find(p => p.id === req.params.id);
+  if (!payment) return res.status(404).json({ success: false, error: 'Pagamento não encontrado' });
+
   res.json({
-    success: true,
-    status: payment.status,
-    qrCode: payment.qrCode,
-    amount: payment.amount,
+    success:     true,
+    status:      payment.status,
+    shortId:     payment.shortId || null,
+    qrCode:      payment.qrCode,
+    amount:      payment.amount,
     productName: payment.productName,
-    proofs: payment.proofs || []
+    proofs:      payment.proofs || [],
+    refuseReason: payment.refuseReason || null
   });
 });
 
+// Lista todos (uso admin)
 router.get('/all', (req, res) => {
-  const payments = loadPayments();
-  res.json(payments);
+  res.json(loadPayments());
 });
 
 module.exports = router;
