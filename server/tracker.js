@@ -15,6 +15,7 @@ const DAILY_F       = path.join(ANALYTICS_DIR, 'daily.json');
 const PRODS_F       = path.join(ANALYTICS_DIR, 'products.json');
 const LIFE_F        = path.join(ANALYTICS_DIR, 'lifetime.json');
 const VISITORS_F    = path.join(ANALYTICS_DIR, 'visitors.json');
+const CARTS_F       = path.join(ANALYTICS_DIR, 'carts.json');
 
 [ANALYTICS_DIR, EV_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
@@ -113,6 +114,8 @@ function blankDay() {
     visitors: 0, pageViews: 0, logins: 0, signups: 0,
     orders: 0, pix: 0, checkouts: 0, pixPaid: 0,
     clickBuy: 0, clickWa: 0,
+    clickLogin: 0, clickSignup: 0, clickCheckout: 0, clickCalcFrete: 0,
+    cartAdds: 0,
     byHour: {}, sources: {}, utmSources: {},
     devices: {}, browsers: {}, os: {}, countries: {}, cities: {},
     visitorIds: []
@@ -124,11 +127,14 @@ const dailyDB      = readJ(DAILY_F, {});
 const prodStore    = readJ(PRODS_F, {});
 const lifetime     = readJ(LIFE_F, {
   visitors: 0, pageViews: 0, logins: 0, signups: 0, orders: 0, pix: 0,
-  checkouts: 0, pixPaid: 0, clickBuy: 0, clickWa: 0, wa: { sent: 0, received: 0 }
+  checkouts: 0, pixPaid: 0, clickBuy: 0, clickWa: 0,
+  clickLogin: 0, clickSignup: 0, clickCheckout: 0, clickCalcFrete: 0,
+  cartAdds: 0, wa: { sent: 0, received: 0 }
 });
 if (!lifetime.wa) lifetime.wa = { sent: 0, received: 0 };
 
-const visitorsStore = readJ(VISITORS_F, {});
+const visitorsStore  = readJ(VISITORS_F, {});
+const abandonedCarts = readJ(CARTS_F, []);
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -141,31 +147,40 @@ let dayData    = dayRec(_day);
 const visitorSet = new Set(dayData.visitorIds || []);
 
 let stats = {
-  pageViews:  dayData.pageViews,  logins:    dayData.logins,
-  signups:    dayData.signups,    orders:    dayData.orders,
-  pix:        dayData.pix,        checkouts: dayData.checkouts,
-  pixPaid:    dayData.pixPaid   || 0,
-  clickBuy:   dayData.clickBuy  || 0,
-  clickWa:    dayData.clickWa   || 0,
+  pageViews:       dayData.pageViews,       logins:          dayData.logins,
+  signups:         dayData.signups,         orders:          dayData.orders,
+  pix:             dayData.pix,             checkouts:       dayData.checkouts,
+  pixPaid:         dayData.pixPaid        || 0,
+  clickBuy:        dayData.clickBuy       || 0,
+  clickWa:         dayData.clickWa        || 0,
+  clickLogin:      dayData.clickLogin     || 0,
+  clickSignup:     dayData.clickSignup    || 0,
+  clickCheckout:   dayData.clickCheckout  || 0,
+  clickCalcFrete:  dayData.clickCalcFrete || 0,
+  cartAdds:        dayData.cartAdds       || 0,
 };
 
 const sessions      = new Map();
 const sessionStarts = [];
 const products      = new Map(Object.entries(prodStore));
 const visitors      = new Map(Object.entries(visitorsStore));
+const carts         = new Map(); // sessionId → active cart state (in-memory only)
 const wa            = lifetime.wa;
 
 // ── Dirty flags & debounced flush ─────────────────────────────────────────────
-let _dirtyDaily = false, _dirtyProducts = false, _dirtyLifetime = false, _dirtyVisitors = false;
+let _dirtyDaily = false, _dirtyProducts = false, _dirtyLifetime = false, _dirtyVisitors = false, _dirtyCarts = false;
 
 function flush() {
   if (_dirtyDaily) {
     Object.assign(dayData, {
-      visitors:  visitorSet.size, pageViews: stats.pageViews,
-      logins:    stats.logins,    signups:   stats.signups,
-      orders:    stats.orders,    pix:       stats.pix,
-      checkouts: stats.checkouts, pixPaid:   stats.pixPaid,
-      clickBuy:  stats.clickBuy,  clickWa:   stats.clickWa,
+      visitors:       visitorSet.size,      pageViews:      stats.pageViews,
+      logins:         stats.logins,         signups:        stats.signups,
+      orders:         stats.orders,         pix:            stats.pix,
+      checkouts:      stats.checkouts,      pixPaid:        stats.pixPaid,
+      clickBuy:       stats.clickBuy,       clickWa:        stats.clickWa,
+      clickLogin:     stats.clickLogin,     clickSignup:    stats.clickSignup,
+      clickCheckout:  stats.clickCheckout,  clickCalcFrete: stats.clickCalcFrete,
+      cartAdds:       stats.cartAdds,
       visitorIds: [...visitorSet].slice(0, 10000),
     });
     writeJ(DAILY_F, dailyDB);
@@ -181,6 +196,7 @@ function flush() {
     writeJ(VISITORS_F, obj);
     _dirtyVisitors = false;
   }
+  if (_dirtyCarts) { writeJ(CARTS_F, abandonedCarts.slice(0, 500)); _dirtyCarts = false; }
 }
 
 setInterval(flush, 5000).unref();
@@ -197,12 +213,17 @@ function checkReset() {
   visitorSet.clear();
   (dayData.visitorIds || []).forEach(id => visitorSet.add(id));
   stats = {
-    pageViews:  dayData.pageViews,  logins:    dayData.logins,
-    signups:    dayData.signups,    orders:    dayData.orders,
-    pix:        dayData.pix,        checkouts: dayData.checkouts,
-    pixPaid:    dayData.pixPaid   || 0,
-    clickBuy:   dayData.clickBuy  || 0,
-    clickWa:    dayData.clickWa   || 0,
+    pageViews:       dayData.pageViews,       logins:          dayData.logins,
+    signups:         dayData.signups,         orders:          dayData.orders,
+    pix:             dayData.pix,             checkouts:       dayData.checkouts,
+    pixPaid:         dayData.pixPaid        || 0,
+    clickBuy:        dayData.clickBuy       || 0,
+    clickWa:         dayData.clickWa        || 0,
+    clickLogin:      dayData.clickLogin     || 0,
+    clickSignup:     dayData.clickSignup    || 0,
+    clickCheckout:   dayData.clickCheckout  || 0,
+    clickCalcFrete:  dayData.clickCalcFrete || 0,
+    cartAdds:        dayData.cartAdds       || 0,
   };
 }
 
@@ -255,8 +276,23 @@ function emit() {
 
 // ── Session cleanup ────────────────────────────────────────────────────────────
 setInterval(() => {
-  const cutoff = Date.now() - 3 * 60 * 1000;
-  for (const [id, s] of sessions) if (new Date(s.lastSeen).getTime() < cutoff) sessions.delete(id);
+  const cutoff     = Date.now() - 3  * 60 * 1000;
+  const cartCutoff = Date.now() - 5  * 60 * 1000; // cart abandoned after 5 min inactive
+  for (const [id, s] of sessions) {
+    if (new Date(s.lastSeen).getTime() < cutoff) {
+      // Detect abandoned cart: session expired while having an active cart
+      if (carts.has(id)) {
+        const c = carts.get(id);
+        if (c.items && c.items.length > 0 && new Date(c.lastUpdated).getTime() < cartCutoff) {
+          abandonedCarts.unshift({ ...c, abandonedAt: new Date().toISOString() });
+          if (abandonedCarts.length > 500) abandonedCarts.length = 500;
+          _dirtyCarts = true;
+        }
+        carts.delete(id);
+      }
+      sessions.delete(id);
+    }
+  }
   const h2ago = Date.now() - 2 * 60 * 60 * 1000;
   while (sessionStarts.length && new Date(sessionStarts[0].at).getTime() < h2ago) sessionStarts.shift();
 }, 60_000).unref();
@@ -376,13 +412,50 @@ function heartbeat({
 // ── record ────────────────────────────────────────────────────────────────────
 function record(type, data = {}) {
   checkReset();
-  if (type === 'login')          { stats.logins++;    lifetime.logins++;    }
-  if (type === 'signup')         { stats.signups++;   lifetime.signups++;   }
-  if (type === 'order_created')  { stats.orders++;    lifetime.orders++;    }
-  if (type === 'pix_created')    { stats.pix++;       lifetime.pix++;       }
-  if (type === 'pix_paid')       { stats.pixPaid++;   lifetime.pixPaid = (lifetime.pixPaid || 0) + 1; }
-  if (type === 'click_buy')      { stats.clickBuy++;  lifetime.clickBuy = (lifetime.clickBuy || 0) + 1; }
-  if (type === 'click_whatsapp') { stats.clickWa++;   lifetime.clickWa  = (lifetime.clickWa  || 0) + 1; }
+  if (type === 'login')          { stats.logins++;         lifetime.logins++;         }
+  if (type === 'signup')         { stats.signups++;        lifetime.signups++;        }
+  if (type === 'order_created')  {
+    stats.orders++;    lifetime.orders++;
+    if (data.sessionId) carts.delete(data.sessionId);
+  }
+  if (type === 'pix_created')    {
+    stats.pix++;       lifetime.pix++;
+    if (data.sessionId) carts.delete(data.sessionId);
+  }
+  if (type === 'pix_paid')       { stats.pixPaid++;        lifetime.pixPaid        = (lifetime.pixPaid        || 0) + 1; }
+  if (type === 'click_buy')      { stats.clickBuy++;       lifetime.clickBuy       = (lifetime.clickBuy       || 0) + 1; }
+  if (type === 'click_whatsapp') { stats.clickWa++;        lifetime.clickWa        = (lifetime.clickWa        || 0) + 1; }
+  if (type === 'click_login')    { stats.clickLogin++;     lifetime.clickLogin     = (lifetime.clickLogin     || 0) + 1; }
+  if (type === 'click_signup')   { stats.clickSignup++;    lifetime.clickSignup    = (lifetime.clickSignup    || 0) + 1; }
+  if (type === 'click_checkout') { stats.clickCheckout++;  lifetime.clickCheckout  = (lifetime.clickCheckout  || 0) + 1; }
+  if (type === 'click_calc_frete') { stats.clickCalcFrete++; lifetime.clickCalcFrete = (lifetime.clickCalcFrete || 0) + 1; }
+
+  if (type === 'cart_add') {
+    stats.cartAdds++;
+    lifetime.cartAdds = (lifetime.cartAdds || 0) + 1;
+    const { sessionId, items, total, userEmail, userName, userPhone } = data;
+    if (sessionId) {
+      const s   = sessions.get(sessionId);
+      const vfp = s ? visitors.get(s.fp) : null;
+      const existing = carts.get(sessionId);
+      carts.set(sessionId, {
+        sessionId,
+        items:       items        || existing?.items || [],
+        total:       total        || 0,
+        source:      s?.source    || existing?.source   || 'Direto',
+        device:      s?.device    || existing?.device   || 'Desktop',
+        ip:          s?.ip        || existing?.ip       || null,
+        city:        vfp?.city    || existing?.city     || null,
+        country:     vfp?.country || existing?.country  || null,
+        addedAt:     existing?.addedAt || new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+        userEmail:   userEmail    || existing?.userEmail  || null,
+        userName:    userName     || existing?.userName   || null,
+        userPhone:   userPhone    || existing?.userPhone  || null,
+      });
+    }
+  }
+
   if (type === 'checkout_start') {
     stats.checkouts++; lifetime.checkouts++;
     if (data.productId && products.has(data.productId)) { products.get(data.productId).checkouts++; _dirtyProducts = true; }
@@ -406,19 +479,25 @@ function snap() {
   const lastHour = sessionStarts.filter(s => new Date(s.at).getTime() > h1ago).length;
   const uniq   = visitorSet.size;
   return {
-    activeNow:        sessions.size,
-    visitorsToday:    uniq,
-    visitorsLastHour: lastHour,
-    pageViewsToday:   stats.pageViews,
-    ordersToday:      stats.orders,
-    pixToday:         stats.pix,
-    pixPaidToday:     stats.pixPaid,
-    loginsToday:      stats.logins,
-    signupsToday:     stats.signups,
-    checkoutsToday:   stats.checkouts,
-    clickBuyToday:    stats.clickBuy,
-    clickWaToday:     stats.clickWa,
-    conversionRate:   uniq > 0 ? +(stats.pix / uniq * 100).toFixed(1) : 0,
+    activeNow:            sessions.size,
+    visitorsToday:        uniq,
+    visitorsLastHour:     lastHour,
+    pageViewsToday:       stats.pageViews,
+    ordersToday:          stats.orders,
+    pixToday:             stats.pix,
+    pixPaidToday:         stats.pixPaid,
+    loginsToday:          stats.logins,
+    signupsToday:         stats.signups,
+    checkoutsToday:       stats.checkouts,
+    clickBuyToday:        stats.clickBuy,
+    clickWaToday:         stats.clickWa,
+    clickLoginToday:      stats.clickLogin,
+    clickSignupToday:     stats.clickSignup,
+    clickCheckoutToday:   stats.clickCheckout,
+    clickCalcFreteToday:  stats.clickCalcFrete,
+    cartAddsToday:        stats.cartAdds,
+    activeCartsNow:       carts.size,
+    conversionRate:       uniq > 0 ? +(stats.pix / uniq * 100).toFixed(1) : 0,
     sessions:  Array.from(sessions.values()).sort((a, b) => (b.lastSeen > a.lastSeen ? 1 : -1)),
     events:    evBuf.slice(0, 150),
     products:  Array.from(products.values()).sort((a, b) => b.views - a.views).slice(0, 15),
@@ -483,4 +562,4 @@ function getVisitors({ page = 1, limit = 50, search = '', country = '' } = {}) {
   return { items: list.slice((page - 1) * limit, page * limit), total, page, pages: Math.max(1, Math.ceil(total / limit)) };
 }
 
-module.exports = { heartbeat, record, snap, bus, getHistory, getVisitors, products, lifetime, visitors };
+module.exports = { heartbeat, record, snap, bus, getHistory, getVisitors, products, lifetime, visitors, carts, abandonedCarts };

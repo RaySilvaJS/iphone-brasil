@@ -678,6 +678,135 @@ router.patch('/orders/:id', adminAuth, (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// ── SITE ROUTES (business intelligence panel) ────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+
+// ---- SITE: Abandoned + active carts ----
+router.get('/site/carts', adminAuth, (req, res) => {
+  const { page = 1, limit = 30, active } = req.query;
+  const p = Math.max(1, +page), l = Math.min(+limit, 50);
+
+  if (active === 'true') {
+    const list = Array.from(tracker.carts.values())
+      .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
+    const total = list.length;
+    return res.json({ items: list.slice((p - 1) * l, p * l), total, page: p, pages: Math.max(1, Math.ceil(total / l)) });
+  }
+
+  const list  = tracker.abandonedCarts;
+  const total = list.length;
+  res.json({ items: list.slice((p - 1) * l, p * l), total, page: p, pages: Math.max(1, Math.ceil(total / l)) });
+});
+
+// ---- SITE: Click stats by period ----
+router.get('/site/clicks', adminAuth, (req, res) => {
+  const { period = '7d' } = req.query;
+  const dayCount = period === 'today' ? 1 : period === '30d' ? 30 : 7;
+  const history  = tracker.getHistory(dayCount);
+
+  const sum = (field) => history.reduce((a, d) => a + (d[field] || 0), 0);
+  const clicks = [
+    { key: 'click_buy',        label: 'Comprar',          icon: '🛒', today: history[0]?.[`clickBuy`]       || 0, total: sum('clickBuy') },
+    { key: 'click_wa',         label: 'WhatsApp',         icon: '💬', today: history[0]?.['clickWa']         || 0, total: sum('clickWa') },
+    { key: 'click_login',      label: 'Login',            icon: '🔑', today: history[0]?.['clickLogin']      || 0, total: sum('clickLogin') },
+    { key: 'click_signup',     label: 'Cadastro',         icon: '📝', today: history[0]?.['clickSignup']     || 0, total: sum('clickSignup') },
+    { key: 'click_checkout',   label: 'Finalizar Compra', icon: '💳', today: history[0]?.['clickCheckout']   || 0, total: sum('clickCheckout') },
+    { key: 'click_calc_frete', label: 'Calcular Frete',   icon: '📦', today: history[0]?.['clickCalcFrete']  || 0, total: sum('clickCalcFrete') },
+  ].sort((a, b) => b.today - a.today);
+
+  res.json({ period, clicks, activeCartsNow: tracker.carts.size });
+});
+
+// ---- SITE: Enhanced user list ----
+router.get('/site/users', adminAuth, (req, res) => {
+  const { filter = 'all' } = req.query;
+  try {
+    const users  = JSON.parse(fs.readFileSync(path.join(DATA, 'users.json'),    'utf-8'));
+    const orders = JSON.parse(fs.readFileSync(path.join(DATA, 'payments.json'), 'utf-8'));
+    const now    = new Date();
+
+    const filtered = users.filter(u => {
+      if (filter === 'all') return true;
+      if (!u.createdAt) return false;
+      const created = new Date(u.createdAt);
+      if (filter === 'today') return created.toDateString() === now.toDateString();
+      if (filter === 'week')  return (now - created) <  7 * 86400000;
+      if (filter === 'month') return (now - created) < 30 * 86400000;
+      return true;
+    });
+
+    const result = filtered.map(u => {
+      const uOrders  = orders.filter(o => o.userId === u.id || o.clientPhone === u.whatsapp);
+      const lastOrd  = uOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      return {
+        id:             u.id,
+        nome:           u.nome,
+        email:          u.email,
+        whatsapp:       u.whatsapp,
+        role:           u.role,
+        createdAt:      u.createdAt  || null,
+        lastLogin:      u.lastLogin  || null,
+        totalOrders:    uOrders.length,
+        paidOrders:     uOrders.filter(o => o.status === 'paid').length,
+        lastOrderAt:    lastOrd?.createdAt || null,
+        lastOrderStatus:lastOrd?.status    || null,
+      };
+    }).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    res.json({ users: result, total: result.length });
+  } catch (e) {
+    res.json({ users: [], total: 0 });
+  }
+});
+
+// ---- SITE: Export (carts, users) ----
+router.get('/site/export', adminAuth, (req, res) => {
+  const { type = 'users', format = 'csv' } = req.query;
+  const q = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
+
+  if (type === 'carts') {
+    const list = tracker.abandonedCarts;
+    if (format === 'json') {
+      res.setHeader('Content-Disposition', 'attachment; filename="carrinhos-abandonados.json"');
+      res.setHeader('Content-Type', 'application/json');
+      return res.json(list);
+    }
+    const headers = 'Data Abandono,Produtos,Total R$,Origem,Dispositivo,Cidade,País,Email,Nome,WhatsApp';
+    const rows = list.map(c => [
+      c.abandonedAt || c.addedAt,
+      (c.items || []).map(i => `${i.nome || i.id} x${i.quantidade || 1}`).join(' | '),
+      (c.total || 0).toFixed(2),
+      c.source || '', c.device || '', c.city || '', c.country || '',
+      c.userEmail || '', c.userName || '', c.userPhone || '',
+    ].map(q).join(','));
+    res.setHeader('Content-Disposition', 'attachment; filename="carrinhos-abandonados.csv"');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    return res.send('﻿' + [headers, ...rows].join('\r\n'));
+  }
+
+  if (type === 'users') {
+    try {
+      const users = JSON.parse(fs.readFileSync(path.join(DATA, 'users.json'), 'utf-8'));
+      if (format === 'json') {
+        const safe = users.map(u => ({ id: u.id, nome: u.nome, email: u.email, whatsapp: u.whatsapp, role: u.role, createdAt: u.createdAt, lastLogin: u.lastLogin }));
+        res.setHeader('Content-Disposition', 'attachment; filename="usuarios.json"');
+        res.setHeader('Content-Type', 'application/json');
+        return res.json(safe);
+      }
+      const headers = 'Nome,Email,WhatsApp,Role,Cadastro,Último Login';
+      const rows = users.map(u => [u.nome, u.email, u.whatsapp, u.role, u.createdAt, u.lastLogin || ''].map(q).join(','));
+      res.setHeader('Content-Disposition', 'attachment; filename="usuarios.csv"');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      return res.send('﻿' + [headers, ...rows].join('\r\n'));
+    } catch { return res.status(500).json({ error: 'Erro ao exportar' }); }
+  }
+
+  res.status(400).json({ error: 'Tipo inválido' });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+
 // ---- Analytics ----
 router.get('/analytics', adminAuth, (req, res) => {
   const { period = '7d' } = req.query;

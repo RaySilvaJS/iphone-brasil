@@ -82,6 +82,18 @@ class Cart {
     }
     this.saveCart();
     this.updateUI();
+    // Track cart add event for abandoned cart detection
+    if (window.JBR_track) {
+      const session = JSON.parse(localStorage.getItem('user-session') || 'null');
+      window.JBR_track('cart_add', {
+        sessionId: window.JBR_sid,
+        items: this.items.map(i => ({ id: i.id, nome: i.nome, preco: i.preco, imagem: i.imagem, quantidade: i.quantidade })),
+        total: this.getTotal(),
+        userEmail: session?.email || null,
+        userName:  session?.nome  || null,
+        userPhone: session?.whatsapp || null,
+      });
+    }
     return this.items.length;
   }
 

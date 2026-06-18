@@ -105,32 +105,56 @@
     } catch {}
   }
 
+  // Expose globally so cart.js and other modules can fire events
+  window.JBR_track = sendEvent;
+  window.JBR_sid   = sid;
+
   // ── Click event tracking ────────────────────────────────────────────────────
   document.addEventListener('click', function (e) {
-    const el = e.target;
+    const el  = e.target;
+    const btn = el.closest('button, a, [role=button]') || el;
+    const txt = (btn.textContent || btn.value || '').trim();
 
-    // Buy / checkout buttons
-    const buyBtn = el.closest('[data-track="buy"], [data-track="checkout"], .btn-comprar, .buy-btn');
-    if (buyBtn) {
-      sendEvent('click_buy', { page: location.pathname, label: buyBtn.textContent.trim().slice(0, 40) });
-      return;
-    }
-
-    // Buy detected by button text (fallback)
-    if ((el.tagName === 'BUTTON' || el.tagName === 'A') && /comprar|compre|finalizar|checkout/i.test(el.textContent)) {
-      sendEvent('click_buy', { page: location.pathname, label: el.textContent.trim().slice(0, 40) });
-      return;
-    }
-
-    // WhatsApp links
+    // WhatsApp links — check first (highest priority)
     const waLink = el.closest('a[href*="wa.me"], a[href*="whatsapp"]');
     if (waLink) {
       sendEvent('click_whatsapp', { page: location.pathname });
       return;
     }
 
+    // Buy / checkout buttons
+    const buyBtn = el.closest('[data-track="buy"], .btn-comprar, .buy-btn');
+    if (buyBtn || /^(comprar|compre agora|comprar agora)$/i.test(txt)) {
+      sendEvent('click_buy', { page: location.pathname, label: txt.slice(0, 40) });
+      return;
+    }
+
+    // Finalizar compra / ir para pagamento
+    if (el.closest('[data-track="checkout"], #continueBtn') || /finalizar compra|ir para pagamento/i.test(txt)) {
+      sendEvent('click_checkout', { page: location.pathname });
+      return;
+    }
+
+    // Calcular frete
+    if (el.closest('#calcBtn, [data-track="calc-frete"]') || /calcular frete|calcular/i.test(txt)) {
+      sendEvent('click_calc_frete', { page: location.pathname });
+      return;
+    }
+
+    // Login / Entrar
+    if (el.closest('[data-track="login"], #login-submit, #btn-login') || /^(entrar|fazer login|login)$/i.test(txt)) {
+      sendEvent('click_login', { page: location.pathname });
+      return;
+    }
+
+    // Cadastro
+    if (el.closest('[data-track="signup"], #btn-cadastrar') || /^(cadastrar|criar conta|cadastre-se)$/i.test(txt)) {
+      sendEvent('click_signup', { page: location.pathname });
+      return;
+    }
+
     // PIX copy button
-    if (el.closest('[data-track="pix-copy"]') || /copiar.*pix|pix.*copia/i.test(el.textContent)) {
+    if (el.closest('[data-track="pix-copy"]') || /copiar.*pix|pix.*copi/i.test(txt)) {
       sendEvent('pix_copy', { page: location.pathname });
     }
   }, { passive: true });

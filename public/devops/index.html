@@ -338,6 +338,67 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 /* ══════════════════════════════════════════
+   SITE TAB
+═══════════════════════════════════════════ */
+.nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); padding: 14px 16px 4px; }
+.site-tabs { display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.site-tab { background: none; border: none; color: var(--muted); padding: 9px 14px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; border-radius: 0; }
+.site-tab:hover { color: var(--text); }
+.site-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.site-section { display: none; }
+.site-section.active { display: block; }
+
+/* KPI grid */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--kpi-color, var(--blue)); }
+.kpi-val { font-size: 26px; font-weight: 800; line-height: 1; }
+.kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.kpi-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.kpi-blue { --kpi-color: var(--blue); } .kpi-blue .kpi-val { color: var(--blue); }
+.kpi-green { --kpi-color: var(--green); } .kpi-green .kpi-val { color: var(--green); }
+.kpi-yellow { --kpi-color: var(--yellow); } .kpi-yellow .kpi-val { color: var(--yellow); }
+.kpi-red { --kpi-color: var(--red); } .kpi-red .kpi-val { color: var(--red); }
+.kpi-purple { --kpi-color: var(--purple); } .kpi-purple .kpi-val { color: var(--purple); }
+.kpi-orange { --kpi-color: var(--orange); } .kpi-orange .kpi-val { color: var(--orange); }
+
+/* Activity feed */
+.ev-feed { font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace; max-height: 380px; overflow-y: auto; }
+.ev-item { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--bg3); align-items: flex-start; }
+.ev-item:last-child { border-bottom: none; }
+.ev-time { color: var(--muted); flex-shrink: 0; min-width: 56px; }
+.ev-icon { flex-shrink: 0; font-size: 14px; }
+.ev-text { flex: 1; color: var(--text); line-height: 1.4; }
+.ev-sub { color: var(--muted); font-size: 11px; }
+
+/* Funnel */
+.funnel-wrap { display: flex; flex-direction: column; gap: 6px; }
+.funnel-step { display: flex; align-items: center; gap: 12px; }
+.funnel-bar-wrap { flex: 1; background: var(--bg3); border-radius: 4px; height: 34px; overflow: hidden; }
+.funnel-bar { height: 100%; display: flex; align-items: center; padding-left: 12px; font-size: 12px; font-weight: 600; transition: width .5s ease; border-radius: 4px; min-width: 40px; white-space: nowrap; }
+.funnel-meta { min-width: 120px; text-align: right; font-size: 12px; color: var(--muted); }
+.funnel-label { min-width: 170px; font-size: 12px; }
+.funnel-drop { font-size: 11px; color: var(--red); min-width: 60px; text-align: right; }
+
+/* Live session table */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+/* Bar chart (sources / clicks) */
+.bar-list { display: flex; flex-direction: column; gap: 8px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-name { min-width: 120px; font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; background: var(--bg3); border-radius: 3px; height: 18px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width .4s; }
+.bar-count { min-width: 50px; text-align: right; font-size: 12px; font-weight: 700; color: var(--muted); }
+
+/* Alerts toast */
+.site-alert { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+.site-alert-new  { background: rgba(88,166,255,.12); border: 1px solid rgba(88,166,255,.25); }
+.site-alert-sale { background: rgba(63,185,80,.12);  border: 1px solid rgba(63,185,80,.25);  }
+.site-alert-warn { background: rgba(210,153,34,.12); border: 1px solid rgba(210,153,34,.25); }
+
+/* ══════════════════════════════════════════
    RESPONSIVE — VERY SMALL (≤ 380px)
 ═══════════════════════════════════════════ */
 @media (max-width: 380px) {
@@ -377,19 +438,24 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="logo-sub">Painel Administrativo</div>
   </div>
   <div class="nav-items">
-    <div class="nav-item active" data-page="dashboard"><span class="ni-icon">📊</span> Dashboard</div>
+    <div class="nav-section">Negócio</div>
+    <div class="nav-item active" data-page="site"><span class="ni-icon">🌎</span> Site</div>
+    <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
+    <div class="nav-item" data-page="analytics"><span class="ni-icon">📊</span> Analytics</div>
+    <div class="nav-section">Operações</div>
+    <div class="nav-item" data-page="dashboard"><span class="ni-icon">🖥️</span> Dashboard</div>
     <div class="nav-item" data-page="whatsapp"><span class="ni-icon">💬</span> WhatsApp</div>
-    <div class="nav-item" data-page="monitor"><span class="ni-icon">🖥️</span> Monitor</div>
+    <div class="nav-item" data-page="monitor"><span class="ni-icon">📈</span> Monitor</div>
     <div class="nav-item" data-page="deploy"><span class="ni-icon">🚀</span> Deploy</div>
-    <div class="nav-item" data-page="logs"><span class="ni-icon">📋</span> Logs</div>
-    <div class="nav-item" data-page="backup"><span class="ni-icon">💾</span> Backup</div>
-    <div class="nav-item" data-page="files"><span class="ni-icon">📁</span> Arquivos</div>
+    <div class="nav-section">Segurança</div>
     <div class="nav-item" data-page="security"><span class="ni-icon">🔒</span> Segurança</div>
     <div class="nav-item" data-page="audit"><span class="ni-icon">📜</span> Auditoria</div>
     <div class="nav-item" data-page="alerts"><span class="ni-icon">🔔</span> Alertas</div>
-    <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
+    <div class="nav-section">Dados</div>
     <div class="nav-item" data-page="catalogs"><span class="ni-icon">📦</span> Catálogos</div>
-    <div class="nav-item" data-page="analytics"><span class="ni-icon">📊</span> Analytics</div>
+    <div class="nav-item" data-page="logs"><span class="ni-icon">📋</span> Logs</div>
+    <div class="nav-item" data-page="backup"><span class="ni-icon">💾</span> Backup</div>
+    <div class="nav-item" data-page="files"><span class="ni-icon">📁</span> Arquivos</div>
     <div class="nav-item" data-page="settings"><span class="ni-icon">⚙️</span> Config</div>
   </div>
   <div class="sidebar-footer">
@@ -1014,6 +1080,237 @@ tbody tr:last-child td { border-bottom: none; }
 
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════════════════
+         🌎 SITE — Central de Monitoramento
+    ════════════════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-site">
+
+      <!-- Sub-navigation -->
+      <div class="site-tabs" id="site-tabs">
+        <button class="site-tab active" data-st="dash">📊 Dashboard</button>
+        <button class="site-tab" data-st="live">👥 Ao Vivo</button>
+        <button class="site-tab" data-st="produtos">📱 Produtos</button>
+        <button class="site-tab" data-st="usuarios">👤 Usuários</button>
+        <button class="site-tab" data-st="funil">🔽 Funil</button>
+        <button class="site-tab" data-st="carrinhos">🛒 Carrinhos</button>
+        <button class="site-tab" data-st="cliques">🖱️ Cliques</button>
+        <button class="site-tab" data-st="origens">🌐 Origens</button>
+        <button class="site-tab" data-st="exportar">💾 Exportar</button>
+      </div>
+
+      <!-- ── DASHBOARD ───────────────────────────────────────────────────── -->
+      <div class="site-section active" id="st-dash">
+        <div class="kpi-grid" id="site-kpis"></div>
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card" style="padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h3 style="margin:0">Atividade em Tempo Real</h3>
+              <label style="font-size:11px;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)">
+                <input type="checkbox" id="site-pause" style="margin:0"> Pausar
+              </label>
+            </div>
+            <div class="ev-feed" id="site-activity"></div>
+          </div>
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:12px">Produtos Mais Vistos Hoje</h3>
+            <div id="site-products-dash"><div class="empty-state">Aguardando dados...</div></div>
+          </div>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3 style="margin-bottom:14px">Funil Rápido — Hoje</h3>
+          <div class="funnel-wrap" id="site-funnel-mini"></div>
+        </div>
+      </div>
+
+      <!-- ── AO VIVO ─────────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-live">
+        <div class="card" style="padding:16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <h3 style="margin:0">Visitantes Online Agora</h3>
+              <span class="badge badge-green" id="site-live-count" style="font-size:14px;font-weight:800">0</span>
+            </div>
+            <button class="btn btn-ghost" onclick="loadSiteLive()">↺ Atualizar</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="table" style="font-size:12px">
+              <thead><tr><th>Status</th><th>Sessão</th><th>Página</th><th>Dispositivo</th><th>Navegador</th><th>Cidade</th><th>Origem</th><th>Tempo</th><th>Última Ativ.</th></tr></thead>
+              <tbody id="site-live-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3 style="margin-bottom:12px">Feed de Sessões — Última Hora</h3>
+          <div class="ev-feed" id="site-sessions-feed"></div>
+        </div>
+      </div>
+
+      <!-- ── PRODUTOS ────────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-produtos">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="font-size:15px;font-weight:700">Ranking de Produtos</h3>
+          <button class="btn btn-ghost" onclick="loadSiteProducts()">↺ Atualizar</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="table" style="font-size:12px">
+              <thead><tr><th>#</th><th>Produto</th><th>Visualizações</th><th>Checkouts</th><th>PIX Gerados</th><th>Conversão</th></tr></thead>
+              <tbody id="site-products-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── USUÁRIOS ────────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-usuarios">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <h3 style="font-size:15px;font-weight:700">Usuários Cadastrados</h3>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn analytics-period active" data-uf="today"  onclick="setSiteUserFilter('today')">Hoje</button>
+            <button class="btn analytics-period"         data-uf="week"   onclick="setSiteUserFilter('week')">Semana</button>
+            <button class="btn analytics-period"         data-uf="month"  onclick="setSiteUserFilter('month')">Mês</button>
+            <button class="btn analytics-period"         data-uf="all"    onclick="setSiteUserFilter('all')">Todos</button>
+            <button class="btn btn-ghost" onclick="siteExport('users','csv')">⬇ CSV</button>
+            <button class="btn btn-ghost" onclick="siteExport('users','json')">⬇ JSON</button>
+          </div>
+        </div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-bottom:14px" id="site-users-kpis"></div>
+        <div class="card" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="table" style="font-size:12px">
+              <thead><tr><th>Nome</th><th>Email</th><th>WhatsApp</th><th>Cadastro</th><th>Último Login</th><th>Pedidos</th><th>Pagos</th></tr></thead>
+              <tbody id="site-users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FUNIL ───────────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-funil">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="font-size:15px;font-weight:700">Funil de Vendas — Hoje</h3>
+          <button class="btn btn-ghost" onclick="loadSiteFunnel()">↺ Atualizar</button>
+        </div>
+        <div class="card" style="max-width:860px;padding:24px">
+          <div class="funnel-wrap" id="site-funnel-full"></div>
+          <p style="margin-top:18px;font-size:12px;color:var(--muted)">% de perda calculada em relação à etapa anterior.</p>
+        </div>
+      </div>
+
+      <!-- ── CARRINHOS ───────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-carrinhos">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <div>
+            <h3 style="font-size:15px;font-weight:700">Carrinhos Abandonados</h3>
+            <p style="font-size:12px;color:var(--muted);margin-top:2px">Sessões que adicionaram ao carrinho mas não concluíram o pagamento.</p>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn analytics-period active" data-cf="abandoned" onclick="setSiteCartFilter('abandoned')">Abandonados</button>
+            <button class="btn analytics-period"         data-cf="active"    onclick="setSiteCartFilter('active')">Ativos Agora</button>
+            <button class="btn btn-ghost" onclick="siteExport('carts','csv')">⬇ CSV</button>
+            <button class="btn btn-ghost" onclick="siteExport('carts','json')">⬇ JSON</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="table" style="font-size:12px">
+              <thead><tr><th>Data</th><th>Produtos</th><th>Total</th><th>Origem</th><th>Dispositivo</th><th>Cidade</th><th>Email</th><th>Nome</th></tr></thead>
+              <tbody id="site-carts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="site-carts-pagination" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;justify-content:center"></div>
+      </div>
+
+      <!-- ── CLIQUES ─────────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-cliques">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <h3 style="font-size:15px;font-weight:700">Monitoramento de Cliques</h3>
+          <div style="display:flex;gap:6px">
+            <button class="btn analytics-period active" data-cp="today" onclick="setSiteClickPeriod('today')">Hoje</button>
+            <button class="btn analytics-period"         data-cp="7d"    onclick="setSiteClickPeriod('7d')">7 dias</button>
+            <button class="btn analytics-period"         data-cp="30d"   onclick="setSiteClickPeriod('30d')">30 dias</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:14px">Ranking de Cliques — <span id="site-clicks-period-label">Hoje</span></h3>
+            <div class="bar-list" id="site-clicks-chart"></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="overflow-x:auto">
+              <table class="table" style="font-size:12px">
+                <thead><tr><th>Botão</th><th>Hoje</th><th>Período</th></tr></thead>
+                <tbody id="site-clicks-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ORIGENS ─────────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-origens">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="font-size:15px;font-weight:700">Origem dos Acessos</h3>
+          <button class="btn btn-ghost" onclick="loadSiteOrigens()">↺ Atualizar</button>
+        </div>
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:14px">Canais de Tráfego — Hoje</h3>
+            <div class="bar-list" id="site-sources-chart"></div>
+          </div>
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:14px">Dispositivos</h3>
+            <div class="bar-list" id="site-devices-chart"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:14px">Países</h3>
+            <div class="bar-list" id="site-countries-chart"></div>
+          </div>
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:14px">Sistemas Operacionais</h3>
+            <div class="bar-list" id="site-os-chart"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EXPORTAR ────────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-exportar">
+        <div class="grid-2" style="max-width:820px">
+          <div class="card" style="padding:20px">
+            <h3 style="margin-bottom:16px">📋 Usuários Cadastrados</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-blue" onclick="siteExport('users','csv')" style="justify-content:flex-start;gap:10px">📄 Exportar CSV</button>
+              <button class="btn btn-ghost" onclick="siteExport('users','json')" style="justify-content:flex-start;gap:10px">{ } Exportar JSON</button>
+            </div>
+          </div>
+          <div class="card" style="padding:20px">
+            <h3 style="margin-bottom:16px">🛒 Carrinhos Abandonados</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-blue" onclick="siteExport('carts','csv')" style="justify-content:flex-start;gap:10px">📄 Exportar CSV</button>
+              <button class="btn btn-ghost" onclick="siteExport('carts','json')" style="justify-content:flex-start;gap:10px">{ } Exportar JSON</button>
+            </div>
+          </div>
+          <div class="card" style="padding:20px">
+            <h3 style="margin-bottom:16px">📊 Analytics Histórico</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-blue" onclick="exportData('csv')" style="justify-content:flex-start;gap:10px">📄 Exportar CSV (por dia)</button>
+              <button class="btn btn-ghost" onclick="exportData('json')" style="justify-content:flex-start;gap:10px">{ } Exportar JSON completo</button>
+            </div>
+          </div>
+          <div class="card" style="padding:20px">
+            <h3 style="margin-bottom:16px">👥 Visitantes</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-ghost" onclick="exportVisitors()" style="justify-content:flex-start;gap:10px">{ } Exportar JSON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-site -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -1095,7 +1392,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações' };
+const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -1109,6 +1406,8 @@ function closeMobMenu() {
 function showPage(name) {
   // Disconnect tracker SSE when leaving dashboard
   if (currentPage === 'dashboard' && name !== 'dashboard') disconnectTrackerSSE();
+  // Disconnect SITE SSE when leaving site
+  if (currentPage === 'site' && name !== 'site' && _siteSSE) { _siteSSE.close(); _siteSSE = null; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${name}`).classList.add('active');
@@ -1120,7 +1419,8 @@ function showPage(name) {
 }
 
 function loadPage(name) {
-  if (name === 'dashboard') loadDashboard();
+  if (name === 'site') loadSite();
+  else if (name === 'dashboard') loadDashboard();
   else if (name === 'whatsapp') loadWhatsApp();
   else if (name === 'monitor') loadMonitor();
   else if (name === 'deploy') loadDeploy();
@@ -1137,6 +1437,7 @@ function loadPage(name) {
 }
 
 function refreshCurrent() { loadPage(currentPage); }
+function navigateTo(page) { showPage(page); }
 
 // ═══════════════════════════════════════════════
 // UTILS
@@ -2783,6 +3084,424 @@ async function exportVisitors() {
 }
 
 // ═══════════════════════════════════════════════
+// 🌎 SITE — helpers & loaders
+// ═══════════════════════════════════════════════
+
+let _siteSnap        = null;
+let _siteSSE         = null;
+let _siteSubTab      = 'dash';
+let _siteUserFilter  = 'today';
+let _siteCartFilter  = 'abandoned';
+let _siteCartPage    = 1;
+let _siteClickPeriod = 'today';
+
+function fmtBRL(v) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+function fmtDur(ms) {
+  if (!ms || ms < 0) return '—';
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), ss = s % 60;
+  if (m < 60) return m + 'm ' + ss + 's';
+  return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+}
+function fmtAgo(isoOrMs) {
+  const ms = typeof isoOrMs === 'number' ? isoOrMs : new Date(isoOrMs).getTime();
+  return fmtDur(Date.now() - ms) + ' atrás';
+}
+function fmtDt(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function barList(el, data, color) {
+  if (!el) return;
+  const entries = Object.entries(data || {}).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const max = entries[0]?.[1] || 1;
+  el.innerHTML = entries.length
+    ? entries.map(([k, v]) => `
+      <div class="bar-row">
+        <div class="bar-name" title="${esc(k)}">${esc(k)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v / max * 100)}%;background:${color || 'var(--blue)'}"></div></div>
+        <div class="bar-count">${v.toLocaleString('pt-BR')}</div>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:12px">Sem dados</div>';
+}
+
+// Event label lookup
+const EV_LABELS = {
+  visitor_enter:   ['🔵', 'Novo visitante'],
+  login:           ['🔑', 'Login realizado'],
+  signup:          ['📝', 'Novo cadastro'],
+  order_created:   ['📋', 'Pedido criado'],
+  pix_created:     ['💳', 'PIX gerado'],
+  pix_paid:        ['✅', 'PIX confirmado'],
+  checkout_start:  ['🛒', 'Checkout iniciado'],
+  cart_add:        ['🛍️', 'Adicionou ao carrinho'],
+  click_buy:       ['👆', 'Clicou em Comprar'],
+  click_whatsapp:  ['💬', 'Clicou no WhatsApp'],
+  click_login:     ['🔑', 'Clicou em Login'],
+  click_signup:    ['📝', 'Clicou em Cadastrar'],
+  click_checkout:  ['💳', 'Clicou em Finalizar'],
+  click_calc_frete:['📦', 'Calculou frete'],
+  product_view:    ['📱', 'Visualizou produto'],
+  wa_sent:         ['💬', 'Mensagem WA enviada'],
+  wa_received:     ['💬', 'Mensagem WA recebida'],
+};
+
+function renderEvFeed(elId, events) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!events || !events.length) { el.innerHTML = '<div class="empty-state" style="padding:12px">Aguardando eventos...</div>'; return; }
+  el.innerHTML = events.slice(0, 60).map(ev => {
+    const [icon, label] = EV_LABELS[ev.type] || ['•', ev.type];
+    const d = ev.data || {};
+    let sub = '';
+    if (d.page)        sub += d.page;
+    if (d.source && d.source !== 'Direto') sub += (sub ? ' · ' : '') + d.source;
+    if (d.device)      sub += (sub ? ' · ' : '') + d.device;
+    if (d.productId)   sub += (sub ? ' · ' : '') + (d.productName || d.productId).slice(0, 30);
+    if (d.email)       sub += (sub ? ' · ' : '') + d.email;
+    const t = ev.at ? new Date(ev.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+    return `<div class="ev-item">
+      <span class="ev-time">${t}</span>
+      <span class="ev-icon">${icon}</span>
+      <div class="ev-text">${label}${sub ? '<div class="ev-sub">' + esc(sub) + '</div>' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderKpis(snap) {
+  const el = document.getElementById('site-kpis');
+  if (!el || !snap) return;
+  el.innerHTML = [
+    { icon: '👥', val: snap.activeNow,         label: 'Online Agora',      sub: snap.visitorsLastHour + ' última hora', cls: 'kpi-blue'   },
+    { icon: '📊', val: snap.visitorsToday,      label: 'Visitantes Hoje',   sub: snap.pageViewsToday + ' pageviews',     cls: 'kpi-blue'   },
+    { icon: '📝', val: snap.signupsToday,       label: 'Cadastros Hoje',    sub: 'total lifetime: ' + (snap.lifetime?.signups || 0), cls: 'kpi-purple' },
+    { icon: '📋', val: snap.ordersToday,        label: 'Pedidos Hoje',      sub: snap.pixPaidToday + ' pagos',           cls: 'kpi-green'  },
+    { icon: '💳', val: snap.pixToday,           label: 'PIX Gerados',       sub: snap.pixPaidToday + ' confirmados',     cls: 'kpi-yellow' },
+    { icon: '🛍️', val: snap.activeCartsNow || 0,label: 'Carrinhos Ativos',  sub: snap.cartAddsToday + ' adds hoje',      cls: 'kpi-orange' },
+    { icon: '🛒', val: snap.checkoutsToday,     label: 'Checkouts Hoje',    sub: '',                                     cls: 'kpi-blue'   },
+    { icon: '📈', val: (snap.conversionRate || 0) + '%', label: 'Taxa Conversão', sub: 'visitantes → PIX',             cls: snap.conversionRate > 3 ? 'kpi-green' : 'kpi-yellow' },
+    { icon: '💬', val: snap.clickWaToday,       label: 'Cliques WhatsApp',  sub: '',                                     cls: 'kpi-green'  },
+    { icon: '👆', val: snap.clickBuyToday,      label: 'Cliques Comprar',   sub: '',                                     cls: 'kpi-blue'   },
+  ].map(k => `
+    <div class="kpi-card ${k.cls}">
+      <div style="font-size:22px">${k.icon}</div>
+      <div class="kpi-val">${typeof k.val === 'number' ? k.val.toLocaleString('pt-BR') : k.val}</div>
+      <div class="kpi-label">${k.label}</div>
+      ${k.sub ? `<div class="kpi-sub">${esc(k.sub)}</div>` : ''}
+    </div>`).join('');
+}
+
+function renderProductsDash(products) {
+  const el = document.getElementById('site-products-dash');
+  if (!el) return;
+  if (!products || !products.length) { el.innerHTML = '<div class="empty-state" style="padding:12px">Sem dados</div>'; return; }
+  el.innerHTML = products.slice(0, 10).map((p, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bg3)">
+      <span style="color:var(--muted);font-size:12px;min-width:18px">${i + 1}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name || p.id)}</div>
+        <div style="font-size:11px;color:var(--muted)">${p.views} views · ${p.checkouts || 0} checkouts</div>
+      </div>
+      <span class="badge badge-blue" style="font-size:10px">${p.views}</span>
+    </div>`).join('');
+}
+
+function renderFunnel(elId, snap) {
+  const el = document.getElementById(elId);
+  if (!el || !snap) return;
+
+  const cartAdds = snap.cartAddsToday || 0;
+  const steps = [
+    { label: '🌐 Visitantes',          val: snap.visitorsToday,    color: '#58a6ff' },
+    { label: '📱 Visualizaram Produto', val: snap.pageViewsToday,  color: '#7ee787' },
+    { label: '🛍️ Adicionaram Carrinho', val: cartAdds,             color: '#d2a820' },
+    { label: '🛒 Iniciaram Checkout',   val: snap.checkoutsToday,  color: '#e3b341' },
+    { label: '💳 Geraram PIX',          val: snap.pixToday,        color: '#bc8cff' },
+    { label: '✅ PIX Confirmado',        val: snap.pixPaidToday,    color: '#3fb950' },
+  ];
+  const maxVal = steps[0].val || 1;
+  el.innerHTML = steps.map((s, i) => {
+    const pct = Math.round(s.val / maxVal * 100);
+    const dropPct = i > 0 && steps[i - 1].val > 0
+      ? Math.round((1 - s.val / steps[i - 1].val) * 100) : 0;
+    return `
+      <div class="funnel-step">
+        <div class="funnel-label">${s.label}</div>
+        <div class="funnel-bar-wrap">
+          <div class="funnel-bar" style="width:${Math.max(pct, 2)}%;background:${s.color}20;border:1px solid ${s.color}40;color:${s.color}">
+            ${s.val.toLocaleString('pt-BR')}
+          </div>
+        </div>
+        <div class="funnel-meta">${pct}% do total</div>
+        <div class="funnel-drop">${i > 0 && dropPct > 0 ? '-' + dropPct + '%' : ''}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── SITE SSE connection ────────────────────────────────────────────────────
+function connectSiteSSE() {
+  if (_siteSSE) return;
+  const url = `/api/admin/tracker/stream?adminToken=${encodeURIComponent(adminToken)}`;
+  _siteSSE = new EventSource(url);
+  _siteSSE.onmessage = (e) => {
+    if (currentPage !== 'site') return;
+    if (document.getElementById('site-pause')?.checked) return;
+    try {
+      const snap = JSON.parse(e.data);
+      if (!snap || snap.heartbeat) return;
+      _siteSnap = snap;
+      if (_siteSubTab === 'dash') {
+        renderKpis(snap);
+        renderEvFeed('site-activity', snap.events);
+        renderProductsDash(snap.products);
+        renderFunnel('site-funnel-mini', snap);
+      }
+      if (_siteSubTab === 'live') {
+        renderLiveSessions(snap);
+      }
+    } catch {}
+  };
+  _siteSSE.onerror = () => { _siteSSE?.close(); _siteSSE = null; setTimeout(connectSiteSSE, 5000); };
+}
+
+// ── Sub-tab switching ──────────────────────────────────────────────────────
+function switchSiteTab(st) {
+  _siteSubTab = st;
+  document.querySelectorAll('.site-tab').forEach(b => b.classList.toggle('active', b.dataset.st === st));
+  document.querySelectorAll('.site-section').forEach(s => s.classList.toggle('active', s.id === 'st-' + st));
+
+  if (st === 'dash')      { if (_siteSnap) { renderKpis(_siteSnap); renderEvFeed('site-activity', _siteSnap.events); renderProductsDash(_siteSnap.products); renderFunnel('site-funnel-mini', _siteSnap); } else loadSiteDash(); }
+  if (st === 'live')      loadSiteLive();
+  if (st === 'produtos')  loadSiteProducts();
+  if (st === 'usuarios')  loadSiteUsers();
+  if (st === 'funil')     loadSiteFunnel();
+  if (st === 'carrinhos') loadSiteCarts();
+  if (st === 'cliques')   loadSiteClicks();
+  if (st === 'origens')   loadSiteOrigens();
+}
+
+document.querySelectorAll('.site-tab').forEach(b =>
+  b.addEventListener('click', () => switchSiteTab(b.dataset.st)));
+
+// ── loadSite (main entry) ─────────────────────────────────────────────────
+async function loadSite() {
+  connectSiteSSE();
+  loadSiteDash();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
+async function loadSiteDash() {
+  const snap = await api.get('/api/admin/tracker/stats');
+  if (!snap) return;
+  _siteSnap = snap;
+  renderKpis(snap);
+  renderEvFeed('site-activity', snap.events);
+  renderProductsDash(snap.products);
+  renderFunnel('site-funnel-mini', snap);
+}
+
+// ── Live sessions ─────────────────────────────────────────────────────────
+async function loadSiteLive() {
+  const snap = await api.get('/api/admin/tracker/stats');
+  if (!snap) return;
+  _siteSnap = snap;
+  renderLiveSessions(snap);
+  renderEvFeed('site-sessions-feed', snap.events);
+  document.getElementById('site-live-count').textContent = snap.activeNow || 0;
+}
+
+function renderLiveSessions(snap) {
+  const tbody = document.getElementById('site-live-tbody');
+  if (!tbody) return;
+  const sessions = snap.sessions || [];
+  if (!sessions.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Nenhum visitante ativo</td></tr>`; return; }
+  const now = Date.now();
+  tbody.innerHTML = sessions.map(s => {
+    const dur = fmtDur(now - new Date(s.startedAt).getTime());
+    const ago = fmtAgo(s.lastSeen);
+    return `<tr>
+      <td><span class="live-dot"></span></td>
+      <td style="font-family:monospace;color:var(--muted)">${esc(s.id.slice(0, 8))}</td>
+      <td>${esc(s.page || '/')}</td>
+      <td>${esc(s.device || '—')}</td>
+      <td>${esc(s.browser || '—')}</td>
+      <td>${esc(s.city || '—')}</td>
+      <td><span class="badge badge-blue" style="font-size:10px">${esc(s.source || 'Direto')}</span></td>
+      <td style="color:var(--green)">${dur}</td>
+      <td style="color:var(--muted);font-size:11px">${ago}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Products ranking ──────────────────────────────────────────────────────
+async function loadSiteProducts() {
+  const snap = await api.get('/api/admin/tracker/stats');
+  if (!snap) return;
+  const tbody = document.getElementById('site-products-tbody');
+  if (!tbody) return;
+  const prods = (snap.products || []);
+  if (!prods.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Sem dados de produtos ainda</td></tr>`; return; }
+  tbody.innerHTML = prods.map((p, i) => {
+    const conv = p.views > 0 ? (p.pix / p.views * 100).toFixed(1) : '0.0';
+    return `<tr>
+      <td style="color:var(--muted)">${i + 1}</td>
+      <td style="font-weight:600;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name || p.id)}</td>
+      <td><span class="badge badge-blue">${p.views || 0}</span></td>
+      <td>${p.checkouts || 0}</td>
+      <td><span class="badge badge-${p.pix > 0 ? 'green' : 'blue'}">${p.pix || 0}</span></td>
+      <td style="font-weight:700;color:${+conv > 5 ? 'var(--green)' : 'var(--muted)'}">${conv}%</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────
+async function loadSiteUsers() {
+  const data = await api.get(`/api/admin/site/users?filter=${_siteUserFilter}`);
+  if (!data) return;
+  const { users, total } = data;
+
+  const kpis = document.getElementById('site-users-kpis');
+  if (kpis) {
+    const hoje = users.filter(u => u.createdAt && new Date(u.createdAt).toDateString() === new Date().toDateString()).length;
+    const comPedido = users.filter(u => u.totalOrders > 0).length;
+    kpis.innerHTML = [
+      { v: total,      l: 'Exibidos',         cls: 'kpi-blue'   },
+      { v: hoje,       l: 'Cadastraram Hoje',  cls: 'kpi-green'  },
+      { v: comPedido,  l: 'Com Pedidos',       cls: 'kpi-yellow' },
+      { v: users.filter(u => u.paidOrders > 0).length, l: 'Compraram', cls: 'kpi-purple' },
+    ].map(k => `<div class="kpi-card ${k.cls}"><div class="kpi-val">${k.v}</div><div class="kpi-label">${k.l}</div></div>`).join('');
+  }
+
+  const tbody = document.getElementById('site-users-tbody');
+  if (!tbody) return;
+  if (!users.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nenhum usuário encontrado para este filtro</td></tr>`; return; }
+  tbody.innerHTML = users.map(u => `<tr>
+    <td style="font-weight:600">${esc(u.nome || '—')}</td>
+    <td style="color:var(--muted)">${esc(u.email || '—')}</td>
+    <td>${esc(u.whatsapp || '—')}</td>
+    <td style="font-size:11px">${fmtDt(u.createdAt)}</td>
+    <td style="font-size:11px;color:var(--muted)">${fmtDt(u.lastLogin)}</td>
+    <td><span class="badge badge-${u.totalOrders > 0 ? 'blue' : 'blue'}">${u.totalOrders}</span></td>
+    <td><span class="badge badge-${u.paidOrders > 0 ? 'green' : 'blue'}">${u.paidOrders}</span></td>
+  </tr>`).join('');
+}
+
+function setSiteUserFilter(f) {
+  _siteUserFilter = f;
+  document.querySelectorAll('[data-uf]').forEach(b => b.classList.toggle('active', b.dataset.uf === f));
+  loadSiteUsers();
+}
+
+// ── Full funnel ───────────────────────────────────────────────────────────
+async function loadSiteFunnel() {
+  const snap = await api.get('/api/admin/tracker/stats');
+  if (!snap) return;
+  _siteSnap = snap;
+  renderFunnel('site-funnel-full', snap);
+}
+
+// ── Carts ─────────────────────────────────────────────────────────────────
+async function loadSiteCarts() {
+  const isActive = _siteCartFilter === 'active';
+  const data = await api.get(`/api/admin/site/carts?active=${isActive}&page=${_siteCartPage}&limit=30`);
+  if (!data) return;
+
+  const tbody = document.getElementById('site-carts-tbody');
+  if (!tbody) return;
+  if (!data.items.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">${isActive ? 'Nenhum carrinho ativo no momento' : 'Nenhum carrinho abandonado registrado'}</td></tr>`;
+    document.getElementById('site-carts-pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = data.items.map(c => {
+    const prodStr = (c.items || []).map(i => `${esc(i.nome || i.id)} ×${i.quantidade || 1}`).join(', ');
+    const dateField = isActive ? c.lastUpdated : c.abandonedAt;
+    return `<tr>
+      <td style="font-size:11px">${fmtDt(dateField)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(prodStr)}">${prodStr || '—'}</td>
+      <td style="font-weight:700;color:var(--green)">${fmtBRL(c.total)}</td>
+      <td><span class="badge badge-blue" style="font-size:10px">${esc(c.source || 'Direto')}</span></td>
+      <td style="color:var(--muted)">${esc(c.device || '—')}</td>
+      <td style="color:var(--muted)">${esc(c.city || '—')}</td>
+      <td style="color:var(--muted);font-size:11px">${esc(c.userEmail || '—')}</td>
+      <td>${esc(c.userName || '—')}</td>
+    </tr>`;
+  }).join('');
+
+  const pgEl = document.getElementById('site-carts-pagination');
+  if (data.pages <= 1) { pgEl.innerHTML = ''; return; }
+  let pg = '';
+  if (_siteCartPage > 1) pg += `<button class="btn btn-ghost" onclick="siteCartPage(${_siteCartPage - 1})">← Anterior</button>`;
+  for (let i = Math.max(1, _siteCartPage - 2); i <= Math.min(data.pages, _siteCartPage + 2); i++)
+    pg += `<button class="btn ${i === _siteCartPage ? 'btn-blue' : 'btn-ghost'}" onclick="siteCartPage(${i})">${i}</button>`;
+  if (_siteCartPage < data.pages) pg += `<button class="btn btn-ghost" onclick="siteCartPage(${_siteCartPage + 1})">Próxima →</button>`;
+  pgEl.innerHTML = pg;
+}
+
+function setSiteCartFilter(f) {
+  _siteCartFilter = f; _siteCartPage = 1;
+  document.querySelectorAll('[data-cf]').forEach(b => b.classList.toggle('active', b.dataset.cf === f));
+  loadSiteCarts();
+}
+function siteCartPage(p) { _siteCartPage = p; loadSiteCarts(); }
+
+// ── Clicks ────────────────────────────────────────────────────────────────
+async function loadSiteClicks() {
+  const data = await api.get(`/api/admin/site/clicks?period=${_siteClickPeriod}`);
+  if (!data) return;
+  const { clicks } = data;
+
+  const max = Math.max(...clicks.map(c => c.today), 1);
+  document.getElementById('site-clicks-chart').innerHTML = clicks.map(c => `
+    <div class="bar-row">
+      <div class="bar-name">${c.icon} ${esc(c.label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(c.today / max * 100)}%"></div></div>
+      <div class="bar-count">${c.today}</div>
+    </div>`).join('');
+
+  document.getElementById('site-clicks-tbody').innerHTML = clicks.map(c => `
+    <tr>
+      <td style="font-weight:600">${c.icon} ${esc(c.label)}</td>
+      <td><span class="badge badge-blue">${c.today}</span></td>
+      <td style="color:var(--muted)">${c.total}</td>
+    </tr>`).join('');
+}
+
+function setSiteClickPeriod(p) {
+  _siteClickPeriod = p;
+  const labels = { today: 'Hoje', '7d': '7 dias', '30d': '30 dias' };
+  document.getElementById('site-clicks-period-label').textContent = labels[p] || p;
+  document.querySelectorAll('[data-cp]').forEach(b => b.classList.toggle('active', b.dataset.cp === p));
+  loadSiteClicks();
+}
+
+// ── Origins ───────────────────────────────────────────────────────────────
+async function loadSiteOrigens() {
+  const snap = await api.get('/api/admin/tracker/stats');
+  if (!snap) return;
+  const COLORS = { sources: 'var(--blue)', devices: 'var(--green)', countries: 'var(--purple)', os: 'var(--orange)' };
+  barList(document.getElementById('site-sources-chart'),   snap.sources,   COLORS.sources);
+  barList(document.getElementById('site-devices-chart'),   snap.devices,   COLORS.devices);
+  barList(document.getElementById('site-countries-chart'), snap.countries, COLORS.countries);
+  barList(document.getElementById('site-os-chart'),        snap.os,        COLORS.os);
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function siteExport(type, format) {
+  const url = `/api/admin/site/export?type=${type}&format=${format}&adminToken=${encodeURIComponent(adminToken)}`;
+  const a = document.createElement('a'); a.href = url; a.download = ''; a.click();
+}
+
+// ── Auto-refresh SITE if on dash sub-tab ─────────────────────────────────
+setInterval(() => {
+  if (currentPage !== 'site') return;
+  if (_siteSubTab === 'dash') loadSiteDash();
+}, 15000);
+
+// ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 async function init() {
@@ -2793,8 +3512,8 @@ async function init() {
   monCpuChart = makeChart('mon-cpu-chart', 'rgb(88,166,255)', 'CPU');
   monRamChart = makeChart('mon-ram-chart', 'rgb(63,185,80)', 'RAM');
 
-  // Load initial page + connect realtime tracker
-  loadDashboard();
+  // Load initial page — SITE is the primary tab
+  showPage('site');
   loadNotifications();
 
   // System stats refresh every 10s (SSE handles tracker realtime)
