@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const fs     = require('fs');
 const path   = require('path');
 const EventEmitter = require('events');
+const telegram = require('./telegram');
 
 const bus = new EventEmitter();
 bus.setMaxListeners(200);
@@ -118,6 +119,9 @@ function blankDay() {
     cartAdds: 0,
     byHour: {}, sources: {}, utmSources: {},
     devices: {}, browsers: {}, os: {}, countries: {}, cities: {},
+    // paid traffic breakdown
+    paidSources: {}, // { "Facebook Ads": N, "Instagram Ads": N, ... }
+    campaigns: {},   // { campaignName: { source, medium, visitors, checkouts, pix, pixPaid } }
     visitorIds: []
   };
 }
@@ -257,14 +261,44 @@ const SRC_RE = [
 function getSource(ref, utm) {
   if (utm) {
     if (/facebook|fb/i.test(utm)) return 'Facebook Ads';
-    if (/instagram/i.test(utm))   return 'Instagram';
+    if (/instagram/i.test(utm))   return 'Instagram Ads';
     if (/google/i.test(utm))      return 'Google Ads';
-    if (/tiktok/i.test(utm))      return 'TikTok';
+    if (/tiktok/i.test(utm))      return 'TikTok Ads';
     return String(utm).slice(0, 30);
   }
   if (!ref) return 'Direto';
   for (const [re, label] of SRC_RE) if (re.test(ref)) return label;
   try { return new URL(ref).hostname.replace('www.', '').slice(0, 30); } catch { return 'Outro'; }
+}
+
+// Classify paid traffic source based on all available signals
+function classifyPaidSource(utmSource, utmMedium, fbclid, gclid) {
+  // fbclid = Facebook / Instagram click ID — definitive paid signal
+  if (fbclid) {
+    if (utmSource && /instagram/i.test(utmSource)) return 'Instagram Ads';
+    return 'Facebook Ads';
+  }
+  // gclid = Google click ID
+  if (gclid) return 'Google Ads';
+  // UTM medium signals paid traffic
+  if (utmMedium && /^(cpc|ppc|paid|paid_social|paidsocial|paid-social|display|banner|retargeting|remarketing|cpv|cpm|meta)$/i.test(utmMedium)) {
+    if (utmSource) {
+      if (/instagram/i.test(utmSource)) return 'Instagram Ads';
+      if (/facebook|fb/i.test(utmSource)) return 'Facebook Ads';
+      if (/google/i.test(utmSource)) return 'Google Ads';
+      if (/tiktok/i.test(utmSource)) return 'TikTok Ads';
+    }
+    return 'Tráfego Pago';
+  }
+  // UTM source alone (organic-looking sources excluded)
+  if (utmSource) {
+    const s = utmSource.toLowerCase();
+    if (s === 'instagram') return 'Instagram Ads';
+    if (s === 'facebook' || s === 'fb') return 'Facebook Ads';
+    if (s === 'google') return 'Google Ads';
+    if (s === 'tiktok') return 'TikTok Ads';
+  }
+  return null; // not paid
 }
 
 // ── Emit throttle ─────────────────────────────────────────────────────────────
@@ -284,9 +318,11 @@ setInterval(() => {
       if (carts.has(id)) {
         const c = carts.get(id);
         if (c.items && c.items.length > 0 && new Date(c.lastUpdated).getTime() < cartCutoff) {
-          abandonedCarts.unshift({ ...c, abandonedAt: new Date().toISOString() });
+          const abandoned = { ...c, abandonedAt: new Date().toISOString() };
+          abandonedCarts.unshift(abandoned);
           if (abandonedCarts.length > 500) abandonedCarts.length = 500;
           _dirtyCarts = true;
+          telegram.notifyEvent('cart_abandoned', abandoned);
         }
         carts.delete(id);
       }
@@ -301,6 +337,7 @@ setInterval(() => {
 function heartbeat({
   sessionId, page, productId, productName, referrer,
   utmSource, utmMedium, utmCampaign, utmContent, utmTerm,
+  fbclid, gclid,
   ip, ua, language, timezone, screenW, screenH
 }) {
   if (!sessionId) return;
@@ -314,6 +351,10 @@ function heartbeat({
   const { device, browser, os } = parseUA(ua || '');
   const fp = fingerprint(cleanIp, ua || '');
 
+  // Paid traffic classification
+  const paidSource = existing?.paidSource || classifyPaidSource(utmSource, utmMedium, fbclid, gclid);
+  const isPaid     = !!paidSource;
+
   if (isNew) {
     visitorSet.add(sessionId);
     sessionStarts.push({ sid: sessionId, at: now });
@@ -325,6 +366,25 @@ function heartbeat({
     dayData.browsers[browser]  = (dayData.browsers[browser] || 0) + 1;
     dayData.os[os]             = (dayData.os[os] || 0) + 1;
     if (utmSource) dayData.utmSources[utmSource] = (dayData.utmSources[utmSource] || 0) + 1;
+
+    // Paid traffic tracking
+    if (isPaid) {
+      if (!dayData.paidSources) dayData.paidSources = {};
+      dayData.paidSources[paidSource] = (dayData.paidSources[paidSource] || 0) + 1;
+    }
+    if (utmCampaign) {
+      if (!dayData.campaigns) dayData.campaigns = {};
+      if (!dayData.campaigns[utmCampaign]) {
+        dayData.campaigns[utmCampaign] = {
+          source:    paidSource || source, medium: utmMedium || '',
+          content:   utmContent || '', term: utmTerm || '',
+          visitors: 0, checkouts: 0, pix: 0, pixPaid: 0,
+          firstSeen: now,
+        };
+      }
+      dayData.campaigns[utmCampaign].visitors++;
+      dayData.campaigns[utmCampaign].lastSeen = now;
+    }
 
     lifetime.visitors++;
     _dirtyLifetime = true;
@@ -366,6 +426,12 @@ function heartbeat({
           if (geo.timezone && !v.timezone) v.timezone = geo.timezone;
           _dirtyVisitors = true;
         }
+        // Also update live session with geo data (used by Telegram 3s timer)
+        const s = sessions.get(sessionId);
+        if (s) {
+          s.city    = geo.city    || null;
+          s.country = geo.country || null;
+        }
         if (geo.countryCode) dayData.countries[geo.countryCode] = (dayData.countries[geo.countryCode] || 0) + 1;
         if (geo.city)        dayData.cities[geo.city]           = (dayData.cities[geo.city] || 0) + 1;
         _dirtyDaily = true;
@@ -374,9 +440,19 @@ function heartbeat({
 
     pushEv('visitor_enter', {
       page: page || '/', source, device, browser, os,
+      isPaid, paidSource: paidSource || null,
+      campaign: utmCampaign || null,
       sessionId: sessionId.slice(0, 8),
     });
     _dirtyDaily = true;
+
+    // Telegram notification for paid traffic (delayed 3s for geo lookup to complete)
+    if (isPaid) {
+      setTimeout(() => {
+        const s = sessions.get(sessionId);
+        if (s) telegram.notifyPaidVisitor(s);
+      }, 3000);
+    }
   }
 
   sessions.set(sessionId, {
@@ -384,7 +460,13 @@ function heartbeat({
     page: page || '/', productId: productId || null, productName: productName || null,
     source, ip: cleanIp, device, browser, os,
     language: language || null, timezone: timezone || null,
-    utmSource: utmSource || null, utmMedium: utmMedium || null, utmCampaign: utmCampaign || null,
+    utmSource: utmSource || null, utmMedium: utmMedium || null,
+    utmCampaign: utmCampaign || null, utmContent: utmContent || null,
+    fbclid: fbclid || existing?.fbclid || null,
+    gclid:  gclid  || existing?.gclid  || null,
+    isPaid, paidSource: paidSource || null,
+    city:    existing?.city    || null,
+    country: existing?.country || null,
     fp,
   });
 
@@ -412,22 +494,52 @@ function heartbeat({
 // ── record ────────────────────────────────────────────────────────────────────
 function record(type, data = {}) {
   checkReset();
-  if (type === 'login')          { stats.logins++;         lifetime.logins++;         }
-  if (type === 'signup')         { stats.signups++;        lifetime.signups++;        }
-  if (type === 'order_created')  {
-    stats.orders++;    lifetime.orders++;
-    if (data.sessionId) carts.delete(data.sessionId);
+
+  // Helper: get session campaign for conversion attribution
+  const getSessionCampaign = (sessionId) => sessionId ? sessions.get(sessionId)?.utmCampaign : null;
+  const updateCampaign = (sessionId, field) => {
+    const camp = getSessionCampaign(sessionId);
+    if (camp && dayData.campaigns && dayData.campaigns[camp]) {
+      dayData.campaigns[camp][field] = (dayData.campaigns[camp][field] || 0) + 1;
+      _dirtyDaily = true;
+    }
+  };
+
+  if (type === 'login') {
+    stats.logins++; lifetime.logins++;
+    telegram.notifyEvent('login', data);
   }
-  if (type === 'pix_created')    {
-    stats.pix++;       lifetime.pix++;
-    if (data.sessionId) carts.delete(data.sessionId);
+  if (type === 'signup') {
+    stats.signups++; lifetime.signups++;
+    telegram.notifyEvent('signup', data);
   }
-  if (type === 'pix_paid')       { stats.pixPaid++;        lifetime.pixPaid        = (lifetime.pixPaid        || 0) + 1; }
-  if (type === 'click_buy')      { stats.clickBuy++;       lifetime.clickBuy       = (lifetime.clickBuy       || 0) + 1; }
-  if (type === 'click_whatsapp') { stats.clickWa++;        lifetime.clickWa        = (lifetime.clickWa        || 0) + 1; }
-  if (type === 'click_login')    { stats.clickLogin++;     lifetime.clickLogin     = (lifetime.clickLogin     || 0) + 1; }
-  if (type === 'click_signup')   { stats.clickSignup++;    lifetime.clickSignup    = (lifetime.clickSignup    || 0) + 1; }
-  if (type === 'click_checkout') { stats.clickCheckout++;  lifetime.clickCheckout  = (lifetime.clickCheckout  || 0) + 1; }
+  if (type === 'order_created') {
+    stats.orders++; lifetime.orders++;
+    if (data.sessionId) carts.delete(data.sessionId);
+    // Attach campaign from session if not already provided
+    const camp = data.campaign || getSessionCampaign(data.sessionId);
+    telegram.notifyEvent('order_created', { ...data, campaign: camp });
+  }
+  if (type === 'pix_created') {
+    stats.pix++; lifetime.pix++;
+    if (data.sessionId) carts.delete(data.sessionId);
+    updateCampaign(data.sessionId, 'pix');
+    const camp = data.campaign || getSessionCampaign(data.sessionId);
+    telegram.notifyEvent('pix_created', { ...data, campaign: camp });
+  }
+  if (type === 'pix_paid') {
+    stats.pixPaid++; lifetime.pixPaid = (lifetime.pixPaid || 0) + 1;
+    if (data.campaignName && dayData.campaigns && dayData.campaigns[data.campaignName]) {
+      dayData.campaigns[data.campaignName].pixPaid = (dayData.campaigns[data.campaignName].pixPaid || 0) + 1;
+      _dirtyDaily = true;
+    }
+    telegram.notifyEvent('pix_paid', data);
+  }
+  if (type === 'click_buy')       { stats.clickBuy++;       lifetime.clickBuy       = (lifetime.clickBuy       || 0) + 1; }
+  if (type === 'click_whatsapp')  { stats.clickWa++;        lifetime.clickWa        = (lifetime.clickWa        || 0) + 1; }
+  if (type === 'click_login')     { stats.clickLogin++;     lifetime.clickLogin     = (lifetime.clickLogin     || 0) + 1; }
+  if (type === 'click_signup')    { stats.clickSignup++;    lifetime.clickSignup    = (lifetime.clickSignup    || 0) + 1; }
+  if (type === 'click_checkout')  { stats.clickCheckout++;  lifetime.clickCheckout  = (lifetime.clickCheckout  || 0) + 1; }
   if (type === 'click_calc_frete') { stats.clickCalcFrete++; lifetime.clickCalcFrete = (lifetime.clickCalcFrete || 0) + 1; }
 
   if (type === 'cart_add') {
@@ -442,11 +554,13 @@ function record(type, data = {}) {
         sessionId,
         items:       items        || existing?.items || [],
         total:       total        || 0,
-        source:      s?.source    || existing?.source   || 'Direto',
-        device:      s?.device    || existing?.device   || 'Desktop',
-        ip:          s?.ip        || existing?.ip       || null,
-        city:        vfp?.city    || existing?.city     || null,
-        country:     vfp?.country || existing?.country  || null,
+        source:      s?.source    || existing?.source    || 'Direto',
+        paidSource:  s?.paidSource|| existing?.paidSource|| null,
+        utmCampaign: s?.utmCampaign || existing?.utmCampaign || null,
+        device:      s?.device    || existing?.device    || 'Desktop',
+        ip:          s?.ip        || existing?.ip        || null,
+        city:        vfp?.city    || s?.city || existing?.city     || null,
+        country:     vfp?.country || s?.country || existing?.country  || null,
         addedAt:     existing?.addedAt || new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
         userEmail:   userEmail    || existing?.userEmail  || null,
@@ -458,7 +572,14 @@ function record(type, data = {}) {
 
   if (type === 'checkout_start') {
     stats.checkouts++; lifetime.checkouts++;
+    updateCampaign(data.sessionId, 'checkouts');
     if (data.productId && products.has(data.productId)) { products.get(data.productId).checkouts++; _dirtyProducts = true; }
+    const s = data.sessionId ? sessions.get(data.sessionId) : null;
+    telegram.notifyEvent('checkout_start', {
+      ...data,
+      source:   s?.source    || data.source,
+      campaign: s?.utmCampaign || data.campaign,
+    });
   }
   if (type === 'pix_created' && data.productId && products.has(data.productId)) {
     products.get(data.productId).pix++; _dirtyProducts = true;
@@ -508,7 +629,13 @@ function snap() {
     browsers:  { ...dayData.browsers },
     os:        { ...dayData.os },
     countries: { ...dayData.countries },
-    sources:   { ...dayData.sources },
+    sources:      { ...dayData.sources },
+    paidSources:  { ...(dayData.paidSources || {}) },
+    campaigns:    Object.entries(dayData.campaigns || {})
+      .map(([name, d]) => ({ name, ...d }))
+      .sort((a, b) => b.visitors - a.visitors)
+      .slice(0, 30),
+    activePaidSessions: Array.from(sessions.values()).filter(s => s.isPaid),
   };
 }
 
@@ -562,4 +689,4 @@ function getVisitors({ page = 1, limit = 50, search = '', country = '' } = {}) {
   return { items: list.slice((page - 1) * limit, page * limit), total, page, pages: Math.max(1, Math.ceil(total / limit)) };
 }
 
-module.exports = { heartbeat, record, snap, bus, getHistory, getVisitors, products, lifetime, visitors, carts, abandonedCarts };
+module.exports = { heartbeat, record, snap, bus, getHistory, getVisitors, products, lifetime, visitors, carts, abandonedCarts, telegram, dayData: () => dayData };

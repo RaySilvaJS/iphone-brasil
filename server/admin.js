@@ -805,6 +805,52 @@ router.get('/site/export', adminAuth, (req, res) => {
   res.status(400).json({ error: 'Tipo inválido' });
 });
 
+// ---- SITE: Paid Traffic & Telegram history ----
+router.get('/site/paid-traffic', adminAuth, (req, res) => {
+  try {
+    const snap        = tracker.snap();
+    const dayData     = tracker.dayData();
+    const paidSources = dayData.paidSources || {};
+    const campaigns   = snap.campaigns || [];
+
+    const fbAds    = (paidSources['Facebook Ads']  || 0);
+    const igAds    = (paidSources['Instagram Ads'] || 0);
+    const ggAds    = (paidSources['Google Ads']    || 0);
+    const ttAds    = (paidSources['TikTok Ads']    || 0);
+    const otherAds = (paidSources['Tráfego Pago']  || 0);
+    const totalPaid = fbAds + igAds + ggAds + ttAds + otherAds;
+
+    const totalVisitors = snap.visitorsToday || 1;
+    const paidRate = totalVisitors > 0 ? +(totalPaid / totalVisitors * 100).toFixed(1) : 0;
+
+    // Campaign conversion rates
+    const campaignsWithRate = campaigns.map(c => ({
+      ...c,
+      convRate: c.visitors > 0 ? +(c.pix / c.visitors * 100).toFixed(1) : 0,
+    }));
+
+    // Active paid sessions live
+    const activePaid = snap.activePaidSessions || [];
+
+    // Telegram notification history from module
+    const tgHistory = tracker.telegram.history.slice(0, 50);
+
+    res.json({
+      today: {
+        fbAds, igAds, ggAds, ttAds, otherAds, totalPaid, paidRate,
+        totalVisitors: snap.visitorsToday,
+        paidSources,
+      },
+      campaigns: campaignsWithRate,
+      activePaid,
+      telegramEnabled: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+      telegramHistory: tgHistory,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════════════════════════════
 
 // ---- Analytics ----

@@ -1095,6 +1095,7 @@ tbody tr:last-child td { border-bottom: none; }
         <button class="site-tab" data-st="carrinhos">🛒 Carrinhos</button>
         <button class="site-tab" data-st="cliques">🖱️ Cliques</button>
         <button class="site-tab" data-st="origens">🌐 Origens</button>
+        <button class="site-tab" data-st="paid">💰 Tráfego Pago</button>
         <button class="site-tab" data-st="exportar">💾 Exportar</button>
       </div>
 
@@ -1273,6 +1274,68 @@ tbody tr:last-child td { border-bottom: none; }
             <h3 style="margin-bottom:14px">Sistemas Operacionais</h3>
             <div class="bar-list" id="site-os-chart"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- ── TRÁFEGO PAGO ───────────────────────────────────────────────────── -->
+      <div class="site-section" id="st-paid">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <div>
+            <h3 style="font-size:15px;font-weight:700">💰 Tráfego Pago — Facebook Ads / Instagram / Google Ads</h3>
+            <p style="font-size:12px;color:var(--muted);margin-top:2px">Visitantes captados por campanhas pagas monitorados em tempo real.</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span id="paid-tg-status" class="badge badge-blue" style="font-size:11px">⌛ verificando...</span>
+            <button class="btn btn-ghost" onclick="loadSitePaid()">↺ Atualizar</button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid" id="paid-kpis" style="margin-bottom:16px"></div>
+
+        <!-- Source bar chart + active sessions -->
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:14px">Visitantes por Canal — Hoje</h3>
+            <div class="bar-list" id="paid-sources-chart"></div>
+          </div>
+          <div class="card" style="padding:16px">
+            <h3 style="margin-bottom:10px">Sessões Pagas Ativas Agora
+              <span class="badge badge-green" id="paid-active-count" style="margin-left:6px;font-size:12px">0</span>
+            </h3>
+            <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
+              <table class="table" style="font-size:11px">
+                <thead><tr><th>Canal</th><th>Dispositivo</th><th>Cidade</th><th>Campanha</th><th>Página</th></tr></thead>
+                <tbody id="paid-sessions-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campaign table -->
+        <div class="card" style="padding:0;margin-bottom:16px">
+          <div style="padding:14px 16px 8px;border-bottom:1px solid var(--bg3);display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0">Campanhas — Hoje</h3>
+            <span style="font-size:11px;color:var(--muted)">Clique na campanha para ver detalhes</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="table" style="font-size:12px">
+              <thead><tr>
+                <th>Campanha</th><th>Canal</th><th>Visitantes</th><th>Checkouts</th>
+                <th>PIX</th><th>Pagos</th><th>Conversão</th>
+              </tr></thead>
+              <tbody id="paid-campaigns-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Telegram notifications history -->
+        <div class="card" style="padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="margin:0">📨 Últimas Notificações Enviadas ao Telegram</h3>
+            <div id="paid-tg-config" style="font-size:11px;color:var(--muted)"></div>
+          </div>
+          <div class="ev-feed" id="paid-tg-feed"></div>
         </div>
       </div>
 
@@ -3280,6 +3343,7 @@ function switchSiteTab(st) {
   if (st === 'carrinhos') loadSiteCarts();
   if (st === 'cliques')   loadSiteClicks();
   if (st === 'origens')   loadSiteOrigens();
+  if (st === 'paid')      loadSitePaid();
 }
 
 document.querySelectorAll('.site-tab').forEach(b =>
@@ -3495,10 +3559,121 @@ function siteExport(type, format) {
   const a = document.createElement('a'); a.href = url; a.download = ''; a.click();
 }
 
+// ── Paid Traffic ─────────────────────────────────────────────────────────────
+async function loadSitePaid() {
+  const data = await api.get('/api/admin/site/paid-traffic');
+  if (!data) return;
+
+  const { today, campaigns, activePaid, telegramEnabled, telegramHistory } = data;
+
+  // Telegram status badge
+  const tgStatus = document.getElementById('paid-tg-status');
+  const tgConfig = document.getElementById('paid-tg-config');
+  if (tgStatus) {
+    tgStatus.textContent = telegramEnabled ? '✅ Telegram Ativo' : '⚠️ Não configurado';
+    tgStatus.className = 'badge ' + (telegramEnabled ? 'badge-green' : 'badge-yellow');
+  }
+  if (tgConfig && !telegramEnabled) {
+    tgConfig.innerHTML = '<span style="color:var(--yellow)">Adicione TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID ao .env</span>';
+  } else if (tgConfig && telegramEnabled) {
+    tgConfig.innerHTML = '<span style="color:var(--green)">Bot conectado — notificações ativas</span>';
+  }
+
+  // KPI cards
+  const kpiEl = document.getElementById('paid-kpis');
+  if (kpiEl) {
+    const tv = Math.max(today.totalVisitors || 1, 1);
+    kpiEl.innerHTML = [
+      { icon: '📘', val: today.fbAds,     label: 'Facebook Ads Hoje',  cls: 'kpi-blue',   sub: (today.fbAds / tv * 100).toFixed(1) + '% do tráfego' },
+      { icon: '📸', val: today.igAds,     label: 'Instagram Ads Hoje', cls: 'kpi-purple', sub: (today.igAds / tv * 100).toFixed(1) + '% do tráfego' },
+      { icon: '🔍', val: today.ggAds,     label: 'Google Ads Hoje',    cls: 'kpi-green',  sub: (today.ggAds / tv * 100).toFixed(1) + '% do tráfego' },
+      { icon: '🎵', val: today.ttAds,     label: 'TikTok Ads Hoje',    cls: 'kpi-yellow', sub: '' },
+      { icon: '💰', val: today.totalPaid, label: 'Total Pago Hoje',    cls: 'kpi-orange', sub: today.paidRate + '% do total' },
+      { icon: '💳', val: campaigns.reduce((a, c) => a + (c.pix || 0), 0), label: 'PIX de Campanhas', cls: 'kpi-green', sub: '' },
+    ].map(k => `<div class="kpi-card ${k.cls}">
+      <div style="font-size:20px">${k.icon}</div>
+      <div class="kpi-val">${typeof k.val === 'number' ? k.val.toLocaleString('pt-BR') : k.val}</div>
+      <div class="kpi-label">${k.label}</div>
+      ${k.sub ? '<div class="kpi-sub">' + esc(k.sub) + '</div>' : ''}
+    </div>`).join('');
+  }
+
+  // Source bar chart
+  barList(document.getElementById('paid-sources-chart'), today.paidSources, 'var(--blue)');
+
+  // Active paid sessions
+  const countEl = document.getElementById('paid-active-count');
+  if (countEl) countEl.textContent = activePaid.length;
+  const sessEl = document.getElementById('paid-sessions-tbody');
+  if (sessEl) {
+    if (!activePaid.length) {
+      sessEl.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px">Nenhuma sessão paga ativa no momento</td></tr>';
+    } else {
+      const srcIcon = { 'Facebook Ads': '📘', 'Instagram Ads': '📸', 'Google Ads': '🔍', 'TikTok Ads': '🎵' };
+      sessEl.innerHTML = activePaid.map(s => `<tr>
+        <td><span class="badge badge-blue" style="font-size:10px">${esc((srcIcon[s.paidSource] || '💰') + ' ' + (s.paidSource || '—'))}</span></td>
+        <td style="color:var(--muted)">${esc(s.device || '—')}</td>
+        <td>${esc(s.city || '—')}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px" title="${esc(s.utmCampaign || '')}">${esc(s.utmCampaign || '—')}</td>
+        <td style="color:var(--muted)">${esc(s.page || '/')}</td>
+      </tr>`).join('');
+    }
+  }
+
+  // Campaigns table
+  const campEl = document.getElementById('paid-campaigns-tbody');
+  if (campEl) {
+    if (!campaigns.length) {
+      campEl.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nenhuma campanha detectada hoje. Verifique se as URLs contêm fbclid ou parâmetros UTM.</td></tr>';
+    } else {
+      const srcIcon = { 'Facebook Ads': '📘', 'Instagram Ads': '📸', 'Google Ads': '🔍', 'TikTok Ads': '🎵', 'Tráfego Pago': '💰' };
+      campEl.innerHTML = campaigns.map(c => {
+        const icon = srcIcon[c.source] || '🌐';
+        const conv = c.convRate || 0;
+        return `<tr>
+          <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.name)}">${esc(c.name)}</td>
+          <td><span class="badge badge-blue" style="font-size:10px">${icon} ${esc(c.source || c.medium || '—')}</span></td>
+          <td><span class="badge badge-blue">${c.visitors || 0}</span></td>
+          <td>${c.checkouts || 0}</td>
+          <td><span class="badge badge-${c.pix > 0 ? 'green' : 'blue'}">${c.pix || 0}</span></td>
+          <td><span class="badge badge-${c.pixPaid > 0 ? 'green' : 'blue'}">${c.pixPaid || 0}</span></td>
+          <td style="font-weight:700;color:${conv >= 5 ? 'var(--green)' : conv > 0 ? 'var(--yellow)' : 'var(--muted)'}">${conv}%</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // Telegram history feed
+  const tgFeed = document.getElementById('paid-tg-feed');
+  if (tgFeed) {
+    if (!telegramHistory.length) {
+      tgFeed.innerHTML = telegramEnabled
+        ? '<div class="empty-state" style="padding:12px">Nenhuma notificação enviada ainda hoje.</div>'
+        : '<div class="empty-state" style="padding:12px">Configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID no arquivo .env para ativar as notificações.</div>';
+    } else {
+      const tgIcons = {
+        paid_visitor: '🚀', signup: '📝', login: '🔑',
+        order_created: '📋', pix_created: '💳', pix_paid: '✅',
+        checkout_start: '🛒', cart_abandoned: '🛒',
+      };
+      tgFeed.innerHTML = telegramHistory.map(n => {
+        const icon = tgIcons[n.type] || '📨';
+        const t = n.sentAt ? new Date(n.sentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+        return `<div class="ev-item">
+          <span class="ev-time">${t}</span>
+          <span class="ev-icon">${icon}</span>
+          <div class="ev-text">${esc(n.preview || n.type)}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
 // ── Auto-refresh SITE if on dash sub-tab ─────────────────────────────────
 setInterval(() => {
   if (currentPage !== 'site') return;
   if (_siteSubTab === 'dash') loadSiteDash();
+  if (_siteSubTab === 'paid') loadSitePaid();
 }, 15000);
 
 // ═══════════════════════════════════════════════

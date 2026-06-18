@@ -84,6 +84,8 @@ WHATSAPP_GROUP_ID=   # admin group JID (format: 120363...@g.us)
 ADMIN_TOKEN=         # master key for /devops panel
 MELHOR_ENVIO_TOKEN=  # shipping calculation API
 ORIGIN_CEP=          # store origin CEP for shipping
+TELEGRAM_BOT_TOKEN=  # Telegram bot token (@BotFather) for paid traffic + event notifications
+TELEGRAM_CHAT_ID=    # Telegram group/channel chat ID for notifications
 ```
 
 ## Key Patterns

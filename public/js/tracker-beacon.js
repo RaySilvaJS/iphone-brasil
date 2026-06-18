@@ -16,7 +16,7 @@
   const language  = navigator.language || null;
   const timezone  = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
 
-  // ── UTM params (all 5, persisted in sessionStorage) ─────────────────────────
+  // ── UTM params + paid ad click IDs (persisted in sessionStorage) ───────────
   const SRC_KEY = 'jbr_utm';
   function getUtm() {
     const saved = sessionStorage.getItem(SRC_KEY);
@@ -28,8 +28,10 @@
       utmCampaign: p.get('utm_campaign') || '',
       utmContent:  p.get('utm_content')  || '',
       utmTerm:     p.get('utm_term')     || '',
+      fbclid:      p.get('fbclid')       || '',
+      gclid:       p.get('gclid')        || '',
     };
-    // Only persist if at least one UTM param is present
+    // Persist if any paid or UTM signal is present
     if (Object.values(utm).some(Boolean)) sessionStorage.setItem(SRC_KEY, JSON.stringify(utm));
     return utm;
   }
@@ -77,6 +79,8 @@
     const payload = JSON.stringify({
       sessionId: sid, page, productId, productName,
       referrer, ...utm,
+      fbclid: utm.fbclid || null,
+      gclid:  utm.gclid  || null,
       screenW, screenH, language, timezone,
     });
     try {
