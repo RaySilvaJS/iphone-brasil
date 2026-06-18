@@ -441,6 +441,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-section">Negócio</div>
     <div class="nav-item active" data-page="site"><span class="ni-icon">🌎</span> Site</div>
     <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
+    <div class="nav-item" data-page="financeiro"><span class="ni-icon">💰</span> Financeiro <span class="nav-badge" id="fin-badge" style="display:none">0</span></div>
     <div class="nav-item" data-page="analytics"><span class="ni-icon">📊</span> Analytics</div>
     <div class="nav-section">Operações</div>
     <div class="nav-item" data-page="dashboard"><span class="ni-icon">🖥️</span> Dashboard</div>
@@ -882,6 +883,111 @@ tbody tr:last-child td { border-bottom: none; }
       <div id="order-drawer-content"></div>
     </div>
     <div id="order-drawer-overlay" onclick="closeOrderDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299"></div>
+
+    <!-- ═══ FINANCEIRO ═══ -->
+    <div class="page" id="page-financeiro">
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="fin-kpis" style="margin-bottom:20px">
+        <div class="kpi-card kpi-blue"><div class="kpi-val">—</div><div class="kpi-label">PIX Gerados Hoje</div></div>
+        <div class="kpi-card kpi-yellow"><div class="kpi-val">—</div><div class="kpi-label">Comprovantes Hoje</div></div>
+        <div class="kpi-card kpi-green"><div class="kpi-val">—</div><div class="kpi-label">Aprovados Hoje</div></div>
+        <div class="kpi-card kpi-red"><div class="kpi-val">—</div><div class="kpi-label">Recusados Hoje</div></div>
+        <div class="kpi-card kpi-green"><div class="kpi-val">—</div><div class="kpi-label">Receita Hoje</div></div>
+        <div class="kpi-card kpi-orange"><div class="kpi-val">—</div><div class="kpi-label">Pendentes Total</div></div>
+        <div class="kpi-card kpi-purple"><div class="kpi-val">—</div><div class="kpi-label">Ticket Médio</div></div>
+        <div class="kpi-card kpi-yellow"><div class="kpi-val">—</div><div class="kpi-label">Total Pendente (R$)</div></div>
+      </div>
+
+      <!-- Config PIX + Aprovação side-by-side on large screens -->
+      <div class="grid-2" style="margin-bottom:20px">
+
+        <!-- Config PIX -->
+        <div class="card">
+          <h3>⚙️ Configuração da Chave PIX</h3>
+          <div style="display:grid;gap:10px">
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Tipo da Chave</label>
+              <select id="fin-pix-type" class="input" style="width:100%">
+                <option value="chave_aleatoria">Chave Aleatória (UUID)</option>
+                <option value="cpf">CPF</option>
+                <option value="cnpj">CNPJ</option>
+                <option value="email">E-mail</option>
+                <option value="telefone">Telefone (+55...)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Chave Pix</label>
+              <input id="fin-pix-key" class="input" style="width:100%" placeholder="Cole a chave Pix aqui"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Nome do Recebedor (max. 25 chars)</label>
+              <input id="fin-pix-name" class="input" style="width:100%" placeholder="Jessi iPhones" maxlength="25"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Cidade do Recebedor (max. 15 chars)</label>
+              <input id="fin-pix-city" class="input" style="width:100%" placeholder="Rio de Janeiro" maxlength="15"/>
+            </div>
+            <button class="btn btn-blue" onclick="savePixCfg()">💾 Salvar Configuração PIX</button>
+            <div id="fin-pix-feedback" style="font-size:12px;color:var(--green);display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Sumário total recebido -->
+        <div class="card">
+          <h3>📊 Resumo Financeiro</h3>
+          <div id="fin-summary" style="display:grid;gap:10px">
+            <div class="empty-state">Carregando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aprovação de pagamentos -->
+      <div class="card" style="padding:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px">
+          <h3 style="margin:0">📄 Aprovação de Pagamentos</h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="fin-filter" class="input" style="width:200px" onchange="loadFinOrders()">
+              <option value="awaiting_validation">Aguardando validação</option>
+              <option value="all">Todos os pedidos</option>
+              <option value="paid">Pagos</option>
+              <option value="refused">Recusados</option>
+              <option value="pending">Pendentes</option>
+            </select>
+            <button class="btn btn-ghost" onclick="loadFinanceiro()">↺ Atualizar</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Pedido</th>
+              <th>Produto</th>
+              <th>Valor</th>
+              <th>Cliente</th>
+              <th>Comprovante</th>
+              <th>Status</th>
+              <th>Data</th>
+              <th>Ações</th>
+            </tr></thead>
+            <tbody id="fin-orders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /page-financeiro -->
+
+    <!-- Modal recusar pagamento -->
+    <div id="fin-refuse-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;width:min(460px,90vw);display:grid;gap:14px">
+        <h3 style="margin:0;font-size:15px;">✕ Recusar Pagamento</h3>
+        <p style="margin:0;color:var(--muted);font-size:13px;">Informe o motivo (opcional). O cliente receberá a mensagem via WhatsApp.</p>
+        <input id="fin-refuse-reason" class="input" placeholder="Ex.: Comprovante ilegível, valor incorreto..." style="width:100%"/>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="closeFinRefuse()">Cancelar</button>
+          <button class="btn btn-red" onclick="confirmFinRefuse()">Confirmar Recusa</button>
+        </div>
+      </div>
+    </div>
 
     <!-- CATALOGS PAGE -->
     <div class="page" id="page-catalogs">
@@ -1415,10 +1521,11 @@ const api = {
       return await r.json();
     } catch (e) { console.error('API error:', e); return null; }
   },
-  get: (u) => api.call('GET', u),
-  post: (u, b) => api.call('POST', u, b),
-  del: (u, b) => api.call('DELETE', u, b),
-  put: (u, b) => api.call('PUT', u, b)
+  get:   (u)    => api.call('GET',    u),
+  post:  (u, b) => api.call('POST',   u, b),
+  del:   (u, b) => api.call('DELETE', u, b),
+  put:   (u, b) => api.call('PUT',    u, b),
+  patch: (u, b) => api.call('PATCH',  u, b)
 };
 
 // ═══════════════════════════════════════════════
@@ -1494,6 +1601,7 @@ function loadPage(name) {
   else if (name === 'audit') loadAudit();
   else if (name === 'alerts') loadAlerts();
   else if (name === 'orders') loadOrders();
+  else if (name === 'financeiro') loadFinanceiro();
   else if (name === 'catalogs') loadCatalogs();
   else if (name === 'analytics') loadAnalytics();
   else if (name === 'settings') loadSettings();
@@ -3742,6 +3850,213 @@ async function init() {
     }
   }, 10000);
   setInterval(loadNotifications, 30000);
+  // Atualiza badge do Financeiro a cada 60s
+  setInterval(async () => {
+    try {
+      const data = await api.get('/api/admin/financial/dashboard');
+      const badge = document.getElementById('fin-badge');
+      if (badge && data?.overall) {
+        const count = data.overall.awaitingValidation || 0;
+        badge.textContent = count;
+        badge.style.display = count > 0 ? '' : 'none';
+      }
+    } catch {}
+  }, 60000);
+}
+
+// ═══════════════════════════════════════════════
+// FINANCEIRO
+// ═══════════════════════════════════════════════
+
+let _finRefusingId = null;
+
+async function loadFinanceiro() {
+  await Promise.all([loadFinDashboard(), loadFinOrders(), loadPixCfgForm()]);
+}
+
+async function loadFinDashboard() {
+  try {
+    const data = await api.get('/api/admin/financial/dashboard');
+    if (!data) return;
+    const { today, overall } = data;
+    const f = (v) => Number(v||0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+
+    // KPI cards
+    const kpiEl = document.getElementById('fin-kpis');
+    if (kpiEl) {
+      const kpis = [
+        { cls:'kpi-blue',   val: today.pixGenerated,       label:'PIX Gerados Hoje',    sub:`Total: ${overall.pixGenerated}` },
+        { cls:'kpi-yellow', val: today.proofsSent,         label:'Comprovantes Hoje',   sub:`Total: ${overall.proofsSent}` },
+        { cls:'kpi-green',  val: today.approved,           label:'Aprovados Hoje',      sub:`Total: ${overall.approved}` },
+        { cls:'kpi-red',    val: today.refused,            label:'Recusados Hoje',      sub:`Total: ${overall.refused}` },
+        { cls:'kpi-green',  val: f(today.revenue),         label:'Receita Hoje',        sub:`Total: ${f(overall.totalReceived)}` },
+        { cls:'kpi-orange', val: overall.pending,          label:'Pendentes',           sub:`Ag. validação: ${overall.awaitingValidation}` },
+        { cls:'kpi-purple', val: f(overall.ticketMedio),   label:'Ticket Médio',        sub:'' },
+        { cls:'kpi-yellow', val: f(overall.totalPending),  label:'Total Pendente (R$)', sub:'' },
+      ];
+      kpiEl.innerHTML = kpis.map(k => `
+        <div class="kpi-card ${k.cls}">
+          <div class="kpi-val">${k.val}</div>
+          <div class="kpi-label">${k.label}</div>
+          ${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}
+        </div>`).join('');
+    }
+
+    // Badge no sidebar
+    const badge = document.getElementById('fin-badge');
+    if (badge) {
+      const count = overall.awaitingValidation || 0;
+      badge.textContent = count;
+      badge.style.display = count > 0 ? '' : 'none';
+    }
+
+    // Sumário
+    const sumEl = document.getElementById('fin-summary');
+    if (sumEl) {
+      const rows = [
+        ['Total recebido (pago)',   f(overall.totalReceived),   'var(--green)'],
+        ['Total pendente',          f(overall.totalPending),    'var(--yellow)'],
+        ['Ticket médio',            f(overall.ticketMedio),     'var(--blue)'],
+        ['Pedidos pagos',           overall.approved,           'var(--green)'],
+        ['Recusados',               overall.refused,            'var(--red)'],
+        ['PIX gerados (com chave)', overall.pixGenerated,       'var(--blue)'],
+      ];
+      sumEl.innerHTML = rows.map(([lbl, val, col]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bg3);">
+          <span style="font-size:12px;color:var(--muted)">${lbl}</span>
+          <span style="font-size:14px;font-weight:700;color:${col}">${val}</span>
+        </div>`).join('');
+    }
+  } catch(e) { console.error('loadFinDashboard', e); }
+}
+
+async function loadFinOrders() {
+  const tbody  = document.getElementById('fin-orders-tbody');
+  if (!tbody) return;
+  const filter = document.getElementById('fin-filter')?.value || 'awaiting_validation';
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>`;
+
+  try {
+    const url = filter === 'awaiting_validation'
+      ? '/api/admin/financial/pending-approval'
+      : `/api/admin/orders?status=${filter === 'all' ? '' : filter}&limit=50`;
+    const raw  = await api.get(url);
+    const list = Array.isArray(raw) ? raw : (raw?.items || []);
+
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="padding:20px;text-align:center">Nenhum pedido encontrado.</td></tr>`;
+      return;
+    }
+
+    const statusBadge = {
+      pending:             '<span class="badge badge-yellow">Aguardando PIX</span>',
+      awaiting_validation: '<span class="badge badge-blue">Comprovante enviado</span>',
+      paid:                '<span class="badge badge-green">Pago</span>',
+      refused:             '<span class="badge badge-red">Recusado</span>',
+    };
+
+    tbody.innerHTML = list.map(o => {
+      const short     = o.shortId ? `#${o.shortId}` : o.id.slice(0,8);
+      const proofLink = o.proofs?.length
+        ? o.proofs.map(p => `<a href="/proofs/${p.storedFileName}" target="_blank" rel="noopener" style="color:var(--blue);font-size:11px">${p.fileName}</a>`).join('<br>')
+        : '<span style="color:var(--muted);font-size:11px">Sem comprovante</span>';
+      const isAwaiting = o.status === 'awaiting_validation';
+      const actions = isAwaiting ? `
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-green" style="font-size:11px;padding:5px 10px" onclick="finApprove('${o.id}')">✓ Aprovar</button>
+          <button class="btn btn-red"   style="font-size:11px;padding:5px 10px" onclick="openFinRefuse('${o.id}')">✕ Recusar</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="finResend('${o.id}')">↺ Reenviar</button>
+        </div>` : '—';
+
+      return `<tr>
+        <td style="font-weight:700;white-space:nowrap">${short}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.productName || o.productId || '—')}</td>
+        <td style="white-space:nowrap;font-weight:600;color:var(--green)">${fmtBRL(o.amount)}</td>
+        <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.clientName || o.clientPhone || '—')}</td>
+        <td>${proofLink}</td>
+        <td>${statusBadge[o.status] || o.status}</td>
+        <td style="white-space:nowrap;color:var(--muted);font-size:11px">${fmtDate(o.createdAt)}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:16px">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+async function loadPixCfgForm() {
+  try {
+    const cfg = await api.get('/api/admin/pix-config');
+    if (!cfg) return;
+    if (cfg.pixKey)       document.getElementById('fin-pix-key')?.setAttribute('value', cfg.pixKey);
+    if (cfg.pixKeyType)   { const s = document.getElementById('fin-pix-type'); if (s) s.value = cfg.pixKeyType; }
+    if (cfg.receiverName) document.getElementById('fin-pix-name')?.setAttribute('value', cfg.receiverName);
+    if (cfg.receiverCity) document.getElementById('fin-pix-city')?.setAttribute('value', cfg.receiverCity);
+    // also set live values
+    if (cfg.pixKey && document.getElementById('fin-pix-key'))  document.getElementById('fin-pix-key').value  = cfg.pixKey;
+    if (cfg.receiverName && document.getElementById('fin-pix-name')) document.getElementById('fin-pix-name').value = cfg.receiverName;
+    if (cfg.receiverCity && document.getElementById('fin-pix-city')) document.getElementById('fin-pix-city').value = cfg.receiverCity;
+  } catch {}
+}
+
+async function savePixCfg() {
+  const pixKey      = document.getElementById('fin-pix-key')?.value.trim();
+  const pixKeyType  = document.getElementById('fin-pix-type')?.value;
+  const receiverName= document.getElementById('fin-pix-name')?.value.trim();
+  const receiverCity= document.getElementById('fin-pix-city')?.value.trim();
+  const fb          = document.getElementById('fin-pix-feedback');
+
+  if (!pixKey) { if (fb) { fb.style.color='var(--red)'; fb.textContent='Informe a chave Pix.'; fb.style.display=''; } return; }
+
+  try {
+    const r = await api.post('/api/admin/pix-config', { pixKey, pixKeyType, receiverName, receiverCity });
+    if (fb) {
+      fb.style.color = r?.ok ? 'var(--green)' : 'var(--red)';
+      fb.textContent  = r?.ok ? '✓ Configuração salva!' : (r?.error || 'Erro ao salvar.');
+      fb.style.display = '';
+      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 3000);
+    }
+  } catch(e) {
+    if (fb) { fb.style.color='var(--red)'; fb.textContent='Erro: ' + e.message; fb.style.display=''; }
+  }
+}
+
+async function finApprove(id) {
+  if (!confirm('Aprovar este pagamento? O cliente será notificado via WhatsApp.')) return;
+  try {
+    await api.patch(`/api/admin/orders/${id}`, { status: 'paid' });
+    await loadFinanceiro();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+function openFinRefuse(id) {
+  _finRefusingId = id;
+  const modal = document.getElementById('fin-refuse-modal');
+  document.getElementById('fin-refuse-reason').value = '';
+  modal.style.display = 'flex';
+}
+
+function closeFinRefuse() {
+  _finRefusingId = null;
+  document.getElementById('fin-refuse-modal').style.display = 'none';
+}
+
+async function confirmFinRefuse() {
+  if (!_finRefusingId) return;
+  const reason = document.getElementById('fin-refuse-reason').value.trim();
+  try {
+    await api.patch(`/api/admin/orders/${_finRefusingId}`, { status: 'refused', refuseReason: reason || 'Motivo não informado' });
+    closeFinRefuse();
+    await loadFinanceiro();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function finResend(id) {
+  if (!confirm('Solicitar reenvio de comprovante para o cliente?')) return;
+  try {
+    await api.patch(`/api/admin/orders/${id}`, { status: 'pending', adminNote: 'Reenvio de comprovante solicitado' });
+    await loadFinOrders();
+  } catch(e) { alert('Erro: ' + e.message); }
 }
 
 // Auto-login if token saved
