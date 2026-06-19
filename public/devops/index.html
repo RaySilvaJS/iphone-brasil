@@ -636,11 +636,16 @@ tbody tr:last-child td { border-bottom: none; }
       <div class="card">
         <h3>Comandos</h3>
         <div class="btn-group">
-          <button class="btn btn-blue" id="btn-deploy" onclick="startDeploy()">🚀 Atualizar Sistema</button>
+          <button class="btn btn-blue" id="btn-deploy-full" onclick="startDeploy('full')">🚀 Deploy Completo</button>
+          <button class="btn btn-yellow" id="btn-deploy-quick" onclick="confirmQuickDeploy()">⚡ Deploy Rápido</button>
           <button class="btn btn-yellow" onclick="sysCmd('restart-app')">↺ Reiniciar App</button>
           <button class="btn btn-ghost" onclick="sysCmd('restart-pm2')">↺ Reiniciar PM2</button>
           <button class="btn btn-ghost" onclick="sysCmd('restart-nginx')">↺ Reiniciar Nginx</button>
           <button class="btn btn-ghost" onclick="sysCmd('clear-cache')">🗑 Limpar Cache</button>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--muted)">
+          <span>🚀 <strong>Completo</strong>: backup otimizado + git pull + npm install + pm2</span>
+          <span>⚡ <strong>Rápido</strong>: git pull + npm install (se alterado) + pm2 &mdash; sem backup</span>
         </div>
         <h3>Terminal</h3>
         <div class="terminal" id="deploy-terminal"><span style="color:var(--muted)">Aguardando comando...</span></div>
@@ -648,6 +653,23 @@ tbody tr:last-child td { border-bottom: none; }
       <div class="card">
         <h3>Histórico de Deploys</h3>
         <div id="deploy-history"></div>
+      </div>
+    </div>
+
+    <!-- Modal Deploy Rápido -->
+    <div id="modal-quick-deploy" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.6);align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:14px;padding:30px 28px 24px;max-width:460px;width:calc(100% - 32px);box-shadow:0 24px 64px rgba(0,0,0,.28);">
+        <div style="font-size:38px;text-align:center;margin-bottom:10px;">⚡</div>
+        <h3 style="margin:0 0 16px;text-align:center;color:#0F172A;font-size:16px;">Deploy Rápido — Sem Backup</h3>
+        <div style="background:#FFFBEB;border:1.5px solid #F59E0B;border-radius:8px;padding:14px 16px;margin-bottom:18px;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400E;">⚠ ATENÇÃO</p>
+          <p style="margin:0;font-size:13px;color:#78350F;line-height:1.5;">Esta atualização será executada <strong>sem backup</strong>. Caso algo dê errado, não será possível realizar rollback automático. Deseja continuar?</p>
+        </div>
+        <p style="margin:0 0 22px;font-size:12px;color:#64748b;line-height:1.5;">Serão executados: <code>git pull</code> → <code>npm install</code> (somente se package.json alterado) → <code>pm2 restart</code></p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-ghost" onclick="closeQuickModal()">Cancelar</button>
+          <button class="btn btn-yellow" onclick="startDeploy('quick')">Confirmar Atualização</button>
+        </div>
       </div>
     </div>
 
@@ -2059,27 +2081,65 @@ async function loadDeploy() {
     <div class="wa-info-grid">
       <span class="key">Data</span><span class="val">${fmtDate(ld.at)}</span>
       <span class="key">Por</span><span class="val">${esc(ld.by)}</span>
-      <span class="key">Status</span><span class="val"><span class="badge ${ld.status === 'success' ? 'badge-green' : 'badge-red'}">${ld.status}</span></span>
+      <span class="key">Tipo</span><span class="val"><span class="badge ${ld.type === 'Rápido' ? 'badge-yellow' : 'badge-blue'}">${esc(ld.type || 'Completo')}</span></span>
+      <span class="key">Duração</span><span class="val">${ld.duration ? ld.duration + 's' : '—'}</span>
+      <span class="key">Status</span><span class="val"><span class="badge ${ld.status === 'success' ? 'badge-green' : 'badge-red'}">${ld.status === 'success' ? 'Sucesso' : 'Falha'}</span></span>
       ${ld.error ? `<span class="key">Erro</span><span class="val" style="color:var(--red)">${esc(ld.error)}</span>` : ''}
     </div>
   ` : '<p style="color:var(--muted);font-size:13px">Nenhum deploy realizado.</p>';
 
   document.getElementById('deploy-history').innerHTML = (info.deployHistory || []).length ? `
     <table style="width:100%;border-collapse:collapse">
-      <thead><tr><th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Data</th><th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Por</th><th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Status</th></tr></thead>
-      <tbody>${info.deployHistory.map(d => `<tr><td style="padding:8px;font-size:13px">${fmtDate(d.at)}</td><td style="padding:8px;font-size:13px">${esc(d.by)}</td><td style="padding:8px"><span class="badge ${d.status === 'success' ? 'badge-green' : 'badge-red'}">${d.status}</span></td></tr>`).join('')}</tbody>
+      <thead><tr>
+        <th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Data/Hora</th>
+        <th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Usuário</th>
+        <th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Tipo</th>
+        <th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Duração</th>
+        <th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Status</th>
+      </tr></thead>
+      <tbody>${info.deployHistory.map(d => `
+        <tr style="border-top:1px solid var(--border)">
+          <td style="padding:8px;font-size:12px">${fmtDate(d.at)}</td>
+          <td style="padding:8px;font-size:12px">${esc(d.by)}</td>
+          <td style="padding:8px"><span class="badge ${d.type === 'Rápido' ? 'badge-yellow' : 'badge-blue'}" style="font-size:10px">${esc(d.type || 'Completo')}</span></td>
+          <td style="padding:8px;font-size:12px;color:var(--muted)">${d.duration ? d.duration + 's' : '—'}</td>
+          <td style="padding:8px"><span class="badge ${d.status === 'success' ? 'badge-green' : 'badge-red'}">${d.status === 'success' ? 'Sucesso' : 'Falha'}</span></td>
+        </tr>`).join('')}
+      </tbody>
     </table>` : '<p style="color:var(--muted);font-size:13px">Sem histórico.</p>';
 }
 
-async function startDeploy() {
-  if (!confirm('Confirma o deploy?\n\nExecutará: git pull, npm install e deploy.sh')) return;
-  const btn = document.getElementById('btn-deploy');
+function confirmQuickDeploy() {
+  const modal = document.getElementById('modal-quick-deploy');
+  if (modal) { modal.style.display = 'flex'; }
+}
+
+function closeQuickModal() {
+  const modal = document.getElementById('modal-quick-deploy');
+  if (modal) { modal.style.display = 'none'; }
+}
+
+// Fecha modal ao clicar fora
+document.addEventListener('click', e => {
+  const modal = document.getElementById('modal-quick-deploy');
+  if (modal && e.target === modal) closeQuickModal();
+});
+
+async function startDeploy(mode) {
+  closeQuickModal();
+  const btnFull  = document.getElementById('btn-deploy-full');
+  const btnQuick = document.getElementById('btn-deploy-quick');
   const term = document.getElementById('deploy-terminal');
-  btn.disabled = true;
+  if (btnFull)  btnFull.disabled  = true;
+  if (btnQuick) btnQuick.disabled = true;
   term.innerHTML = '';
 
   try {
-    const resp = await fetch('/api/admin/system/deploy', { method: 'POST', headers: { 'X-Admin-Token': adminToken } });
+    const resp = await fetch('/api/admin/system/deploy', {
+      method: 'POST',
+      headers: { 'X-Admin-Token': adminToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: mode || 'full' })
+    });
     const reader = resp.body.getReader();
     const dec = new TextDecoder();
     let buf = '';
@@ -2101,7 +2161,8 @@ async function startDeploy() {
   } catch (e) {
     term.innerHTML += `<div class="term-line term-error">Erro de conexão: ${esc(e.message)}</div>`;
   }
-  btn.disabled = false;
+  if (btnFull)  btnFull.disabled  = false;
+  if (btnQuick) btnQuick.disabled = false;
   setTimeout(loadDeploy, 500);
 }
 

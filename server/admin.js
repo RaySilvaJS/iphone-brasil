@@ -129,6 +129,8 @@ router.post('/system/deploy', adminAuth, (req, res) => {
     'X-Accel-Buffering': 'no'
   });
 
+  const mode = (req.body && req.body.mode === 'quick') ? 'quick' : 'full';
+
   const send = (type, data) => {
     try { res.write(`data: ${JSON.stringify({ type, data, ts: Date.now() })}\n\n`); } catch {}
     logger.deploy(String(data));
@@ -144,54 +146,106 @@ router.post('/system/deploy', adminAuth, (req, res) => {
   });
 
   (async () => {
+    const startedAt = Date.now();
     const cfg = loadConfig();
-    const record = { id: uuidv4(), at: new Date().toISOString(), by: req.adminUser?.email || req.adminUser?.nome || 'admin' };
-    try {
-      send('start', 'Iniciando deploy...');
+    const record = {
+      id: uuidv4(),
+      at: new Date().toISOString(),
+      by: req.adminUser?.email || req.adminUser?.nome || 'admin',
+      type: mode === 'quick' ? 'Rápido' : 'Completo'
+    };
 
-      // ── Backup automático pré-deploy ───────────────────────────────────────
-      send('step', '▶ Criando backup pré-deploy...');
-      try {
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        const tarName = `pre-deploy_${stamp}.tar.gz`;
-        const tarPath = path.join(BACKUPS, tarName);
-        await new Promise((res2, rej2) => {
-          exec(`tar -czf "${tarPath}" -C "${ROOT}" server/data 2>&1`, (err, out) => {
-            if (err) {
-              // JSON fallback
-              try {
-                const data = {};
-                ['payments.json','users.json','products.json','config.json','security.json'].forEach(f => {
-                  const fp = path.join(DATA, f);
-                  if (fs.existsSync(fp)) { try { data[f] = JSON.parse(fs.readFileSync(fp, 'utf-8')); } catch {} }
-                });
-                fs.writeFileSync(path.join(BACKUPS, `pre-deploy_${stamp}.json`), JSON.stringify(data, null, 2));
-                send('log', `⚠ tar indisponível — backup JSON criado: pre-deploy_${stamp}.json`);
-              } catch { send('log', '⚠ Backup pré-deploy falhou (não crítico, deploy continua)'); }
-            } else {
-              send('log', `✓ Backup criado: ${tarName}`);
-            }
-            res2();
+    try {
+      send('start', mode === 'quick' ? '⚡ Iniciando Deploy Rápido (sem backup)...' : '🚀 Iniciando Deploy Completo...');
+
+      if (mode === 'full') {
+        // ── Backup otimizado pré-deploy (exclui backups anteriores e arquivos grandes) ──
+        send('step', '▶ Criando backup dos dados...');
+        try {
+          const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+          const tarName = `pre-deploy_${stamp}.tar.gz`;
+          const tarPath = path.join(BACKUPS, tarName);
+          await new Promise((res2) => {
+            // Exclui: backups anteriores (recursivo!), proofs (grandes), node_modules, .git, uploads
+            const excludes = [
+              '--exclude=server/data/backups',
+              '--exclude=server/data/proofs',
+              '--exclude=node_modules',
+              '--exclude=.git',
+              '--exclude=public/uploads'
+            ].join(' ');
+            exec(`tar -czf "${tarPath}" ${excludes} -C "${ROOT}" server/data 2>&1`, (err) => {
+              if (err) {
+                // JSON fallback — apenas os arquivos JSON críticos
+                try {
+                  const jsonData = {};
+                  ['payments.json','users.json','products.json','config.json','security.json'].forEach(f => {
+                    const fp = path.join(DATA, f);
+                    if (fs.existsSync(fp)) { try { jsonData[f] = JSON.parse(fs.readFileSync(fp, 'utf-8')); } catch {} }
+                  });
+                  const jsonName = `pre-deploy_${stamp}.json`;
+                  fs.writeFileSync(path.join(BACKUPS, jsonName), JSON.stringify(jsonData, null, 2));
+                  record.preDeployBackup = jsonName;
+                  send('log', `✓ Backup JSON criado: ${jsonName}`);
+                } catch { send('log', '⚠ Backup falhou (não crítico, deploy continua)'); }
+              } else {
+                record.preDeployBackup = tarName;
+                send('log', `✓ Backup criado: ${tarName} (node_modules e uploads excluídos)`);
+              }
+              res2();
+            });
+          });
+        } catch (backupErr) {
+          send('log', `⚠ Erro no backup: ${backupErr.message} (deploy continua)`);
+        }
+      } else {
+        send('log', '⚡ Modo rápido — backup ignorado');
+      }
+
+      // ── git pull ──────────────────────────────────────────────────────────
+      await runCmd('git pull origin main', 'git', ['pull', 'origin', 'main']);
+
+      // ── npm install (apenas se package.json mudou) ─────────────────────────
+      if (mode === 'full') {
+        await runCmd('npm install', 'npm', ['install', '--omit=dev']);
+      } else {
+        // No modo rápido, instala somente se package.json foi alterado no pull
+        const pkgChanged = await new Promise(resolve => {
+          exec('git diff HEAD~1 HEAD -- package.json', { cwd: ROOT }, (err, stdout) => {
+            resolve(!err && stdout.trim().length > 0);
           });
         });
-        record.preDeployBackup = tarName;
-      } catch (backupErr) {
-        send('log', `⚠ Erro no backup pré-deploy: ${backupErr.message} (deploy continua)`);
+        if (pkgChanged) {
+          send('log', 'ℹ package.json foi alterado — executando npm install...');
+          await runCmd('npm install', 'npm', ['install', '--omit=dev']);
+        } else {
+          send('log', 'ℹ package.json sem alterações — npm install ignorado');
+        }
       }
-      // ──────────────────────────────────────────────────────────────────────
 
-      await runCmd('git pull origin main', 'git', ['pull', 'origin', 'main']);
-      await runCmd('npm install', 'npm', ['install', '--omit=dev']);
+      // ── deploy.sh (se existir) ────────────────────────────────────────────
       if (fs.existsSync(path.join(ROOT, 'deploy.sh'))) {
         await runCmd('bash deploy.sh', 'bash', ['deploy.sh']);
       }
+
+      // ── pm2 restart ───────────────────────────────────────────────────────
+      try {
+        await runCmd('pm2 restart all', 'pm2', ['restart', 'all']);
+      } catch (pm2Err) {
+        send('log', `⚠ pm2 restart: ${pm2Err.message} (processo reiniciará naturalmente)`);
+      }
+
       record.status = 'success';
-      send('done', 'Deploy concluído com sucesso!');
+      record.duration = Math.round((Date.now() - startedAt) / 1000);
+      send('done', `Deploy ${mode === 'quick' ? 'rápido' : 'completo'} concluído em ${record.duration}s!`);
+
     } catch (err) {
       record.status = 'error';
       record.error = err.message;
+      record.duration = Math.round((Date.now() - startedAt) / 1000);
       send('error', `Deploy falhou: ${err.message}`);
     }
+
     cfg.lastDeploy = record;
     cfg.deployHistory = [record, ...(cfg.deployHistory || [])].slice(0, 20);
     saveConfig(cfg);
