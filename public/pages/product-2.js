@@ -138,13 +138,140 @@
       return;
     }
     await window.addToCart(productId);
-    if (typeof window._showTypingMessage === 'function') {
-      window._showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {
-        window.location.href = 'cart.html';
-      });
-    } else {
-      window.location.href = 'cart.html';
+    // Salva o item como compra direta (lido pelo checkout.html?source=buy)
+    const cartItem = window.cart && window.cart.items && window.cart.items.find(i => String(i.id) === String(productId));
+    if (cartItem) {
+      localStorage.setItem('iphone-vendas-buy-now', JSON.stringify({ ...cartItem, quantidade: 1 }));
+    } else if (window._buyNowProduct) {
+      localStorage.setItem('iphone-vendas-buy-now', JSON.stringify({
+        id: window._buyNowProduct.id,
+        nome: window._buyNowProduct.nome,
+        preco: window._buyNowProduct.preco,
+        imagem: window._buyNowProduct.imagem,
+        quantidade: 1,
+        descontoHoje: 0,
+        brinde: null,
+        freteGratis: false,
+        precoOriginal: null,
+      }));
     }
+    _showBuyLoading();
+  };
+
+  // ── Loading overlay ("Preparando tudo para sua compra") ──────────────────────
+  function _showBuyLoading() {
+    const ov = document.createElement('div');
+    ov.id = '__buy-loading';
+    ov.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
+    ov.innerHTML = `
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:buyLoadSpin 1s linear infinite">
+        <circle cx="22" cy="22" r="18" stroke="#E5E7EB" stroke-width="4"/>
+        <path d="M22 4a18 18 0 0 1 18 18" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div style="text-align:center">
+        <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px">Preparando tudo para sua compra</div>
+        <div style="font-size:13px;color:#6B7280">Aguarde um momento...</div>
+      </div>
+      <style>@keyframes buyLoadSpin{to{transform:rotate(360deg)}}</style>`;
+    document.body.appendChild(ov);
+    setTimeout(() => { ov.remove(); _showInsuranceModal(); }, 1600);
+  }
+
+  // ── Modal de seguro ──────────────────────────────────────────────────────────
+  function _showInsuranceModal() {
+    const p = window._buyNowProduct || {};
+    const price = p.preco || 0;
+    const pNome = p.nome || 'este produto';
+    const pImg  = p.imagem || '';
+
+    const g  = Math.round(price * 0.115);
+    const rOrig = Math.round(price * 0.14);
+    const rFinal = Math.round(rOrig * 0.85);
+
+    const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const ov = document.createElement('div');
+    ov.id = '__insurance-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:99999;display:flex;flex-direction:column;overflow-y:auto;font-family:Inter,system-ui,sans-serif;';
+    ov.innerHTML = `
+      <div style="padding:20px 18px 0;border-bottom:1px solid #F3F4F6">
+        <h2 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#111827">Adicione um seguro</h2>
+      </div>
+      <div style="padding:16px 18px;flex:1">
+        <div style="background:#F8FAFC;border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:#374151;line-height:1.5">
+          <span style="color:#2563EB;font-weight:600">Proteja seu produto</span> por 12 meses contra todo tipo de roubo, danos e/ou falhas mecânicas.
+        </div>
+
+        <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+          <div style="width:52px;height:52px;border-radius:50%;border:2.5px solid #16A34A;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background:#F0FDF4">
+            ${pImg ? `<img src="${pImg}" style="width:38px;height:38px;object-fit:contain">` : '<span style="font-size:22px">📱</span>'}
+            <svg style="position:absolute;bottom:0;right:0;color:#16A34A" width="18" height="18" viewBox="0 0 24 24" fill="#16A34A"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;color:#6B7280;margin-bottom:2px">Proteções para:</div>
+            <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pNome}</div>
+          </div>
+        </div>
+
+        <div id="__ins-opt-g" onclick="_selectInsurance('g')" style="border:1.5px solid #E5E7EB;border-radius:10px;padding:16px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:border-color .15s">
+          <span style="font-size:15px;font-weight:600;color:#111827">Garantia estendida</span>
+          <span style="font-size:15px;font-weight:700;color:#111827">${fmt(g)}</span>
+        </div>
+
+        <div id="__ins-opt-r" onclick="_selectInsurance('r')" style="border:1.5px solid #2563EB;background:#EFF6FF;border-radius:10px;padding:16px 18px;margin-bottom:6px;cursor:pointer;position:relative;transition:border-color .15s">
+          <div style="position:absolute;top:-1px;right:12px;background:#111827;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:0 0 6px 6px;letter-spacing:.5px">RECOMENDADO</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end">
+            <span style="font-size:15px;font-weight:600;color:#111827">Roubo + Danos</span>
+            <div style="text-align:right">
+              <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+                <s style="color:#9CA3AF;font-size:12px">${fmt(rOrig)}</s>
+                <span style="background:#DCFCE7;color:#16A34A;font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px">15% OFF</span>
+              </div>
+              <div style="font-size:17px;font-weight:800;color:#111827">${fmt(rFinal)}</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#6B7280;text-align:right;margin-bottom:24px">Você economiza ${fmt(rOrig - rFinal)}</div>
+      </div>
+
+      <div style="padding:14px 18px;border-top:1px solid #F3F4F6;background:#fff;position:sticky;bottom:0">
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <button onclick="_skipInsurance()" style="flex:1;padding:14px;background:#F1F5F9;color:#2563EB;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer">Agora não</button>
+          <button id="__ins-add-btn" onclick="_addInsurance(${g},${rFinal})" style="flex:1;padding:14px;background:#2563EB;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;opacity:.4;pointer-events:none">Adicionar</button>
+        </div>
+        <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:0">Ao adicionar, você aceita as <span style="color:#2563EB">Condições gerais</span> e os <span style="color:#2563EB">Termos de cobrança do Prêmio do seguro</span>.</p>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+
+  let _insSelected = null;
+  window._selectInsurance = (type) => {
+    _insSelected = type;
+    const optG = document.getElementById('__ins-opt-g');
+    const optR = document.getElementById('__ins-opt-r');
+    const btn  = document.getElementById('__ins-add-btn');
+    if (optG) optG.style.borderColor = type === 'g' ? '#2563EB' : '#E5E7EB';
+    if (optG) optG.style.background  = type === 'g' ? '#EFF6FF' : '#fff';
+    if (optR) optR.style.borderColor = type === 'r' ? '#2563EB' : '#E5E7EB';
+    if (optR) optR.style.background  = type === 'r' ? '#EFF6FF' : '#fff';
+    if (btn)  { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+  };
+
+  window._skipInsurance = () => {
+    sessionStorage.removeItem('buy-insurance');
+    document.getElementById('__insurance-modal')?.remove();
+    window.location.href = 'checkout.html?source=buy';
+  };
+
+  window._addInsurance = (gPrice, rPrice) => {
+    if (!_insSelected) return;
+    const p = window._buyNowProduct || {};
+    const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const chosenPrice = _insSelected === 'g' ? gPrice : rPrice;
+    const chosenLabel = _insSelected === 'g' ? 'Garantia estendida 12 meses' : 'Seguro Roubo + Danos 12 meses';
+    sessionStorage.setItem('buy-insurance', JSON.stringify({ label: chosenLabel, price: chosenPrice }));
+    document.getElementById('__insurance-modal')?.remove();
+    window.location.href = 'checkout.html?source=buy';
   };
 
   const getFavs = () => { try { return JSON.parse(localStorage.getItem('iphone-favs') || '[]'); } catch { return []; } };
@@ -1165,6 +1292,16 @@
       const storeDiscount = Math.max(0, Math.min(99, Number(config.descontoPadrao) || 0));
 
       _catalog = siblings && siblings.length ? siblings : [product];
+
+      const _finalPrice = storeDiscount > 0
+        ? Math.round(product.price * (1 - storeDiscount / 100) * 100) / 100
+        : (product.price || product.preco || 0);
+      window._buyNowProduct = {
+        id: product.id,
+        nome: product.name || product.nome || 'Produto',
+        preco: _finalPrice,
+        imagem: Array.isArray(product.images) ? product.images[0] : (product.image || product.imagem || '')
+      };
 
       renderProduct(product, storeDiscount);
       loadRelatedFromData(related || []);

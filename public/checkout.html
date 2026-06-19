@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8"/>
@@ -11,222 +11,276 @@
     html, body { margin: 0; padding: 0; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      background: #F8FAFC;
+      background: #F1F5F9;
       color: #111827;
       font-size: 14px;
       line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 100px;
     }
     a { color: inherit; text-decoration: none; }
-    button, input { font: inherit; }
+    button, input, select { font: inherit; }
     img { max-width: 100%; display: block; }
 
     /* HEADER */
-    .hdr {
+    .co-hdr {
       background: #fff;
       border-bottom: 1px solid #E5E7EB;
-      padding: 0 24px;
+      padding: 0 16px;
       height: 56px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .hdr-logo { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: -.02em; }
-    .hdr-logo span { color: #2563EB; }
-    .hdr-lock {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 12px; font-weight: 600; color: #6B7280;
-    }
-
-    /* STEPS */
-    .steps {
-      background: #fff;
-      border-bottom: 1px solid #E5E7EB;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      padding: 0 24px;
-      height: 48px;
-    }
-    .step {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 600; color: #9CA3AF;
-    }
-    .step.done  { color: #16A34A; }
-    .step.active { color: #2563EB; }
-    .step-dot {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: #F3F4F6; border: 2px solid #E5E7EB;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700; color: #9CA3AF; flex-shrink: 0;
-    }
-    .step.done  .step-dot { background: #16A34A; border-color: #16A34A; color: #fff; }
-    .step.active .step-dot { background: #2563EB; border-color: #2563EB; color: #fff; }
-    .step-sep { width: 40px; height: 1px; background: #E5E7EB; margin: 0 8px; flex-shrink: 0; }
-    .step-sep.done { background: #16A34A; }
-
-    /* LAYOUT */
-    .shell {
-      max-width: 860px; margin: 0 auto;
-      padding: 24px 16px 60px;
-      display: flex; gap: 20px; align-items: flex-start;
-    }
-    .col-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
-    .col-side { flex: 0 0 272px; max-width: 272px; position: sticky; top: 16px; }
-
-    /* CARD */
-    .card {
-      background: #fff;
-      border: 1px solid #E5E7EB;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .card-title {
-      padding: 14px 18px;
-      border-bottom: 1px solid #F3F4F6;
-      font-size: 13px; font-weight: 700; color: #374151;
-    }
-    .card-body { padding: 16px 18px; }
-
-    /* ORDER ITEMS (injetado pelo checkout.js) */
-    .order-item {
-      display: flex; gap: 12px; align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #F3F4F6;
-    }
-    .order-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .order-item:first-child { padding-top: 0; }
-    .order-item img {
-      width: 60px; height: 60px; border-radius: 8px;
-      border: 1px solid #E5E7EB; object-fit: contain;
-      padding: 4px; background: #FAFAFA; flex-shrink: 0;
-    }
-    .order-item-details { flex: 1; min-width: 0; }
-    .order-item-details strong { display: block; font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 2px; }
-    .order-item-details p { margin: 2px 0; font-size: 12px; color: #6B7280; }
-
-    /* ENDEREÇO */
-    .addr-option {
-      display: flex; gap: 10px; align-items: flex-start;
-      padding: 12px 14px;
-      border: 1.5px solid #E5E7EB; border-radius: 8px;
-      background: #fff; cursor: pointer; margin-bottom: 8px;
-    }
-    .addr-option:last-child { margin-bottom: 0; }
-    .addr-option.selected { border-color: #2563EB; background: #EFF6FF; }
-    .addr-option input[type=radio] { margin-top: 3px; flex-shrink: 0; }
-    .addr-option .addr-name { font-weight: 700; font-size: 13px; color: #111827; }
-    .addr-option .addr-line { font-size: 12.5px; color: #6B7280; margin-top: 2px; }
-    .addr-badge {
-      display: inline-block; margin-left: 6px; padding: 1px 6px;
-      background: #DBEAFE; color: #2563EB; border-radius: 4px;
-      font-size: 10.5px; font-weight: 700; vertical-align: middle;
-    }
-    .addr-empty {
-      text-align: center; padding: 8px 0;
-    }
-    .btn-add-addr {
-      display: inline-block; margin-top: 10px;
-      padding: 9px 16px; background: #2563EB; color: #fff;
-      border-radius: 8px; font-size: 13px; font-weight: 600;
-    }
-    .sum-addr {
-      font-size: 12.5px; color: #374151; padding: 8px 0;
-      border-bottom: 1px solid #F3F4F6; line-height: 1.5;
-    }
-
-    /* CEP */
-    .cep-row { display: flex; gap: 8px; align-items: flex-end; }
-    label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
-    input[type=text] {
-      width: 100%; padding: 10px 12px;
-      border: 1px solid #D1D5DB; border-radius: 8px;
-      background: #fff; color: #111827; font-size: 14px; outline: none;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    input[type=text]:focus {
-      border-color: #2563EB;
-      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-    }
-    input::placeholder { color: #D1D5DB; }
-    .btn-calc {
-      padding: 10px 16px;
-      background: #2563EB; color: #fff;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+    .co-hdr-back {
+      width: 36px; height: 36px; border: none; background: transparent;
+      cursor: pointer; border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; color: #374151; flex-shrink: 0;
       transition: background .15s;
     }
-    .btn-calc:hover { background: #1D4ED8; }
-    /* nunca empilha o botão calcular */
-    @media (max-width: 480px) {
-      .cep-row { flex-direction: row; }
-      .btn-calc { width: auto; }
+    .co-hdr-back:hover { background: #F3F4F6; }
+    .co-hdr-title { font-size: 16px; font-weight: 700; color: #111827; flex: 1; }
+    .co-hdr-lock {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: #6B7280;
     }
 
-    /* FRETE (injetado pelo checkout.js) */
-    .muted { font-size: 13px; color: #6B7280; }
-    .shipping-option {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px;
-      border: 1.5px solid #E5E7EB; border-radius: 8px;
-      background: #fff; cursor: pointer; margin-bottom: 8px;
+    /* SHELL */
+    .co-shell {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* SECTION CARD */
+    .co-card {
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .co-card-hdr {
+      padding: 14px 18px 10px;
+      font-size: 15px; font-weight: 700; color: #111827;
+      border-bottom: 1px solid #F3F4F6;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .co-card-hdr svg { color: #6B7280; flex-shrink: 0; }
+    .co-card-body { padding: 14px 18px; }
+
+    /* PRODUCT PREVIEW */
+    .co-product {
+      display: flex; gap: 12px; align-items: center;
+      padding: 14px 18px;
+    }
+    .co-product img {
+      width: 62px; height: 62px; object-fit: contain;
+      border: 1px solid #E5E7EB; border-radius: 8px; background: #FAFAFA;
+      padding: 4px; flex-shrink: 0;
+    }
+    .co-product-info { flex: 1; min-width: 0; }
+    .co-product-name {
+      font-size: 13px; font-weight: 600; color: #111827;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .co-product-qty { font-size: 12px; color: #6B7280; }
+    .co-product-price { font-size: 15px; font-weight: 800; color: #111827; flex-shrink: 0; }
+
+    /* ADDRESS OPTIONS */
+    .co-addr-opt {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 12px 14px; border: 1.5px solid #E5E7EB; border-radius: 10px;
+      cursor: pointer; margin-bottom: 8px; transition: all .15s;
+    }
+    .co-addr-opt:last-of-type { margin-bottom: 0; }
+    .co-addr-opt.selected { border-color: #2563EB; background: #EFF6FF; }
+    .co-addr-opt input[type=radio] { margin-top: 2px; accent-color: #2563EB; flex-shrink: 0; }
+    .co-addr-name { font-weight: 700; font-size: 13px; color: #111827; }
+    .co-addr-badge {
+      display: inline-block; margin-left: 6px; padding: 1px 6px;
+      background: #DBEAFE; color: #2563EB; border-radius: 4px;
+      font-size: 10px; font-weight: 700;
+    }
+    .co-addr-line { font-size: 12px; color: #6B7280; margin-top: 2px; line-height: 1.4; }
+    .co-add-addr {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 10px; color: #2563EB; font-size: 13px; font-weight: 600;
+    }
+
+    /* CEP / FRETE */
+    .co-cep-row { display: flex; gap: 8px; margin-bottom: 4px; }
+    .co-cep-input {
+      flex: 1; padding: 10px 13px;
+      border: 1.5px solid #D1D5DB; border-radius: 8px;
+      color: #111827; font-size: 14px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .co-cep-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    .co-cep-input::placeholder { color: #D1D5DB; }
+    .co-calc-btn {
+      padding: 10px 16px; background: #2563EB; color: #fff;
+      border: none; border-radius: 8px; cursor: pointer;
+      font-size: 13px; font-weight: 600; white-space: nowrap;
+      transition: background .15s;
+    }
+    .co-calc-btn:hover { background: #1D4ED8; }
+    .co-cep-hint { font-size: 11px; color: #9CA3AF; margin-top: 4px; }
+
+    /* SHIPPING OPTIONS */
+    .co-ship-opt {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 14px; border: 1.5px solid #E5E7EB; border-radius: 10px;
+      cursor: pointer; margin-bottom: 8px; transition: all .15s;
+    }
+    .co-ship-opt:last-child { margin-bottom: 0; }
+    .co-ship-opt.selected { border-color: #2563EB; background: #EFF6FF; }
+    .co-ship-opt input[type=radio] { accent-color: #2563EB; flex-shrink: 0; }
+    .co-ship-icon {
+      width: 34px; height: 34px; background: #F1F5F9; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .co-ship-info { flex: 1; }
+    .co-ship-name { font-size: 13px; font-weight: 700; color: #111827; }
+    .co-ship-eta  { font-size: 12px; color: #6B7280; margin-top: 1px; }
+    .co-ship-price { font-size: 15px; font-weight: 800; color: #111827; }
+    .co-ship-free  { font-size: 15px; font-weight: 800; color: #16A34A; }
+
+    /* PAYMENT METHODS */
+    .co-pay-opt {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border: 1.5px solid #E5E7EB; border-radius: 10px;
+      cursor: pointer; margin-bottom: 8px; transition: all .15s; background: #fff;
+    }
+    .co-pay-opt:last-child { margin-bottom: 0; }
+    .co-pay-opt.selected { border-color: #2563EB; background: #EFF6FF; }
+    .co-pay-opt input[type=radio] { accent-color: #2563EB; flex-shrink: 0; }
+    .co-pay-logo {
+      width: 40px; height: 40px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 18px; font-weight: 900;
+    }
+    .co-pay-logo.pix  { background: #00BFA5; color: #fff; }
+    .co-pay-logo.card { background: #111827; color: #fff; }
+    .co-pay-label { font-size: 14px; font-weight: 700; color: #111827; }
+    .co-pay-sub   { font-size: 12px; color: #6B7280; margin-top: 1px; }
+    .co-pay-badge {
+      margin-left: auto; background: #DCFCE7; color: #16A34A;
+      font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+    }
+
+    /* CARD FORM */
+    #co-card-form {
+      display: none;
+      margin-top: 14px; padding: 16px; background: #F8FAFC;
+      border-radius: 10px; border: 1px solid #E5E7EB;
+    }
+    #co-card-form.visible { display: block; }
+    .co-form-row { display: flex; gap: 10px; }
+    .co-form-field { flex: 1; display: flex; flex-direction: column; margin-bottom: 12px; }
+    .co-form-field:last-child { margin-bottom: 0; }
+    .co-form-field label { font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+    .co-form-field input {
+      padding: 11px 13px; border: 1.5px solid #D1D5DB;
+      border-radius: 8px; color: #111827; font-size: 14px; outline: none;
       transition: border-color .15s;
     }
-    .shipping-option:last-child { margin-bottom: 0; }
-    .shipping-option.selected { border-color: #2563EB; background: #EFF6FF; }
-    .price { font-size: 15px; font-weight: 700; color: #111827; }
+    .co-form-field input:focus { border-color: #2563EB; }
+    .co-form-field input::placeholder { color: #D1D5DB; }
 
-    /* RESUMO SIDEBAR */
-    .sum-rows { display: flex; flex-direction: column; gap: 0; }
-    .sum-row {
+    /* FATURAMENTO */
+    .co-billing-line {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px;
+    }
+    .co-billing-line:last-child { border-bottom: none; }
+    .co-billing-key { color: #6B7280; }
+    .co-billing-val { font-weight: 600; color: #111827; }
+
+    /* COUPON */
+    .co-coupon-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .co-coupon-input {
+      flex: 1; padding: 10px 13px;
+      border: 1.5px solid #D1D5DB; border-radius: 8px;
+      color: #111827; font-size: 13px; outline: none;
+      transition: border-color .15s;
+      text-transform: uppercase;
+    }
+    .co-coupon-input:focus { border-color: #2563EB; }
+    .co-coupon-input::placeholder { text-transform: none; color: #D1D5DB; }
+    .co-coupon-btn {
+      padding: 10px 14px; background: #F1F5F9; color: #374151;
+      border: 1.5px solid #E5E7EB; border-radius: 8px; cursor: pointer;
+      font-size: 13px; font-weight: 600; white-space: nowrap;
+      transition: all .15s;
+    }
+    .co-coupon-btn:hover { background: #E5E7EB; }
+
+    /* SUMMARY ROWS */
+    .co-sum-row {
       display: flex; justify-content: space-between; align-items: center;
       padding: 9px 0; font-size: 13px; color: #6B7280;
       border-bottom: 1px solid #F3F4F6;
     }
-    .sum-row:last-child { border-bottom: none; }
-    .sum-row.total-row {
-      padding-top: 12px; margin-top: 4px;
+    .co-sum-row:last-child { border-bottom: none; }
+    .co-sum-row.total {
+      padding-top: 13px; margin-top: 2px;
+      font-size: 16px; font-weight: 800; color: #111827;
       border-top: 1.5px solid #E5E7EB; border-bottom: none;
-      font-size: 15px; font-weight: 700; color: #111827;
     }
-    .sum-row.total-row .val { font-size: 18px; font-weight: 800; color: #16A34A; }
-    .val { font-weight: 600; color: #111827; }
-    .val.green { color: #16A34A; }
-
-    /* CTA */
-    .btn-cta {
-      display: block; width: 100%;
-      padding: 14px;
-      background: #F59E0B; color: #1a1a1a;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-size: 14px; font-weight: 700; margin-top: 14px;
-      transition: background .15s, opacity .15s;
-    }
-    .btn-cta:hover:not([disabled]) { background: #D97706; }
-    .btn-cta[disabled] { opacity: .4; cursor: not-allowed; }
-
-    /* Segurança */
-    .secure-line {
-      margin-top: 12px; text-align: center;
-      font-size: 11.5px; color: #9CA3AF;
-      display: flex; align-items: center; justify-content: center; gap: 4px;
+    .co-sum-val { font-weight: 600; color: #111827; }
+    .co-sum-val.free { color: #16A34A; }
+    .co-savings {
+      background: #F0FDF4; border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; color: #16A34A; font-weight: 600; margin-top: 12px;
+      display: flex; align-items: center; gap: 6px;
     }
 
-    /* link cep */
-    .cep-link {
-      display: inline-block; margin-top: 6px;
-      font-size: 12px; color: #2563EB; cursor: pointer;
+    /* PIX DISCOUNT */
+    .co-pix-disc {
+      background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
+      padding: 10px 14px; font-size: 13px; color: #059669; font-weight: 600;
+      margin-top: 10px; display: none; align-items: center; gap: 6px;
     }
-    .cep-link:hover { text-decoration: underline; }
+    .co-pix-disc.visible { display: flex; }
 
-    /* empty */
-    .text-muted { font-size: 13px; color: #6B7280; margin: 0; }
+    /* STICKY CTA */
+    .co-cta-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid #E5E7EB;
+      padding: 12px 16px env(safe-area-inset-bottom, 0);
+      z-index: 50;
+    }
+    .co-pay-btn {
+      display: block; width: 100%; max-width: 640px; margin: 0 auto;
+      padding: 16px; background: #2563EB; color: #fff;
+      border: none; border-radius: 12px; cursor: pointer;
+      font-size: 16px; font-weight: 800; transition: background .15s, opacity .15s;
+    }
+    .co-pay-btn:hover:not([disabled]) { background: #1D4ED8; }
+    .co-pay-btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+    /* LOADER */
+    .co-spinner {
+      width: 18px; height: 18px; border: 2.5px solid #E5E7EB;
+      border-top-color: #2563EB; border-radius: 50%;
+      animation: coSpin .7s linear infinite; display: inline-block; vertical-align: middle;
+    }
+    @keyframes coSpin { to { transform: rotate(360deg); } }
+
+    /* MUTED */
+    .co-muted { font-size: 13px; color: #6B7280; margin: 0; }
+    .co-info-placeholder { padding: 10px 0; text-align: center; }
 
     /* RESPONSIVE */
-    @media (max-width: 720px) {
-      .shell { flex-direction: column; padding: 14px 14px 60px; gap: 14px; }
-      .col-side { flex: 1 1 100%; max-width: 100%; position: static; }
-      .step span { display: none; }
+    @media (max-width: 480px) {
+      .co-product-name { font-size: 12px; }
     }
   </style>
   <script src="/js/meta-pixel.js"></script>
@@ -234,104 +288,193 @@
 <body>
 
 <!-- HEADER -->
-<header class="hdr">
-  <a href="index.html" class="hdr-logo">jessi.<span>iphones</span></a>
-  <div class="hdr-lock">
-    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+<header class="co-hdr">
+  <button class="co-hdr-back" onclick="history.back()" aria-label="Voltar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+  </button>
+  <span class="co-hdr-title">Finalize sua compra</span>
+  <div class="co-hdr-lock">
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     Compra segura
   </div>
 </header>
 
-<!-- STEPS -->
-<div class="steps">
-  <div class="step done">
-    <span class="step-dot">✓</span>
-    <span>Carrinho</span>
-  </div>
-  <div class="step-sep done"></div>
-  <div class="step active">
-    <span class="step-dot">2</span>
-    <span>Entrega</span>
-  </div>
-  <div class="step-sep"></div>
-  <div class="step">
-    <span class="step-dot">3</span>
-    <span>Pagamento</span>
-  </div>
-</div>
+<div class="co-shell">
 
-<!-- MAIN -->
-<div class="shell">
+  <!-- PRODUTOS -->
+  <div class="co-card" id="co-items-card">
+    <div class="co-card-hdr">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Seus produtos
+    </div>
+    <div id="co-items-list"></div>
+    <p id="co-items-empty" class="co-muted" style="padding:14px 18px;display:none;">Carrinho vazio. <a href="index.html" style="color:#2563EB;">Voltar à loja →</a></p>
+  </div>
 
-  <div class="col-main">
+  <!-- ENTREGA -->
+  <div class="co-card">
+    <div class="co-card-hdr">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Forma de entrega
+    </div>
+    <div class="co-card-body">
 
-    <!-- Itens -->
-    <div class="card">
-      <div class="card-title">Itens do pedido</div>
-      <div class="card-body">
-        <div id="order-items"></div>
-        <p id="order-empty" class="text-muted">Carrinho vazio. <a href="index.html" style="color:#2563EB;">Voltar à loja →</a></p>
+      <!-- Endereços -->
+      <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Endereço</div>
+      <div id="co-addr-list">
+        <div class="co-info-placeholder"><span class="co-spinner"></span></div>
+      </div>
+      <a class="co-add-addr" href="minha-conta.html?tab=enderecos">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar endereço
+      </a>
+
+      <!-- CEP / frete -->
+      <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px">Calcular envio</div>
+      <div class="co-cep-row">
+        <input id="co-cep" class="co-cep-input" type="text" placeholder="00000-000" autocomplete="postal-code" maxlength="9"/>
+        <button id="co-calc-btn" class="co-calc-btn" type="button">Calcular</button>
+      </div>
+      <p class="co-cep-hint"><a href="https://buscacepinter.correios.com.br/app/endereco/index.php" target="_blank" rel="noopener" style="color:#2563EB;">Não sei meu CEP</a></p>
+      <p id="co-cep-msg" style="font-size:12px;color:#6B7280;margin:4px 0 0;"></p>
+
+      <!-- Opções de frete -->
+      <div id="co-ship-results" style="margin-top:12px">
+        <p class="co-muted">Informe o CEP acima para ver as opções de envio.</p>
       </div>
     </div>
+  </div>
 
-    <!-- Endereço -->
-    <div class="card">
-      <div class="card-title">Endereço de entrega</div>
-      <div class="card-body" id="address-card-body">
-        <p class="text-muted">Carregando endereços...</p>
-      </div>
+  <!-- MEIOS DE PAGAMENTO -->
+  <div class="co-card">
+    <div class="co-card-hdr">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Meios de pagamento
     </div>
+    <div class="co-card-body">
 
-    <!-- CEP -->
-    <div class="card">
-      <div class="card-title">Calcular frete</div>
-      <div class="card-body" style="max-width:420px;margin:0 auto;">
-        <label for="cep">CEP de entrega</label>
-        <div class="cep-row">
-          <input id="cep" type="text" placeholder="00000-000" autocomplete="postal-code" maxlength="9" style="flex:1"/>
-          <button id="calcBtn" class="btn-calc" type="button">Calcular</button>
+      <!-- PIX -->
+      <div class="co-pay-opt selected" id="co-pix-opt" onclick="selectPayMethod('pix')">
+        <input type="radio" name="paymethod" value="pix" checked/>
+        <div class="co-pay-logo pix" style="font-size:13px;font-weight:900;letter-spacing:-.5px">PIX</div>
+        <div>
+          <div class="co-pay-label">PIX</div>
+          <div class="co-pay-sub">Pagamento instantâneo</div>
         </div>
-        <a class="cep-link" href="https://buscacepinter.correios.com.br/app/endereco/index.php" target="_blank" rel="noopener">Não sei meu CEP</a>
-        <p id="cepMsg" style="margin:6px 0 0;font-size:12px;color:#6B7280;"></p>
+        <div class="co-pay-badge">5% OFF</div>
       </div>
-    </div>
 
-    <!-- Frete -->
-    <div id="results" class="card" style="padding:16px 18px;">
-      <p class="muted" style="margin:0;">Informe o CEP acima para ver as opções de frete.</p>
-    </div>
-
-  </div>
-
-  <!-- SIDEBAR -->
-  <div class="col-side">
-    <div class="card">
-      <div class="card-title">Resumo</div>
-      <div class="card-body">
-        <div id="sum-addr-wrap"></div>
-        <div class="sum-rows">
-          <div class="sum-row">
-            <span>Subtotal</span>
-            <span class="val" id="subtotal">R$ 0,00</span>
-          </div>
-          <div class="sum-row">
-            <span>Frete</span>
-            <span class="val green" id="shippingValue">A calcular</span>
-          </div>
-          <div class="sum-row total-row">
-            <span>Total</span>
-            <span class="val" id="total">R$ 0,00</span>
-          </div>
+      <!-- Cartão -->
+      <div class="co-pay-opt" id="co-card-opt" onclick="selectPayMethod('card')">
+        <input type="radio" name="paymethod" value="card"/>
+        <div class="co-pay-logo card">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         </div>
-        <button id="continueBtn" class="btn-cta" disabled>Ir para pagamento</button>
-        <div class="secure-line">
-          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Pagamento 100% seguro · SSL
+        <div>
+          <div class="co-pay-label">Cartão de crédito</div>
+          <div class="co-pay-sub">Visa, Mastercard, Elo, Hipercard</div>
         </div>
       </div>
+
+      <!-- Formulário do cartão -->
+      <div id="co-card-form">
+        <div class="co-form-field">
+          <label>Número do cartão</label>
+          <input id="card-number" type="text" placeholder="0000 0000 0000 0000" maxlength="19" inputmode="numeric"/>
+        </div>
+        <div class="co-form-field">
+          <label>Nome no cartão</label>
+          <input id="card-name" type="text" placeholder="NOME COMO NO CARTÃO" style="text-transform:uppercase"/>
+        </div>
+        <div class="co-form-row">
+          <div class="co-form-field">
+            <label>Validade</label>
+            <input id="card-expiry" type="text" placeholder="MM/AA" maxlength="5" inputmode="numeric"/>
+          </div>
+          <div class="co-form-field">
+            <label>CVV</label>
+            <input id="card-cvv" type="text" placeholder="123" maxlength="4" inputmode="numeric"/>
+          </div>
+        </div>
+        <div class="co-form-field">
+          <label>Parcelas</label>
+          <select id="card-installments" style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;color:#111827;background:#fff;outline:none;appearance:none;cursor:pointer;">
+            <option value="1">1x sem juros</option>
+          </select>
+        </div>
+        <p style="font-size:11px;color:#9CA3AF;margin:8px 0 0;">Seus dados são criptografados com SSL. Não armazenamos dados do cartão.</p>
+      </div>
+
+      <!-- Desconto PIX visível -->
+      <div class="co-pix-disc" id="co-pix-disc-banner">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        5% de desconto no PIX — você economiza <span id="co-pix-economy"></span>
+      </div>
+
     </div>
   </div>
 
+  <!-- FATURAMENTO -->
+  <div class="co-card" id="co-billing-card">
+    <div class="co-card-hdr">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Faturamento
+    </div>
+    <div class="co-card-body" id="co-billing-body">
+      <div class="co-info-placeholder"><span class="co-spinner"></span></div>
+    </div>
+  </div>
+
+  <!-- RESUMO -->
+  <div class="co-card">
+    <div class="co-card-hdr">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Resumo da compra
+    </div>
+    <div class="co-card-body">
+      <!-- Cupom -->
+      <div class="co-coupon-row">
+        <input id="co-coupon" class="co-coupon-input" type="text" placeholder="Adicionar cupom de desconto"/>
+        <button class="co-coupon-btn" onclick="applyCoupon()">Aplicar</button>
+      </div>
+      <p id="co-coupon-msg" style="font-size:12px;color:#DC2626;margin:-6px 0 12px;display:none;"></p>
+
+      <div class="co-sum-row">
+        <span>Produtos</span>
+        <span class="co-sum-val" id="co-subtotal">R$ 0,00</span>
+      </div>
+      <div class="co-sum-row" id="co-insurance-row" style="display:none">
+        <span id="co-insurance-label">Seguro</span>
+        <span class="co-sum-val" id="co-insurance-val">R$ 0,00</span>
+      </div>
+      <div class="co-sum-row" id="co-coupon-row" style="display:none">
+        <span>Cupom de desconto</span>
+        <span class="co-sum-val" style="color:#16A34A" id="co-coupon-val">- R$ 0,00</span>
+      </div>
+      <div class="co-sum-row">
+        <span>Frete</span>
+        <span class="co-sum-val" id="co-shipping-val">A calcular</span>
+      </div>
+      <div class="co-sum-row" id="co-pix-row" style="display:none">
+        <span>Desconto PIX (5%)</span>
+        <span class="co-sum-val" style="color:#059669" id="co-pix-val">- R$ 0,00</span>
+      </div>
+      <div class="co-sum-row total">
+        <span>Total</span>
+        <span id="co-total">R$ 0,00</span>
+      </div>
+      <div class="co-savings" id="co-savings-line" style="display:none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Você economizou <strong id="co-savings-amt"></strong> nesta compra!
+      </div>
+    </div>
+  </div>
+
+</div><!-- /co-shell -->
+
+<!-- STICKY CTA -->
+<div class="co-cta-bar">
+  <button id="co-pay-btn" class="co-pay-btn" disabled>Pagar e finalizar</button>
 </div>
 
 <script src="/js/cookie-consent.js"></script>

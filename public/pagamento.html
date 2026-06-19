@@ -532,22 +532,61 @@
   <script src="/js/cookie-consent.js"></script>
   <script src="/js/payment.js"></script>
   <script>
+    function formatBRL(value) {
+      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const checkoutSummary = JSON.parse(localStorage.getItem('checkout-summary') || 'null');
       const shipping        = JSON.parse(localStorage.getItem('shipping')          || 'null');
       const total = (checkoutSummary && checkoutSummary.total_final) || (shipping && shipping.total) || 0;
 
-      if (!checkoutSummary || !shipping) return;
+      if (checkoutSummary || shipping) {
+        document.getElementById('financial-subtotal').textContent = formatBRL(checkoutSummary ? checkoutSummary.subtotal : 0);
+        document.getElementById('financial-frete').textContent    = formatBRL(shipping ? shipping.frete : 0);
+        document.getElementById('payment-total').textContent      = formatBRL(total);
+        document.getElementById('payment-amount').textContent     = formatBRL(total);
 
-      document.getElementById('financial-subtotal').textContent = formatBRL(checkoutSummary.subtotal || 0);
-      document.getElementById('financial-frete').textContent    = formatBRL(shipping.frete || 0);
-      document.getElementById('payment-total').textContent      = formatBRL(total);
-      document.getElementById('payment-amount').textContent     = formatBRL(total);
+        // Seguro (se contratado)
+        if (checkoutSummary && checkoutSummary.seguro > 0) {
+          const finList = document.querySelector('.finance-list');
+          const segRow  = document.createElement('div');
+          segRow.className = 'finance-row';
+          segRow.innerHTML = `<span>${checkoutSummary.seguroLabel || 'Seguro'}</span><strong>${formatBRL(checkoutSummary.seguro)}</strong>`;
+          finList.insertBefore(segRow, finList.children[1]);
+        }
+      }
+
+      // Cartão de crédito — mostrar tela de confirmação diferente
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('method') === 'cartao') {
+        // Esconder seção PIX
+        const qrSection = document.querySelector('.qr-section');
+        if (qrSection) qrSection.style.display = 'none';
+
+        // Atualizar header
+        const brandMark = document.querySelector('.brand-mark');
+        if (brandMark) { brandMark.textContent = ''; brandMark.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'; }
+        const h1 = document.querySelector('.brand-copy h1');
+        if (h1) h1.textContent = 'Pedido recebido!';
+        const brandP = document.querySelector('.brand-copy p');
+        if (brandP) brandP.textContent = 'Seu pedido por cartão de crédito foi registrado com sucesso.';
+
+        // Mostrar painel de confirmação
+        const successPanel = document.getElementById('success-message');
+        if (successPanel) {
+          successPanel.style.display = 'block';
+          successPanel.style.background = '#EFF6FF';
+          successPanel.style.borderColor = '#BFDBFE';
+          const h2 = successPanel.querySelector('h2');
+          if (h2) { h2.textContent = 'Pedido Registrado!'; h2.style.color = '#2563EB'; }
+          const icon = successPanel.querySelector('svg');
+          if (icon) { icon.setAttribute('stroke', '#2563EB'); }
+          const p = successPanel.querySelector('p');
+          if (p) p.innerHTML = 'Em breve nossa equipe enviará o link de pagamento por cartão no seu <strong>WhatsApp</strong>. Fique atento às mensagens!';
+        }
+      }
     });
-
-    function formatBRL(value) {
-      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
   </script>
 <script src="/js/whatsapp-widget.js"></script>
 </body>

@@ -3,8 +3,12 @@ let _pollingInterval = null;
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams  = new URLSearchParams(window.location.search);
     const paymentId  = urlParams.get('id');
+    const payMethod  = urlParams.get('method');
 
     if (!paymentId) { window.location.href = '/'; return; }
+
+    // Pagamento por cartão — a tela já é tratada no inline script de pagamento.html
+    if (payMethod === 'cartao') return;
 
     const loadingDiv     = document.getElementById('loading');
     const loadingText    = document.getElementById('loading-text');

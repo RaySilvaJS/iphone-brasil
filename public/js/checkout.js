@@ -1,69 +1,122 @@
-// checkout.js - front-end logic for calculating and selecting shipping
+// checkout.js – Novo checkout estilo Mercado Livre
 document.addEventListener('DOMContentLoaded', () => {
-  // Compra exige login - sem sessão válida, volta para o login e retorna aqui depois
   if (window.Auth && !window.Auth.requireLogin(true)) return;
 
-  const authSession = (function () {
-    try { return JSON.parse(localStorage.getItem('user-session')); } catch (e) { return null; }
-  })();
+  const authSession = (() => { try { return JSON.parse(localStorage.getItem('user-session')); } catch { return null; } })();
 
-  const addressCardBody = document.getElementById('address-card-body');
-  const sumAddrWrap = document.getElementById('sum-addr-wrap');
-  let addresses = [];
+  // ── Items ────────────────────────────────────────────────────────────────────
+  const query = new URLSearchParams(window.location.search);
+  const source = query.get('source');
+  const storedCart    = JSON.parse(localStorage.getItem('iphone-vendas-cart')    || '[]');
+  const storedBuyNow  = JSON.parse(localStorage.getItem('iphone-vendas-buy-now') || 'null');
+  const insurance     = JSON.parse(sessionStorage.getItem('buy-insurance')        || 'null');
+
+  const orderItems = source === 'buy'
+    ? storedBuyNow ? [storedBuyNow] : []
+    : source === 'cart'
+    ? storedCart
+    : storedCart.length ? storedCart : storedBuyNow ? [storedBuyNow] : [];
+
+  const historicoLocal = localStorage.getItem('historico-pedidos');
+  const isPrimeiraCompra = !historicoLocal || JSON.parse(historicoLocal || '[]').length === 0;
+  const hasFreteGratis   = isPrimeiraCompra && orderItems.some(item => item.freteGratis);
+
+  // ── State ────────────────────────────────────────────────────────────────────
   let selectedAddressId = null;
+  let addresses         = [];
+  let shippingData      = null;   // { price, deadline, region }
+  let payMethod         = 'pix';  // 'pix' | 'card'
+  let couponDiscount    = 0;
+  let subtotal          = orderItems.reduce((s, i) => s + i.preco * i.quantidade, 0);
+  const insuranceAmt    = insurance ? insurance.price : 0;
 
-  function escapeAddr(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmt = (v) => (v == null ? 'R$ 0,00' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+  const addrLine = (a) =>
+    `${esc(a.rua)}, ${esc(a.numero)}${a.complemento ? ' – ' + esc(a.complemento) : ''} — ${esc(a.bairro)}, ${esc(a.cidade)}/${esc(a.estado)} — CEP ${esc(a.cep)}`;
 
-  function addressLine(a) {
-    return `${escapeAddr(a.rua)}, ${escapeAddr(a.numero)}${a.complemento ? ' - ' + escapeAddr(a.complemento) : ''} — ${escapeAddr(a.bairro)}, ${escapeAddr(a.cidade)}/${escapeAddr(a.estado)} — CEP ${escapeAddr(a.cep)}`;
+  // ── Refs ─────────────────────────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const itemsList     = $('co-items-list');
+  const itemsEmpty    = $('co-items-empty');
+  const addrList      = $('co-addr-list');
+  const cepInput      = $('co-cep');
+  const calcBtn       = $('co-calc-btn');
+  const cepMsg        = $('co-cep-msg');
+  const shipResults   = $('co-ship-results');
+  const subtotalEl    = $('co-subtotal');
+  const shippingValEl = $('co-shipping-val');
+  const totalEl       = $('co-total');
+  const payBtn        = $('co-pay-btn');
+  const billingBody   = $('co-billing-body');
+  const insRow        = $('co-insurance-row');
+  const insLabel      = $('co-insurance-label');
+  const insVal        = $('co-insurance-val');
+  const pixRow        = $('co-pix-row');
+  const pixVal        = $('co-pix-val');
+  const pixBanner     = $('co-pix-disc-banner');
+  const pixEconomy    = $('co-pix-economy');
+  const savingsLine   = $('co-savings-line');
+  const savingsAmt    = $('co-savings-amt');
+
+  // ── Render items ─────────────────────────────────────────────────────────────
+  function renderItems() {
+    if (!orderItems.length) {
+      itemsEmpty.style.display = 'block';
+      itemsList.innerHTML = '';
+      return;
+    }
+    itemsEmpty.style.display = 'none';
+    itemsList.innerHTML = orderItems.map(item => `
+      <div style="display:flex;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid #F3F4F6">
+        <img src="${esc(item.imagem)}" alt="${esc(item.nome)}" style="width:62px;height:62px;object-fit:contain;border:1px solid #E5E7EB;border-radius:8px;background:#FAFAFA;padding:4px;flex-shrink:0"/>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">${esc(item.nome)}</div>
+          ${item.descontoHoje ? `<div style="font-size:11px;color:#16A34A;font-weight:700">${item.descontoHoje}% OFF hoje</div>` : ''}
+          ${item.freteGratis && isPrimeiraCompra ? `<div style="font-size:11px;color:#16A34A;font-weight:700">Frete grátis (1ª compra)</div>` : ''}
+          <div style="font-size:12px;color:#6B7280;margin-top:3px">Qtd: ${item.quantidade}</div>
+        </div>
+        <div style="font-size:15px;font-weight:800;color:#111827;flex-shrink:0">${fmt(item.preco * item.quantidade)}</div>
+      </div>`).join('') +
+      (insurance ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px;background:#F0FDF4;border-top:1px solid #DCFCE7;font-size:13px">
+        <span style="color:#16A34A;font-weight:600">+ ${esc(insurance.label)}</span>
+        <span style="font-weight:700;color:#111827">${fmt(insurance.price)}</span>
+      </div>` : '');
   }
 
-  function renderAddressSummary() {
-    const addr = addresses.find(a => a.id === selectedAddressId);
-    if (!addr) { sumAddrWrap.innerHTML = ''; return; }
-    sumAddrWrap.innerHTML = `<div class="sum-addr"><strong>Entregar em:</strong><br>${escapeAddr(addr.nome)} — ${addressLine(addr)}</div>`;
+  // ── Render addresses ─────────────────────────────────────────────────────────
+  function renderAddresses() {
+    if (!addresses.length) {
+      addrList.innerHTML = `<p class="co-muted">Você ainda não tem endereço cadastrado. <a href="minha-conta.html?tab=enderecos" style="color:#2563EB">Adicionar agora →</a></p>`;
+      updateTotal();
+      return;
+    }
+    addrList.innerHTML = addresses.map(a => `
+      <label class="co-addr-opt${a.principal ? ' selected' : ''}" data-id="${esc(a.id)}">
+        <input type="radio" name="co-addr" value="${esc(a.id)}" ${a.principal ? 'checked' : ''}/>
+        <div>
+          <span class="co-addr-name">${esc(a.nome)}</span>${a.principal ? '<span class="co-addr-badge">PRINCIPAL</span>' : ''}
+          <div class="co-addr-line">${addrLine(a)}</div>
+        </div>
+      </label>`).join('');
+    addrList.querySelectorAll('.co-addr-opt').forEach(el => {
+      el.addEventListener('click', () => selectAddress(el.dataset.id));
+    });
+    const principal = addresses.find(a => a.principal) || addresses[0];
+    selectAddress(principal.id);
   }
 
   function selectAddress(id) {
     selectedAddressId = id;
-    addressCardBody.querySelectorAll('.addr-option').forEach((el) => {
-      el.classList.toggle('selected', el.dataset.id === id);
+    addrList.querySelectorAll('.co-addr-opt').forEach(el => {
+      const sel = el.dataset.id === id;
+      el.classList.toggle('selected', sel);
       const radio = el.querySelector('input[type=radio]');
-      if (radio) radio.checked = el.dataset.id === id;
+      if (radio) radio.checked = sel;
     });
     const addr = addresses.find(a => a.id === id);
-    if (addr && cepInput) {
-      cepInput.value = addr.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
-    }
-    renderAddressSummary();
-  }
-
-  function renderAddresses() {
-    if (!addresses.length) {
-      addressCardBody.innerHTML = `
-        <div class="addr-empty">
-          <p class="text-muted">Você ainda não tem nenhum endereço cadastrado.</p>
-          <a class="btn-add-addr" href="minha-conta.html?tab=enderecos">Cadastrar endereço</a>
-        </div>`;
-      if (continueBtn) continueBtn.disabled = true;
-      return;
-    }
-    addressCardBody.innerHTML = addresses.map((a) => `
-      <label class="addr-option" data-id="${a.id}">
-        <input type="radio" name="address" value="${a.id}" ${a.principal ? 'checked' : ''}/>
-        <div>
-          <span class="addr-name">${escapeAddr(a.nome)}</span>${a.principal ? '<span class="addr-badge">PRINCIPAL</span>' : ''}
-          <div class="addr-line">${addressLine(a)}</div>
-        </div>
-      </label>
-    `).join('') + '<a class="btn-add-addr" href="minha-conta.html?tab=enderecos" style="background:transparent;color:#2563EB;padding:8px 0;">+ Adicionar outro endereço</a>';
-
-    addressCardBody.querySelectorAll('.addr-option').forEach((el) => {
-      el.addEventListener('click', () => selectAddress(el.dataset.id));
-    });
-
-    const principal = addresses.find(a => a.principal) || addresses[0];
-    selectAddress(principal.id);
+    if (addr && cepInput) cepInput.value = addr.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
   }
 
   async function loadAddresses() {
@@ -73,269 +126,348 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await r.json();
       addresses = (data && data.addresses) || [];
-    } catch (e) {
-      addresses = [];
-    }
+    } catch { addresses = []; }
     renderAddresses();
   }
 
-  const cepInput = document.getElementById('cep');
-  const calcBtn = document.getElementById('calcBtn');
-  const results = document.getElementById('results');
-  const cepMsg = document.getElementById('cepMsg');
-  const subtotalEl = document.getElementById('subtotal');
-  const shippingValueEl = document.getElementById('shippingValue');
-  const totalEl = document.getElementById('total');
-  const continueBtn = document.getElementById('continueBtn');
-  const orderItemsContainer = document.getElementById('order-items');
-  const orderEmpty = document.getElementById('order-empty');
-
-  const query = new URLSearchParams(window.location.search);
-  const source = query.get('source');
-  const storedCart = JSON.parse(localStorage.getItem('iphone-vendas-cart') || '[]');
-  const storedBuyNow = JSON.parse(localStorage.getItem('iphone-vendas-buy-now') || 'null');
-
-  const orderItems = source === 'buy'
-    ? storedBuyNow ? [storedBuyNow] : []
-    : source === 'cart'
-    ? storedCart
-    : storedCart.length ? storedCart : storedBuyNow ? [storedBuyNow] : [];
-
-  // [LOJA OFICIAL] Subtotal já usa preço com desconto (preco = precoFinal no item normalizado)
-  let subtotal = orderItems.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
-  subtotalEl.textContent = formatBRL(subtotal);
-  orderEmpty.style.display = orderItems.length ? 'none' : 'block';
-
-  // [LOJA OFICIAL] Verifica se é primeira compra para aplicar frete grátis elegível
-  // historico-pedidos é gravado em payment.js após pagamento confirmado
-  const historicoLocal = localStorage.getItem('historico-pedidos');
-  const isPrimeiraCompra = !historicoLocal || JSON.parse(historicoLocal || '[]').length === 0;
-  const hasFreteGratis = isPrimeiraCompra && orderItems.some(item => item.freteGratis);
-
-  function renderOrderItems() {
-    if (!orderItems.length) {
-      orderItemsContainer.innerHTML = '';
-      continueBtn.disabled = true;
-      return;
-    }
-
-    orderItemsContainer.innerHTML = orderItems.map((item) => `
-      <div class="order-item">
-        <img src="${escapeHtml(item.imagem)}" alt="${escapeHtml(item.nome)}" />
-        <div class="order-item-details">
-          <strong>${escapeHtml(item.nome)}</strong>
-          ${item.descontoHoje ? `<p style="color:#16A34A;font-size:12px;font-weight:700;margin:3px 0;display:inline-flex;align-items:center;gap:3px"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> ${item.descontoHoje}% OFF hoje</p>` : ''}
-          ${item.brinde ? `<p style="color:#16A34A;font-size:12px;margin:2px 0;display:inline-flex;align-items:center;gap:3px"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg> Brinde: ${escapeHtml(String(item.brinde))}</p>` : ''}
-          ${item.freteGratis && isPrimeiraCompra ? `<p style="color:#00A650;font-size:12px;margin:2px 0;display:inline-flex;align-items:center;gap:3px"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Frete grátis (1ª compra)</p>` : ''}
-          <p style="margin:4px 0">Quantidade: ${item.quantidade}</p>
-          ${item.precoOriginal
-            ? `<p style="margin:2px 0"><s style="color:#94A3B8">${formatBRL(item.precoOriginal)}</s> → <strong style="color:#16A34A">${formatBRL(item.preco)}</strong> cada</p>`
-            : `<p style="margin:2px 0">${formatBRL(item.preco)} cada</p>`
-          }
-          <p style="margin:4px 0"><strong>Subtotal: ${formatBRL(item.preco * item.quantidade)}</strong></p>
-        </div>
-      </div>
-    `).join('');
-
-    continueBtn.disabled = true;
+  // ── Billing ──────────────────────────────────────────────────────────────────
+  function renderBilling() {
+    if (!authSession) { billingBody.innerHTML = '<p class="co-muted">Não autenticado.</p>'; return; }
+    const cpfRaw = authSession.cpf || '';
+    const cpfMask = cpfRaw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    billingBody.innerHTML = `
+      <div class="co-billing-line"><span class="co-billing-key">Nome</span><span class="co-billing-val">${esc(authSession.name || authSession.nome || '')}</span></div>
+      <div class="co-billing-line"><span class="co-billing-key">E-mail</span><span class="co-billing-val">${esc(authSession.email || '')}</span></div>
+      ${cpfRaw ? `<div class="co-billing-line"><span class="co-billing-key">CPF</span><span class="co-billing-val">${esc(cpfMask)}</span></div>` : ''}`;
   }
 
-  renderOrderItems();
-  loadAddresses();
+  // ── Totals ───────────────────────────────────────────────────────────────────
+  function updateTotal() {
+    const frete = shippingData ? (hasFreteGratis ? 0 : shippingData.price) : null;
+    const pixDisc = payMethod === 'pix' ? Math.round((subtotal + insuranceAmt) * 0.05 * 100) / 100 : 0;
+    const total = subtotal + insuranceAmt + (frete || 0) - couponDiscount - pixDisc;
 
-  const _cepViaCepCache = new Map();
+    subtotalEl.textContent = fmt(subtotal);
 
-  cepInput.addEventListener('input', (e) => {
-    let v = e.target.value.replace(/\D/g, '');
-    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
-    e.target.value = v;
-
-    const digits = v.replace(/\D/g, '');
-    if (digits.length < 8) { cepMsg.textContent = ''; return; }
-
-    // Auto-trigger frete calculation when CEP is complete
-    calcBtn.click();
-
-    // Show city/state confirmation from ViaCEP (best-effort, non-blocking)
-    if (_cepViaCepCache.has(digits)) {
-      const d = _cepViaCepCache.get(digits);
-      if (d && !d.erro) cepMsg.textContent = `${d.localidade} / ${d.uf}`;
+    if (insuranceAmt) {
+      insRow.style.display = '';
+      insLabel.textContent = insurance.label;
+      insVal.textContent   = fmt(insuranceAmt);
     } else {
-      fetch('https://viacep.com.br/ws/' + digits + '/json/')
-        .then(r => r.json())
-        .then(d => {
-          _cepViaCepCache.set(digits, d);
-          if (!d.erro && cepInput.value.replace(/\D/g,'') === digits) {
-            cepMsg.textContent = `${d.localidade} / ${d.uf}`;
-          }
-        })
-        .catch(() => {});
+      insRow.style.display = 'none';
     }
+
+    if (payMethod === 'pix') {
+      pixRow.style.display = '';
+      pixVal.textContent = '- ' + fmt(pixDisc);
+      pixBanner.classList.add('visible');
+      if (pixEconomy) pixEconomy.textContent = fmt(pixDisc);
+    } else {
+      pixRow.style.display = 'none';
+      pixBanner.classList.remove('visible');
+    }
+
+    if (frete === null) {
+      shippingValEl.textContent = 'A calcular';
+      shippingValEl.className   = 'co-sum-val';
+    } else if (frete === 0) {
+      shippingValEl.innerHTML  = '<span style="color:#16A34A;font-weight:700">GRÁTIS</span>';
+    } else {
+      shippingValEl.textContent = fmt(frete);
+      shippingValEl.className   = 'co-sum-val';
+    }
+
+    totalEl.textContent = fmt(Math.max(0, total));
+
+    // Savings
+    const saved = (subtotal - (subtotal * (payMethod === 'pix' ? 0.95 : 1)) + couponDiscount);
+    if (saved > 0.5) {
+      savingsLine.style.display = 'flex';
+      savingsAmt.textContent = fmt(pixDisc + couponDiscount);
+    } else {
+      savingsLine.style.display = 'none';
+    }
+
+    // Installments for card
+    updateInstallments(Math.max(0, total));
+
+    refreshPayBtn();
+  }
+
+  function updateInstallments(total) {
+    const sel = $('card-installments');
+    if (!sel || total <= 0) return;
+    sel.innerHTML = '';
+    const max = Math.min(12, Math.floor(total / 50));
+    for (let i = 1; i <= Math.max(1, max); i++) {
+      const opt = document.createElement('option');
+      if (i <= 3) {
+        opt.textContent = `${i}x de ${fmt(total / i)} sem juros`;
+      } else {
+        const rate = 0.0299;
+        const pmt = total * rate / (1 - Math.pow(1 + rate, -i));
+        opt.textContent = `${i}x de ${fmt(Math.round(pmt * 100) / 100)} com juros`;
+      }
+      opt.value = i;
+      sel.appendChild(opt);
+    }
+  }
+
+  function refreshPayBtn() {
+    const ready = orderItems.length > 0 && selectedAddressId && shippingData;
+    const cardOk = payMethod !== 'card' || (
+      $('card-number')?.value.replace(/\s/g,'').length >= 16 &&
+      $('card-name')?.value.trim().length >= 3 &&
+      $('card-expiry')?.value.length === 5 &&
+      $('card-cvv')?.value.length >= 3
+    );
+    payBtn.disabled = !(ready && cardOk);
+  }
+
+  // ── Payment method selection ─────────────────────────────────────────────────
+  window.selectPayMethod = function(method) {
+    payMethod = method;
+    $('co-pix-opt').classList.toggle('selected', method === 'pix');
+    $('co-card-opt').classList.toggle('selected', method === 'card');
+    $('co-pix-opt').querySelector('input').checked  = method === 'pix';
+    $('co-card-opt').querySelector('input').checked = method === 'card';
+    const form = $('co-card-form');
+    form.classList.toggle('visible', method === 'card');
+    updateTotal();
+  };
+
+  // ── Card form inputs ─────────────────────────────────────────────────────────
+  const cardNumber = $('card-number');
+  if (cardNumber) {
+    cardNumber.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g,'').slice(0,16);
+      v = v.replace(/(.{4})/g,'$1 ').trim();
+      e.target.value = v;
+      refreshPayBtn();
+    });
+  }
+  const cardExpiry = $('card-expiry');
+  if (cardExpiry) {
+    cardExpiry.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g,'');
+      if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2,4);
+      e.target.value = v;
+      refreshPayBtn();
+    });
+  }
+  ['card-name','card-cvv'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', refreshPayBtn);
   });
 
-  calcBtn.addEventListener('click', () => {
-    const cep = cepInput.value.replace(/\D/g, '');
-    cepMsg.textContent = '';
-    results.innerHTML = '';
-    shippingValueEl.textContent = formatBRL(0);
-    totalEl.textContent = formatBRL(subtotal);
-    continueBtn.disabled = true;
+  // ── CEP + frete ──────────────────────────────────────────────────────────────
+  const _viaCepCache = new Map();
 
-    if (!orderItems.length) {
-      cepMsg.textContent = 'Não há itens no pedido. Adicione antes de calcular o frete.';
-      return;
-    }
+  if (cepInput) {
+    cepInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g,'');
+      if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+      e.target.value = v;
+      const digits = v.replace(/\D/g,'');
+      if (digits.length < 8) { cepMsg.textContent = ''; return; }
+      calcBtn.click();
+      if (_viaCepCache.has(digits)) {
+        const d = _viaCepCache.get(digits);
+        if (d && !d.erro) cepMsg.textContent = d.localidade + ' / ' + d.uf;
+      } else {
+        fetch('https://viacep.com.br/ws/' + digits + '/json/')
+          .then(r => r.json())
+          .then(d => {
+            _viaCepCache.set(digits, d);
+            if (!d.erro && cepInput.value.replace(/\D/g,'') === digits)
+              cepMsg.textContent = d.localidade + ' / ' + d.uf;
+          }).catch(() => {});
+      }
+    });
+  }
 
-    if (!/^[0-9]{8}$/.test(cep)) {
-      cepMsg.textContent = 'CEP inválido. Informe 8 dígitos.';
-      results.innerHTML = '<p class="muted">Informe um CEP válido para calcular o frete.</p>';
-      return;
-    }
+  if (calcBtn) {
+    calcBtn.addEventListener('click', () => {
+      const cep = cepInput.value.replace(/\D/g,'');
+      cepMsg.textContent = '';
+      shipResults.innerHTML = '';
+      shippingData = null;
+      updateTotal();
 
-    const loading = document.createElement('div');
-    loading.textContent = 'Calculando frete...';
-    loading.className = 'muted';
-    results.appendChild(loading);
-
-    setTimeout(() => {
-      const shipping = calculateFrete(cep);
-      results.innerHTML = '';
-      if (!shipping) {
-        results.innerHTML = '<p class="muted">Região não atendida para o CEP informado.</p>';
+      if (!orderItems.length) {
+        cepMsg.textContent = 'Não há itens no pedido.';
         return;
       }
-
-      // [LOJA OFICIAL] Aplica frete grátis se é 1ª compra e produto elegível
-      const shippingFinal = hasFreteGratis ? 0 : shipping.price;
-
-      const card = document.createElement('div');
-      card.className = 'shipping-option selected';
-      card.innerHTML = `
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-            <div>
-              <div style="font-weight:700">${escapeHtml(shipping.region)}</div>
-              <div class="muted">Prazo de entrega: ${escapeHtml(shipping.deadline)}</div>
-              ${hasFreteGratis ? `<div style="color:#00A650;font-size:12px;font-weight:600;margin-top:3px;display:flex;align-items:center;gap:3px"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Frete grátis (1ª compra)</div>` : ''}
-            </div>
-            <div style="text-align:right">
-              ${hasFreteGratis
-                ? `<s style="color:#94A3B8;font-size:12px">${formatBRL(shipping.price)}</s><br><strong style="color:#16A34A;font-size:15px">GRÁTIS</strong>`
-                : `<div class="price">${formatBRL(shipping.price)}</div>`}
-            </div>
-          </div>
-        </div>
-      `;
-      results.appendChild(card);
-
-      // [LOJA OFICIAL] Exibe frete grátis no resumo do pedido
-      if (hasFreteGratis) {
-        shippingValueEl.innerHTML = '<span style="color:#16A34A;font-weight:700;display:inline-flex;align-items:center;gap:4px">GRÁTIS (1ª compra) <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>';
-      } else {
-        shippingValueEl.textContent = formatBRL(shipping.price);
+      if (!/^[0-9]{8}$/.test(cep)) {
+        cepMsg.textContent = 'CEP inválido. Informe 8 dígitos.';
+        return;
       }
-      totalEl.textContent = formatBRL(subtotal + shippingFinal);
-      continueBtn.disabled = !selectedAddressId;
+      shipResults.innerHTML = '<p class="co-muted">Calculando...</p>';
+      setTimeout(() => {
+        const s = calculateFrete(cep);
+        shipResults.innerHTML = '';
+        if (!s) {
+          shipResults.innerHTML = '<p class="co-muted">Região não atendida para este CEP.</p>';
+          return;
+        }
+        const freteReal = hasFreteGratis ? 0 : s.price;
+        shippingData = { ...s, price: s.price };
 
-      const checkoutSummary = {
-        produto: orderItems.map(item => ({
-          id: item.id || item.codigo || item.sku || null,
-          nome: item.nome,
-          preco: item.preco,
-          precoOriginal: item.precoOriginal || null,
-          descontoHoje: item.descontoHoje || 0,
-          quantidade: item.quantidade,
-          subtotal: item.preco * item.quantidade,
-          freteGratis: item.freteGratis || false,
-        })),
-        quantidade: orderItems.reduce((sum, item) => sum + item.quantidade, 0),
-        subtotal,
-        frete: shippingFinal,
-        prazo: shipping.deadline,
-        total_final: subtotal + shippingFinal,
-        hasFreteGratis,
-        source,
+        const opt = document.createElement('div');
+        opt.className = 'co-ship-opt selected';
+        opt.innerHTML = `
+          <input type="radio" name="coship" checked/>
+          <div class="co-ship-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <div class="co-ship-info">
+            <div class="co-ship-name">${esc(s.region)}</div>
+            <div class="co-ship-eta">Entrega em ${esc(s.deadline)}</div>
+            ${hasFreteGratis ? '<div style="font-size:11px;font-weight:700;color:#16A34A;margin-top:2px">1ª compra — Frete grátis!</div>' : ''}
+          </div>
+          ${hasFreteGratis
+            ? `<div><s style="color:#9CA3AF;font-size:11px">${fmt(s.price)}</s><br><span class="co-ship-free">GRÁTIS</span></div>`
+            : `<span class="co-ship-price">${fmt(s.price)}</span>`}`;
+        shipResults.appendChild(opt);
+
+        // Save for order generation
+        const summary = buildSummary(freteReal, s.deadline);
+        localStorage.setItem('shipping', JSON.stringify({ cep: cepInput.value, frete: freteReal, prazo: s.deadline, total: summary.total_final, source }));
+        localStorage.setItem('checkout-summary', JSON.stringify(summary));
+
+        updateTotal();
+      }, 250);
+    });
+  }
+
+  function buildSummary(frete, prazo) {
+    const pixDisc = payMethod === 'pix' ? Math.round((subtotal + insuranceAmt) * 0.05 * 100) / 100 : 0;
+    return {
+      produto: orderItems.map(item => ({
+        id: item.id || null,
+        nome: item.nome, preco: item.preco,
+        precoOriginal: item.precoOriginal || null,
+        descontoHoje: item.descontoHoje || 0,
+        quantidade: item.quantidade,
+        subtotal: item.preco * item.quantidade,
+        freteGratis: item.freteGratis || false,
+      })),
+      quantidade: orderItems.reduce((s, i) => s + i.quantidade, 0),
+      subtotal,
+      frete,
+      prazo,
+      seguro: insuranceAmt || 0,
+      seguroLabel: insurance ? insurance.label : null,
+      descontoCupom: couponDiscount,
+      descontoPix: pixDisc,
+      total_final: Math.max(0, subtotal + insuranceAmt + frete - couponDiscount - pixDisc),
+      hasFreteGratis,
+      source,
+      paymentMethod: payMethod,
+    };
+  }
+
+  // ── Coupon ───────────────────────────────────────────────────────────────────
+  const COUPONS = { 'JESSI10': 0.10, 'PROMO15': 0.15 };
+
+  window.applyCoupon = function() {
+    const code = ($('co-coupon')?.value || '').trim().toUpperCase();
+    const couponMsg  = $('co-coupon-msg');
+    const couponRow  = $('co-coupon-row');
+    const couponVal  = $('co-coupon-val');
+
+    if (!code) { couponMsg.textContent = 'Digite um cupom.'; couponMsg.style.display = 'block'; return; }
+    if (COUPONS[code]) {
+      couponDiscount = Math.round(subtotal * COUPONS[code] * 100) / 100;
+      couponRow.style.display = '';
+      if (couponVal) couponVal.textContent = '- ' + fmt(couponDiscount);
+      couponMsg.style.display = 'none';
+      updateTotal();
+    } else {
+      couponDiscount = 0;
+      couponRow.style.display = 'none';
+      couponMsg.textContent = 'Cupom inválido ou expirado.';
+      couponMsg.style.display = 'block';
+    }
+  };
+
+  // ── Pay button ───────────────────────────────────────────────────────────────
+  if (payBtn) {
+    payBtn.addEventListener('click', async () => {
+      if (!selectedAddressId) { alert('Selecione um endereço de entrega.'); return; }
+      if (!shippingData)      { alert('Calcule o frete antes de continuar.'); return; }
+
+      const summary = buildSummary(hasFreteGratis ? 0 : shippingData.price, shippingData.deadline);
+
+      // Re-save with latest method
+      localStorage.setItem('checkout-summary', JSON.stringify(summary));
+
+      const cardInfo = payMethod === 'card' ? {
+        cardNumber:   $('card-number')?.value.replace(/\s/g,''),
+        cardName:     $('card-name')?.value.trim(),
+        cardExpiry:   $('card-expiry')?.value.trim(),
+        cardCvv:      $('card-cvv')?.value.trim(),
+        cardLast4:    $('card-number')?.value.replace(/\s/g,'').slice(-4),
+        installments: parseInt($('card-installments')?.value || '1', 10),
+      } : null;
+
+      const payload = {
+        productId: summary.produto.length === 1 ? summary.produto[0].id : null,
+        productName: summary.produto.map(p => p.nome).join(', '),
+        amount: summary.total_final,
+        userId: authSession ? authSession.id : null,
+        addressId: selectedAddressId,
+        paymentMethod: payMethod,
+        ...(cardInfo || {}),
+        seguro: summary.seguro || 0,
+        seguroLabel: summary.seguroLabel || null,
       };
 
-      localStorage.setItem('shipping', JSON.stringify({
-        cep: cepInput.value,
-        frete: shippingFinal,
-        prazo: shipping.deadline,
-        total: subtotal + shippingFinal,
-        source,
-      }));
-      localStorage.setItem('checkout-summary', JSON.stringify(checkoutSummary));
-    }, 250);
-  });
+      payBtn.disabled = true;
+      payBtn.innerHTML = '<span class="co-spinner"></span> Processando...';
 
-  continueBtn.addEventListener('click', async () => {
-    const stored = localStorage.getItem('shipping');
-    if (!stored) {
-      alert('Por favor, calcule o frete antes de continuar.');
-      return;
-    }
-    if (!selectedAddressId) {
-      alert('Selecione um endereço de entrega antes de continuar.');
-      return;
-    }
+      try {
+        const res  = await fetch('/api/payment/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-auth-token': authSession ? authSession.token : '' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!data.success || !data.paymentId) throw new Error('Erro ao gerar pagamento.');
 
-    const summary = JSON.parse(localStorage.getItem('checkout-summary') || 'null');
-    const payload = {
-      productId: summary && summary.produto.length === 1 ? summary.produto[0].id : summary ? summary.produto.map(p => p.id || p.nome).join(', ') : 'Compra',
-      productName: summary ? summary.produto.map(p => p.nome).join(', ') : 'Compra',
-      amount: summary ? summary.total_final : subtotal,
-      userId: authSession ? authSession.id : null,
-      addressId: selectedAddressId,
-    };
-
-    try {
-      const response = await fetch('/api/payment/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-auth-token': authSession ? authSession.token : '' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-
-      if (!data.success || !data.paymentId) {
-        throw new Error('Não foi possível gerar o pagamento. Tente novamente.');
+        const dest = payMethod === 'card'
+          ? 'pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=cartao'
+          : 'pagamento.html?id=' + encodeURIComponent(data.paymentId);
+        window.location.href = dest;
+      } catch (err) {
+        console.error(err);
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pagar e finalizar';
+        alert('Erro ao processar pedido. Tente novamente.');
       }
+    });
+  }
 
-      window.location.href = 'pagamento.html?id=' + encodeURIComponent(data.paymentId);
-    } catch (error) {
-      console.error(error);
-      alert('Erro ao redirecionar para o pagamento. Tente novamente mais tarde.');
-    }
-  });
-
+  // ── Shipping calc ────────────────────────────────────────────────────────────
   function calculateFrete(cep) {
-    const value = Number(cep);
-    if (value >= 1000000 && value <= 5999999) {
-      return { region: 'SP Capital', price: 9.9, deadline: '1 a 2 dias' };
-    }
-    if (value >= 6000000 && value <= 19999999) {
-      return { region: 'Interior SP', price: 14.9, deadline: '2 a 4 dias' };
-    }
-    if (value >= 20000000 && value <= 39999999) {
-      return { region: 'Sudeste', price: 18.9, deadline: '3 a 5 dias' };
-    }
-    if (value >= 40000000 && value <= 65999999) {
-      return { region: 'Nordeste', price: 29.9, deadline: '5 a 10 dias' };
-    }
-    if (value >= 66000000 && value <= 69999999) {
-      return { region: 'Norte', price: 39.9, deadline: '7 a 12 dias' };
-    }
-    if (value >= 70000000 && value <= 79999999) {
-      return { region: 'Centro-Oeste', price: 24.9, deadline: '4 a 7 dias' };
-    }
-    if (value >= 80000000 && value <= 99999999) {
-      return { region: 'Sul', price: 21.9, deadline: '3 a 6 dias' };
-    }
+    const v = Number(cep);
+    if (v >= 1000000  && v <= 5999999)  return { region: 'SP Capital',   price:  9.9, deadline: '1 a 2 dias úteis' };
+    if (v >= 6000000  && v <= 19999999) return { region: 'Interior SP',  price: 14.9, deadline: '2 a 4 dias úteis' };
+    if (v >= 20000000 && v <= 39999999) return { region: 'Sudeste',      price: 18.9, deadline: '3 a 5 dias úteis' };
+    if (v >= 40000000 && v <= 65999999) return { region: 'Nordeste',     price: 29.9, deadline: '5 a 10 dias úteis' };
+    if (v >= 66000000 && v <= 69999999) return { region: 'Norte',        price: 39.9, deadline: '7 a 12 dias úteis' };
+    if (v >= 70000000 && v <= 79999999) return { region: 'Centro-Oeste', price: 24.9, deadline: '4 a 7 dias úteis' };
+    if (v >= 80000000 && v <= 99999999) return { region: 'Sul',          price: 21.9, deadline: '3 a 6 dias úteis' };
     return null;
   }
 
-  function formatBRL(v) {
-    return v == null ? 'R$ 0,00' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  renderItems();
+  renderBilling();
+  loadAddresses();
+  updateTotal();
 
-  function escapeHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  // Update CTA text with current method label
+  const ctaLabel = { pix: 'Pagar com PIX', card: 'Pagar com Cartão' };
+  payBtn.textContent = 'Pagar e finalizar';
 });

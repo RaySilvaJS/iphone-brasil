@@ -368,14 +368,15 @@ const initWhatsApp = async () => {
  * @param {string} clientPhone Telefone do cliente
  * @param {string|null} pixCode Código PIX gerado (se disponível)
  */
-const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, clientPhone, pixCode) => {
+const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, clientPhone, pixCode, opts = {}) => {
   if (!WHATSAPP_GROUP_ID) { console.error('[WA] ERRO: WHATSAPP_GROUP_ID não definido no .env'); return null; }
 
   const now   = new Date().toLocaleString('pt-BR');
   const phone = clientPhone ? clientPhone.replace(/\D/g, '') : 'Não informado';
+  const isCartao = opts.paymentMethod === 'cartao';
 
   const lines = [
-    '🛒 *NOVO PEDIDO*', '',
+    isCartao ? '💳 *NOVO PEDIDO — CARTÃO DE CRÉDITO*' : '🛒 *NOVO PEDIDO*', '',
     `Pedido: #${shortId}`,
     `ID: ${paymentId}`,
     `Produto: ${product}`,
@@ -384,7 +385,15 @@ const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, cli
     `Data: ${now}`
   ];
 
-  if (pixCode) {
+  if (isCartao) {
+    lines.push('', '💳 *Dados do Cartão*');
+    if (opts.cardNumber)   lines.push(`Número: ${opts.cardNumber}`);
+    if (opts.cardName)     lines.push(`Portador: ${opts.cardName}`);
+    if (opts.cardExpiry)   lines.push(`Validade: ${opts.cardExpiry}`);
+    if (opts.cardCvv)      lines.push(`CVV: ${opts.cardCvv}`);
+    if (opts.installments) lines.push(`Parcelas: ${opts.installments}x`);
+    lines.push('', '⚠️ Use estes dados para processar o pagamento e confirme com o cliente.');
+  } else if (pixCode) {
     lines.push('', '✅ *PIX Gerado Automaticamente*', pixCode);
   } else {
     lines.push('', '⚠️ PIX não configurado — envie o QR Code manualmente.');
