@@ -167,7 +167,12 @@
 
         <!-- IMAGES TAB -->
         <div id="ae-tab-images" style="display:none;">
-          <p style="font-size:12px;color:#64748b;margin:0 0 12px;">Gerencie as imagens. Use ↑↓ para reordenar.</p>
+          <p style="font-size:12px;color:#64748b;margin:0 0 8px;">Gerencie as imagens. A primeira da lista é a <strong>imagem principal</strong> exibida no catálogo e na página do produto.</p>
+          <!-- Preview da imagem principal -->
+          <div id="ae-img-preview" style="display:none;margin-bottom:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Pré-visualização — Imagem Principal</div>
+            <img id="ae-img-preview-img" src="" alt="" style="max-width:120px;max-height:120px;object-fit:contain;border-radius:6px;border:1px solid #e2e8f0;">
+          </div>
           <div id="ae-img-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
           <div style="display:flex;gap:8px;margin-bottom:10px;">
             <input id="ae-img-url" style="${f('flex:1;')}" placeholder="Colar URL de imagem...">
@@ -257,19 +262,39 @@
     const list = document.getElementById('ae-img-list');
     if (!list) return;
     list.innerHTML = '';
+
+    // Atualiza pré-visualização da imagem principal
+    const preview    = document.getElementById('ae-img-preview');
+    const previewImg = document.getElementById('ae-img-preview-img');
+    if (images && images.length > 0) {
+      if (preview)    preview.style.display = 'block';
+      if (previewImg) { previewImg.src = images[0]; previewImg.alt = 'Imagem principal'; }
+    } else {
+      if (preview) preview.style.display = 'none';
+    }
+
     (images || []).forEach((url, i) => {
+      const isMain = i === 0;
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:7px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:5px 8px;';
+      row.style.cssText = `display:flex;align-items:center;gap:7px;border-radius:7px;padding:5px 8px;${isMain ? 'background:#eff6ff;border:1.5px solid #3b82f6;' : 'background:#f8fafc;border:1px solid #e2e8f0;'}`;
       row.innerHTML = `
-        <img src="${url}" style="width:38px;height:38px;object-fit:cover;border-radius:4px;flex-shrink:0;" onerror="this.src='';this.style.background='#e2e8f0'">
-        <span style="flex:1;font-size:10px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${url}">${url.length > 55 ? '…' + url.slice(-48) : url}</span>
-        <button data-i="${i}" style="${btn('#f1f5f9','#374151','padding:3px 6px;font-size:11px;')}" class="ai-up" title="Para cima">↑</button>
-        <button data-i="${i}" style="${btn('#f1f5f9','#374151','padding:3px 6px;font-size:11px;')}" class="ai-dn" title="Para baixo">↓</button>
+        <div style="position:relative;flex-shrink:0;">
+          <img src="${url}" style="width:38px;height:38px;object-fit:cover;border-radius:4px;" onerror="this.src='';this.style.background='#e2e8f0'">
+          ${isMain ? `<span style="position:absolute;top:-5px;left:-5px;background:#f59e0b;color:#fff;font-size:9px;font-weight:800;border-radius:3px;padding:1px 3px;line-height:1.2;">⭐ MAIN</span>` : ''}
+        </div>
+        <span style="flex:1;font-size:10px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${url}">${url.length > 45 ? '…' + url.slice(-38) : url}</span>
+        ${!isMain ? `<button data-i="${i}" style="${btn('#dbeafe','#1d4ed8','padding:2px 5px;font-size:10px;')}" class="ai-main" title="Definir como principal">⭐</button>` : ''}
+        <button data-i="${i}" style="${btn('#f1f5f9','#374151','padding:3px 6px;font-size:11px;')}${i === 0 ? 'opacity:.35;cursor:default;' : ''}" class="ai-up" title="Para cima"${i === 0 ? ' disabled' : ''}>↑</button>
+        <button data-i="${i}" style="${btn('#f1f5f9','#374151','padding:3px 6px;font-size:11px;')}${i >= (images.length - 1) ? 'opacity:.35;cursor:default;' : ''}" class="ai-dn" title="Para baixo"${i >= (images.length - 1) ? ' disabled' : ''}>↓</button>
         <button data-i="${i}" style="${btn('#fef2f2','#dc2626','padding:3px 6px;font-size:11px;')}" class="ai-rm" title="Remover">✕</button>
       `;
       list.appendChild(row);
     });
-    list.querySelectorAll('.ai-rm').forEach(b => b.addEventListener('click', () => { productData.images.splice(+b.dataset.i, 1); renderImages(productData.images); }));
+
+    list.querySelectorAll('.ai-rm').forEach(b => b.addEventListener('click', () => {
+      productData.images.splice(+b.dataset.i, 1);
+      renderImages(productData.images);
+    }));
     list.querySelectorAll('.ai-up').forEach(b => b.addEventListener('click', () => {
       const i = +b.dataset.i; if (i === 0) return;
       [productData.images[i-1], productData.images[i]] = [productData.images[i], productData.images[i-1]];
@@ -278,6 +303,12 @@
     list.querySelectorAll('.ai-dn').forEach(b => b.addEventListener('click', () => {
       const i = +b.dataset.i; if (i >= productData.images.length - 1) return;
       [productData.images[i], productData.images[i+1]] = [productData.images[i+1], productData.images[i]];
+      renderImages(productData.images);
+    }));
+    list.querySelectorAll('.ai-main').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.i; if (i === 0) return;
+      const [item] = productData.images.splice(i, 1);
+      productData.images.unshift(item);
       renderImages(productData.images);
     }));
   }
@@ -292,9 +323,9 @@
       const r = await api('POST', '/api/admin/upload', { dataUrl: e.target.result, filename: file.name });
       if (r.success) {
         productData.images = productData.images || [];
-        productData.images.push(r.url);
+        productData.images.unshift(r.url); // nova imagem vai para a frente como principal
         renderImages(productData.images);
-        if (prog) { prog.textContent = '✓ Imagem adicionada!'; setTimeout(() => { if (prog) prog.textContent = ''; }, 2000); }
+        if (prog) { prog.textContent = '✓ Imagem adicionada como principal!'; setTimeout(() => { if (prog) prog.textContent = ''; }, 2500); }
       } else {
         if (prog) prog.textContent = '✕ ' + (r.error || 'Erro no upload');
         showToast(r.error || 'Erro ao fazer upload.', true);
@@ -400,14 +431,33 @@
     if (r.success) {
       showToast('Produto salvo com sucesso!');
       productData = r.product;
-      // Live-update card in DOM
+      // Live-update card in DOM (título, preço e imagem principal)
       const card = document.querySelector(`.olx-adcard[data-product-id="${productData.id}"]`);
       if (card) {
         const title = card.querySelector('.olx-adcard__title');
         if (title) title.textContent = r.product.name;
         const price = card.querySelector('.olx-adcard__price');
         if (price) price.textContent = 'R$ ' + Number(r.product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        // Atualiza imagem principal — aceita http:// e /uploads/
+        const newMain = (r.product.images || []).find(s => typeof s === 'string' && s.length > 4 && (s.startsWith('http') || s.startsWith('/uploads/')));
+        if (newMain) {
+          const imgEl = card.querySelector('.olx-adcard__media img');
+          if (imgEl) {
+            imgEl.src = newMain;
+          } else {
+            // Cria o <img> se não existia (produto sem imagem anterior)
+            const media = card.querySelector('.olx-adcard__media');
+            if (media) {
+              const img = document.createElement('img');
+              img.src = newMain; img.alt = r.product.name;
+              img.loading = 'lazy'; img.decoding = 'async';
+              media.appendChild(img);
+            }
+          }
+        }
       }
+      // Recarrega catálogo completo para refletir nova ordem das imagens
+      if (window.fetchProducts) window.fetchProducts();
       closeDrawer();
     } else {
       showToast(r.error || 'Erro ao salvar.', true);

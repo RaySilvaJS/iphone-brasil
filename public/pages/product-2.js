@@ -280,7 +280,7 @@
       if (!others.length) { container.closest('.section').remove(); return; }
       container.innerHTML = others.map(p => {
         const img = (Array.isArray(p.images) ? p.images : []).find(s =>
-          typeof s === 'string' && s.startsWith('http')
+          typeof s === 'string' && s.length > 4 && (s.startsWith('http') || s.startsWith('/uploads/'))
         ) || '';
         return `
           <a class="related-card" href="product.html?id=${p.id}">
@@ -298,7 +298,7 @@
   };
 
   const renderProduct = (product, storeDiscount = 0) => {
-    const isValidImg = (s) => typeof s === 'string' && s.startsWith('http');
+    const isValidImg = (s) => typeof s === 'string' && s.length > 4 && (s.startsWith('http') || s.startsWith('/uploads/'));
 
     const images = (Array.isArray(product.images) ? product.images : []).filter(isValidImg);
     const reviewImgs = (Array.isArray(product.reviewsList) ? product.reviewsList : [])
@@ -663,7 +663,7 @@
     const card = document.getElementById('variations-card');
     if (!card) return;
 
-    const isValidImg = (s) => typeof s === 'string' && s.startsWith('http');
+    const isValidImg = (s) => typeof s === 'string' && s.length > 4 && (s.startsWith('http') || s.startsWith('/uploads/'));
 
     const siblings = _catalog.filter(p => p.model && p.model === product.model);
 

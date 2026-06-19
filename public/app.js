@@ -60,7 +60,7 @@ const _getFavs = () => {
   return _favsCache;
 };
 
-const isValidProductImage = (s) => typeof s === 'string' && s.startsWith('http');
+const isValidProductImage = (s) => typeof s === 'string' && s.length > 4 && (s.startsWith('http') || s.startsWith('/uploads/'));
 
 // Retorna a primeira imagem oficial do produto — sem console.log para não travar o render
 const getFirstValidImage = (product) => {
