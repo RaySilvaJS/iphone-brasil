@@ -2483,14 +2483,35 @@ const AUDIT_TYPE_LABELS = {
 
 async function loadAudit() {
   const typeFilter = document.getElementById('audit-type-filter')?.value || '';
-  const url = '/api/admin/audit' + (typeFilter ? `?type=${encodeURIComponent(typeFilter)}` : '');
+  const url = '/api/admin/audit?limit=500' + (typeFilter ? `&type=${encodeURIComponent(typeFilter)}` : '');
   const entries = await api.get(url);
-  const tbody = document.getElementById('audit-table');
+  const tbody = document.getElementById('audit-tbody');
   if (!tbody) return;
+
   if (!entries || entries.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Nenhum registro encontrado</td></tr>';
+    const totalEl = document.getElementById('audit-total');
+    if (totalEl) totalEl.textContent = '0 registros';
     return;
   }
+
+  // Update total counter
+  const totalEl = document.getElementById('audit-total');
+  if (totalEl) totalEl.textContent = `${entries.length} registro${entries.length !== 1 ? 's' : ''}`;
+
+  // Stats cards
+  const statsEl = document.getElementById('audit-stats');
+  if (statsEl) {
+    const counts = {};
+    entries.forEach(e => { counts[e.type] = (counts[e.type] || 0) + 1; });
+    const topTypes = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 4);
+    statsEl.innerHTML = topTypes.map(([type, count]) => `
+      <div class="stat-card">
+        <div class="stat-value">${count}</div>
+        <div class="stat-label">${AUDIT_TYPE_LABELS[type] || type}</div>
+      </div>`).join('');
+  }
+
   tbody.innerHTML = entries.map(e => {
     const typeLabel = AUDIT_TYPE_LABELS[e.type] || e.type;
     const detail = e.data ? Object.entries(e.data).filter(([k]) => !['token','password'].includes(k))
