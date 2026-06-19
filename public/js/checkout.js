@@ -87,11 +87,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Render addresses ─────────────────────────────────────────────────────────
   function renderAddresses() {
+    const addLink = document.querySelector('.co-add-addr');
+    const setAddLinkText = (txt) => {
+      if (!addLink) return;
+      const tn = [...addLink.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+      if (tn) tn.textContent = ' ' + txt;
+    };
     if (!addresses.length) {
-      addrList.innerHTML = `<p class="co-muted">Você ainda não tem endereço cadastrado. <a href="minha-conta.html?tab=enderecos" style="color:#2563EB">Adicionar agora →</a></p>`;
+      addrList.innerHTML = `<p class="co-muted" style="margin:0 0 8px">Você ainda não tem endereço cadastrado.</p>`;
+      setAddLinkText('Adicionar endereço');
       updateTotal();
       return;
     }
+    setAddLinkText('Adicionar outro endereço');
     addrList.innerHTML = addresses.map(a => `
       <label class="co-addr-opt${a.principal ? ' selected' : ''}" data-id="${esc(a.id)}">
         <input type="radio" name="co-addr" value="${esc(a.id)}" ${a.principal ? 'checked' : ''}/>
