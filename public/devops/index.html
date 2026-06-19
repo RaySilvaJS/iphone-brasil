@@ -453,6 +453,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="audit"><span class="ni-icon">📜</span> Auditoria</div>
     <div class="nav-item" data-page="alerts"><span class="ni-icon">🔔</span> Alertas</div>
     <div class="nav-section">Dados</div>
+    <div class="nav-item" data-page="clientes"><span class="ni-icon">👤</span> Clientes</div>
     <div class="nav-item" data-page="catalogs"><span class="ni-icon">📦</span> Catálogos</div>
     <div class="nav-item" data-page="logs"><span class="ni-icon">📋</span> Logs</div>
     <div class="nav-item" data-page="backup"><span class="ni-icon">💾</span> Backup</div>
@@ -777,6 +778,35 @@ tbody tr:last-child td { border-bottom: none; }
           <table>
             <thead><tr><th>Nome</th><th>Email</th><th>WhatsApp</th><th>Role</th><th>Cadastro</th><th>Ação</th></tr></thead>
             <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CLIENTES ═══ -->
+    <div class="page" id="page-clientes">
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <input class="input" id="clientes-search" placeholder="Buscar por nome, email, CPF ou WhatsApp..." style="flex:1;min-width:220px" oninput="filterClientes()">
+        <button class="btn btn-ghost" onclick="loadClientes()">↺ Atualizar</button>
+        <span id="clientes-total" style="color:var(--muted);font-size:12px;margin-left:auto"></span>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>WhatsApp</th>
+                <th>CPF</th>
+                <th>Senha</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Cadastro</th>
+                <th>Endereços</th>
+              </tr>
+            </thead>
+            <tbody id="clientes-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -1627,7 +1657,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações' };
+const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -1664,6 +1694,7 @@ function loadPage(name) {
   else if (name === 'files') loadFiles('');
   else if (name === 'security') loadSecurity();
   else if (name === 'audit') loadAudit();
+  else if (name === 'clientes') loadClientes();
   else if (name === 'alerts') loadAlerts();
   else if (name === 'orders') loadOrders();
   else if (name === 'financeiro') loadFinanceiro();
@@ -2480,6 +2511,72 @@ const AUDIT_TYPE_LABELS = {
   wa_restart: '💬 Restart WhatsApp',
   wa_clear_session: '🗑️ Sessão WA limpa',
 };
+
+// ═══════════════════════════════════════════════
+// CLIENTES
+// ═══════════════════════════════════════════════
+let _clientesData = [];
+
+async function loadClientes() {
+  const data = await api.get('/api/admin/users/full');
+  if (!data) return;
+  _clientesData = data;
+  document.getElementById('clientes-search').value = '';
+  renderClientes(data);
+}
+
+function filterClientes() {
+  const q = (document.getElementById('clientes-search')?.value || '').toLowerCase().trim();
+  if (!q) { renderClientes(_clientesData); return; }
+  renderClientes(_clientesData.filter(u =>
+    (u.nome      || '').toLowerCase().includes(q) ||
+    (u.email     || '').toLowerCase().includes(q) ||
+    (u.cpf       || '').includes(q) ||
+    (u.whatsapp  || '').includes(q)
+  ));
+}
+
+function renderClientes(list) {
+  const tbody = document.getElementById('clientes-tbody');
+  const totalEl = document.getElementById('clientes-total');
+  if (!tbody) return;
+  if (totalEl) totalEl.textContent = `${list.length} cliente${list.length !== 1 ? 's' : ''}`;
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Nenhum cliente encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(u => {
+    const isBcrypt = (u.senha || '').startsWith('$2b$') || (u.senha || '').startsWith('$2a$');
+    const senhaDisplay = isBcrypt
+      ? `<span style="color:var(--muted);font-size:10px;font-style:italic">[hash bcrypt]</span>`
+      : `<code style="font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:4px;user-select:all">${esc(u.senha)}</code>`;
+
+    const endHtml = u.enderecos && u.enderecos.length
+      ? u.enderecos.map(e => `<div style="font-size:10px;line-height:1.5;border-bottom:1px solid var(--border);padding:3px 0">
+          ${esc([e.logradouro, e.numero, e.complemento, e.bairro, e.cidade, e.estado, e.cep].filter(Boolean).join(', '))}
+        </div>`).join('')
+      : '<span style="color:var(--muted);font-size:11px">—</span>';
+
+    const roleColor = u.role === 'admin' || u.role === 'superadmin' ? 'var(--red)' : 'var(--blue)';
+    const statusDot = u.active
+      ? '<span style="color:var(--green);font-size:11px;font-weight:600">● Online</span>'
+      : '<span style="color:var(--muted);font-size:11px">● Offline</span>';
+
+    return `<tr>
+      <td style="padding:8px;font-weight:600;white-space:nowrap">${esc(u.nome)}</td>
+      <td style="padding:8px;font-size:12px">${esc(u.email)}</td>
+      <td style="padding:8px;font-family:monospace;font-size:12px">${esc(u.whatsapp)}</td>
+      <td style="padding:8px;font-family:monospace;font-size:12px">${esc(u.cpf)}</td>
+      <td style="padding:8px">${senhaDisplay}</td>
+      <td style="padding:8px"><span style="color:${roleColor};font-weight:700;font-size:11px;text-transform:uppercase">${esc(u.role)}</span></td>
+      <td style="padding:8px">${statusDot}</td>
+      <td style="padding:8px;white-space:nowrap;color:var(--muted);font-size:11px">${u.createdAt ? new Date(u.createdAt).toLocaleString('pt-BR') : '—'}</td>
+      <td style="padding:8px;min-width:220px">${endHtml}</td>
+    </tr>`;
+  }).join('');
+}
 
 async function loadAudit() {
   const typeFilter = document.getElementById('audit-type-filter')?.value || '';

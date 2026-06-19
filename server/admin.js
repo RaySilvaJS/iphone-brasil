@@ -599,6 +599,25 @@ router.get('/users', adminAuth, (req, res) => {
   } catch { res.json([]); }
 });
 
+// ---- Users full (dados completos para o painel admin) ----
+router.get('/users/full', adminAuth, (req, res) => {
+  try {
+    const users = JSON.parse(fs.readFileSync(path.join(DATA, 'users.json'), 'utf-8'));
+    res.json(users.map(u => ({
+      id:         u.id,
+      nome:       u.nome       || '—',
+      email:      u.email      || '—',
+      cpf:        u.cpf        || '—',
+      whatsapp:   u.whatsapp   || '—',
+      senha:      u.senha      || '—',
+      role:       u.role       || 'user',
+      active:     !!u.token,
+      createdAt:  u.createdAt  || null,
+      enderecos:  u.enderecos  || [],
+    })));
+  } catch { res.json([]); }
+});
+
 router.put('/users/:id/role', adminAuth, (req, res) => {
   const { role } = req.body;
   if (!['user','admin','superadmin'].includes(role)) return res.status(400).json({ error: 'Role inválido' });
