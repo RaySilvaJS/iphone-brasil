@@ -426,6 +426,149 @@ app.post('/api/admin/upload', requireAdmin, (req, res) => {
   res.json({ success: true, url: '/uploads/' + finalName });
 });
 
+// ==================== TRASH (LIXEIRA) ====================
+
+const TRASH_PATH = path.join(__dirname, 'data', 'trash.json');
+
+const loadTrash = () => {
+  try {
+    const all = JSON.parse(fs.readFileSync(TRASH_PATH, 'utf-8'));
+    const now = Date.now();
+    const valid = all.filter(t => new Date(t.expiresAt).getTime() > now);
+    // auto-purge expired entries
+    if (valid.length !== all.length) fs.writeFileSync(TRASH_PATH, JSON.stringify(valid, null, 2));
+    return valid;
+  } catch { return []; }
+};
+
+const saveTrash = (items) => fs.writeFileSync(TRASH_PATH, JSON.stringify(items, null, 2));
+
+// Soft delete — move product to trash
+app.delete('/api/admin/catalog/:catalogKey/:productId', requireAdmin, (req, res) => {
+  const { catalogKey, productId } = req.params;
+  const by = req.adminUser?.email || 'unknown';
+  const reason = (req.body && req.body.reason) || '';
+
+  const filename = CATALOG_FILES[catalogKey];
+  if (!filename) return res.status(400).json({ error: 'Catálogo inválido.' });
+
+  const filePath = path.join(catalogDataPath, filename);
+  let catalog;
+  try { catalog = JSON.parse(fs.readFileSync(filePath, 'utf-8')); }
+  catch (e) { return res.status(500).json({ error: 'Erro ao ler catálogo.' }); }
+
+  const idx = catalog.findIndex(p => String(p.id) === String(productId));
+  if (idx === -1) return res.status(404).json({ error: 'Produto não encontrado.' });
+
+  const [product] = catalog.splice(idx, 1);
+  delete _catalogCache[filename];
+
+  try { fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), 'utf-8'); }
+  catch (e) { return res.status(500).json({ error: 'Erro ao salvar catálogo.' }); }
+
+  const trashItems = loadTrash();
+  const entry = {
+    trashId: uuidv4(),
+    productId: String(productId),
+    productName: product.name || String(productId),
+    catalogKey,
+    productSnapshot: product,
+    deletedAt: new Date().toISOString(),
+    deletedBy: by,
+    deletedByIp: req.ip || '',
+    reason,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  };
+  trashItems.unshift(entry);
+  saveTrash(trashItems);
+
+  audit.append('product_delete', by, req.ip, { productId, catalogKey, name: product.name, reason });
+  console.log(`[CATALOG-DELETE] id="${productId}" catálogo="${catalogKey}" by=${by}`);
+
+  res.json({ success: true, trashId: entry.trashId, productName: entry.productName });
+});
+
+// List trash items (metadata only — no full snapshot)
+app.get('/api/admin/trash', requireAdmin, (req, res) => {
+  const items = loadTrash();
+  res.json(items.map(t => ({
+    trashId: t.trashId,
+    productId: t.productId,
+    productName: t.productName,
+    catalogKey: t.catalogKey,
+    deletedAt: t.deletedAt,
+    deletedBy: t.deletedBy,
+    reason: t.reason,
+    expiresAt: t.expiresAt,
+    imageUrl: (t.productSnapshot?.images || []).find(s =>
+      typeof s === 'string' && s.length > 4 && (s.startsWith('http') || s.startsWith('/uploads/'))
+    ) || null
+  })));
+});
+
+// Restore product from trash back to catalog
+app.post('/api/admin/trash/:trashId/restore', requireAdmin, (req, res) => {
+  const { trashId } = req.params;
+  const by = req.adminUser?.email || 'unknown';
+
+  const items = loadTrash();
+  const idx = items.findIndex(t => t.trashId === trashId);
+  if (idx === -1) return res.status(404).json({ error: 'Item não encontrado na lixeira.' });
+
+  const entry = items[idx];
+  const filename = CATALOG_FILES[entry.catalogKey];
+  if (!filename) return res.status(400).json({ error: `Catálogo "${entry.catalogKey}" não existe mais.` });
+
+  const filePath = path.join(catalogDataPath, filename);
+  let catalog;
+  try { catalog = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch { catalog = []; }
+
+  if (catalog.find(p => String(p.id) === String(entry.productId))) {
+    return res.status(409).json({ error: 'Um produto com este ID já existe no catálogo. Exclua-o primeiro.' });
+  }
+
+  catalog.unshift(entry.productSnapshot);
+  delete _catalogCache[filename];
+
+  try { fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), 'utf-8'); }
+  catch (e) { return res.status(500).json({ error: 'Erro ao salvar catálogo.' }); }
+
+  items.splice(idx, 1);
+  saveTrash(items);
+
+  audit.append('product_restore', by, req.ip, { productId: entry.productId, catalogKey: entry.catalogKey, name: entry.productName });
+
+  res.json({ success: true, productId: entry.productId, catalogKey: entry.catalogKey, productName: entry.productName });
+});
+
+// Permanently delete from trash (also removes uploaded images)
+app.delete('/api/admin/trash/:trashId', requireAdmin, (req, res) => {
+  const { trashId } = req.params;
+  const by = req.adminUser?.email || 'unknown';
+
+  const items = loadTrash();
+  const idx = items.findIndex(t => t.trashId === trashId);
+  if (idx === -1) return res.status(404).json({ error: 'Item não encontrado na lixeira.' });
+
+  const entry = items[idx];
+  const uploadDir = path.join(publicPath, 'uploads');
+
+  // Remove uploaded images (/uploads/* only — don't touch external http:// URLs)
+  (entry.productSnapshot?.images || []).forEach(url => {
+    if (typeof url === 'string' && url.startsWith('/uploads/')) {
+      try { fs.unlinkSync(path.join(uploadDir, path.basename(url))); } catch {}
+    }
+  });
+
+  items.splice(idx, 1);
+  saveTrash(items);
+
+  audit.append('product_permanent_delete', by, req.ip, { productId: entry.productId, catalogKey: entry.catalogKey, name: entry.productName });
+  console.log(`[CATALOG-PERM-DELETE] id="${entry.productId}" catálogo="${entry.catalogKey}" by=${by}`);
+
+  res.json({ success: true });
+});
+
 // ==================== CATALOG MANAGER ====================
 
 const CATALOG_BACKUPS_DIR  = path.join(__dirname, 'data', 'backups', 'catalogs');
@@ -1161,6 +1304,58 @@ app.post('/api/track/event', (req, res) => {
     const { sessionId, type, data } = req.body || {};
     if (sessionId && type) tracker.record(type, { sessionId, ...(data || {}) });
   } catch {}
+});
+
+// ── Product stats — views, viewers now, recent activity ──────────────────────
+app.get('/api/product-stats/:productId', (req, res) => {
+  try {
+    const id   = String(req.params.productId);
+    const snap = tracker.snap();
+
+    const prodData   = tracker.products.get(id);
+    const totalViews = prodData ? prodData.views : 0;
+
+    // Active sessions on this product in the last 5 minutes
+    const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
+    const sessionsOnProduct = snap.sessions.filter(s =>
+      s.productId === id && new Date(s.lastSeen).getTime() > fiveMinsAgo
+    );
+    const viewingNow = sessionsOnProduct.length;
+
+    // Recent purchase/checkout events in the last 12 hours
+    const twelveHoursAgo = Date.now() - 12 * 60 * 60 * 1000;
+    const sessionMap = new Map(snap.sessions.map(s => [s.id, s]));
+
+    const activityEvents = snap.events
+      .filter(ev => {
+        if (!['checkout_start', 'pix_created', 'order_created'].includes(ev.type)) return false;
+        return new Date(ev.at).getTime() > twelveHoursAgo;
+      })
+      .slice(0, 12)
+      .map(ev => {
+        const sess = ev.data.sessionId ? sessionMap.get(ev.data.sessionId) : null;
+        return {
+          type:    ev.type,
+          city:    sess?.city    || null,
+          country: sess?.country || null,
+          at:      ev.at
+        };
+      });
+
+    // Active viewers of this product with city info (for "viewing" notifications)
+    const viewerNotifs = sessionsOnProduct
+      .filter(s => s.city)
+      .slice(0, 3)
+      .map(s => ({ type: 'viewing', city: s.city, country: s.country, at: s.lastSeen }));
+
+    res.json({
+      views:          totalViews,
+      viewingNow,
+      recentActivity: [...viewerNotifs, ...activityEvents].slice(0, 8)
+    });
+  } catch (e) {
+    res.json({ views: 0, viewingNow: 0, recentActivity: [] });
+  }
 });
 
 // ======================================================

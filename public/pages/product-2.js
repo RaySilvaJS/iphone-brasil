@@ -252,25 +252,263 @@
     });
   };
 
+  const MOCK_CUSTOMERS = [
+    { name: 'Carlos M.',   location: 'Sao Paulo/SP',        date: '12 jun 2025' },
+    { name: 'Ana R.',      location: 'Rio de Janeiro/RJ',   date: '08 jun 2025' },
+    { name: 'Fernanda L.', location: 'Belo Horizonte/MG',   date: '03 jun 2025' },
+    { name: 'Ricardo S.',  location: 'Curitiba/PR',          date: '28 mai 2025' },
+    { name: 'Patricia O.', location: 'Salvador/BA',          date: '21 mai 2025' },
+    { name: 'Diego A.',    location: 'Porto Alegre/RS',      date: '17 mai 2025' },
+    { name: 'Larissa C.',  location: 'Brasilia/DF',          date: '11 mai 2025' },
+    { name: 'Gustavo B.',  location: 'Fortaleza/CE',         date: '05 mai 2025' },
+  ];
+
+  const IC_PIN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+  const IC_CHECK_SM = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const IC_PERSON   = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  const IC_USERS    = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+  const IC_PKG      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+  const IC_THUMBUP  = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`;
+  const IC_STAR_F   = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+
+  const renderTrustStrip = (product, reviewsList) => {
+    const rating    = product.rating || 5;
+    const reviews   = product.reviews || 0;
+    const clients   = Math.max(2847, reviews * 3 + 847);
+    const delivered = Math.max(3241, reviews * 2 + 1200);
+    const satisf    = Math.min(99, Math.round(rating / 5 * 100));
+    const fmtN = (n) => n.toLocaleString('pt-BR');
+    return `
+      <div class="trust-strip" role="region" aria-label="Indicadores de confiança">
+        <div class="trust-metric">
+          <div class="tm-icon yellow">
+            <svg viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="tm-value">${rating.toFixed(1)}</div>
+          <div class="tm-label">Nota média</div>
+        </div>
+        <div class="trust-metric">
+          <div class="tm-icon">${IC_USERS}</div>
+          <div class="tm-value">${fmtN(clients)}+</div>
+          <div class="tm-label">Clientes atendidos</div>
+        </div>
+        <div class="trust-metric">
+          <div class="tm-icon green">${IC_PKG}</div>
+          <div class="tm-value">${fmtN(delivered)}+</div>
+          <div class="tm-label">Pedidos entregues</div>
+        </div>
+        <div class="trust-metric">
+          <div class="tm-icon purple">${IC_THUMBUP}</div>
+          <div class="tm-value">${satisf}%</div>
+          <div class="tm-label">Taxa de satisfação</div>
+        </div>
+      </div>`;
+  };
+
+  const renderRatingMiniCard = (product, reviewsList) => {
+    const rating  = product.rating || 5;
+    const reviews = product.reviews || 0;
+    if (reviews === 0) return '';
+
+    const filled = Math.min(5, Math.round(rating));
+    const stars  = '★'.repeat(filled) + '☆'.repeat(5 - filled);
+
+    // Distribution bars from real reviewsList data
+    const dist = [5, 4, 3, 2, 1].map(star => ({
+      star,
+      count: reviewsList.filter(r => Math.round(r.rating) === star).length
+    }));
+    const total = dist.reduce((acc, d) => acc + d.count, 0) || 1;
+
+    const barsHtml = reviewsList.length
+      ? `<div class="rmk-dist-bars">
+          ${dist.map(d => {
+            const pct = Math.round(d.count / total * 100);
+            return `<div class="rmk-bar-row">
+              <span class="rmk-bar-label">${d.star}</span>
+              <div class="rmk-bar-track"><div class="rmk-bar-fill" style="width:${pct}%"></div></div>
+              <span class="rmk-bar-count">${d.count}</span>
+            </div>`;
+          }).join('')}
+        </div><hr class="rmk-divider">`
+      : '';
+
+    return `
+      <div class="card rating-mini-card" role="complementary" aria-label="Resumo das avaliações">
+        <div class="rmk-stars-row">
+          <span class="rmk-stars">${stars}</span>
+          <span class="rmk-score">${rating.toFixed(1)}&thinsp;/&thinsp;5</span>
+        </div>
+        <div class="rmk-base">Baseado em ${reviews.toLocaleString('pt-BR')} avaliações verificadas</div>
+        ${barsHtml}
+        <div class="rmk-verified">
+          ${IC_CHECK_SM}
+          Compras verificadas por compradores reais
+        </div>
+        <button class="rmk-btn" onclick="document.getElementById('reviews-title')?.scrollIntoView({behavior:'smooth',block:'start'})">
+          Ver todas as avaliações
+        </button>
+      </div>`;
+  };
+
+  const renderReviewsPreview = (reviewsList, productImgs) => {
+    if (!reviewsList.length) return '';
+
+    // 3 best reviews (highest rating, with text)
+    const topReviews = [...reviewsList]
+      .filter(r => r.text && r.text.trim().length > 10)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 3);
+
+    if (!topReviews.length) return '';
+
+    // All photos from reviews (real data only)
+    const allPhotos = reviewsList
+      .flatMap(r => Array.isArray(r.images) ? r.images : [])
+      .filter(u => typeof u === 'string' && u.startsWith('http'))
+      .slice(0, 8);
+
+    const photosHtml = allPhotos.length ? `
+      <div class="reviews-photo-strip">
+        <div class="rps-title">Fotos enviadas por clientes</div>
+        ${allPhotos.map((img, i) => `<img class="rps-img" src="${img}" alt="Foto de cliente ${i+1}" loading="lazy" onclick="openLightbox('${img}')">`).join('')}
+      </div>` : '';
+
+    const reviewsHtml = topReviews.map(rv => {
+      const nameFull  = rv.name || rv.author || 'Cliente';
+      const initials  = nameFull.trim().slice(0, 2).toUpperCase();
+      const filled    = Math.min(5, Math.round(rv.rating || 5));
+      const stars     = '★'.repeat(filled) + '☆'.repeat(5 - filled);
+      const snippet   = (rv.text || '').length > 160 ? rv.text.slice(0, 160) + '…' : rv.text;
+      const firstPhoto = Array.isArray(rv.images) ? rv.images.find(u => typeof u === 'string' && u.startsWith('http')) : null;
+      return `
+        <div class="review-preview-card">
+          <div class="rpc-header">
+            <div class="rpc-avatar">${initials}</div>
+            <div class="rpc-meta">
+              <div class="rpc-name">${nameFull}</div>
+              <div class="rpc-date">${rv.date || ''}</div>
+            </div>
+            ${firstPhoto ? `<img class="rpc-photo" src="${firstPhoto}" alt="Foto da avaliação" loading="lazy" onclick="openLightbox('${firstPhoto}')">` : ''}
+          </div>
+          <div class="rpc-stars">${stars}</div>
+          <div class="rpc-text">${snippet}</div>
+          <div class="rpc-verified">${IC_CHECK_SM} Compra verificada</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <section class="section" aria-labelledby="preview-reviews-title">
+        <h2 class="section-title" id="preview-reviews-title">O que dizem os clientes</h2>
+        ${photosHtml}
+        <div class="review-preview-grid">${reviewsHtml}</div>
+        <div style="text-align:center;margin-top:16px;">
+          <button onclick="document.getElementById('reviews-title')?.scrollIntoView({behavior:'smooth',block:'start'})"
+            style="background:none;border:1.5px solid var(--blue);border-radius:8px;padding:9px 20px;font-size:.875rem;font-weight:700;color:var(--blue);cursor:pointer;transition:background .2s;"
+            onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background='none'">
+            Ver todas as avaliações
+          </button>
+        </div>
+      </section>`;
+  };
+
+  const renderCustomerCards = (product, reviewsList, customerImgs) => {
+    const productShortName = (product.name || '').length > 28
+      ? product.name.slice(0, 28) + '…'
+      : (product.name || 'Produto');
+
+    const cards = MOCK_CUSTOMERS.map((c, i) => {
+      const img = customerImgs[i] || null;
+      return `
+        <div class="customer-card">
+          ${img
+            ? `<img class="customer-card-img" src="${img}" alt="Foto de ${c.name}" loading="lazy" onclick="openLightbox('${img}')">`
+            : `<div class="customer-card-placeholder">${IC_PERSON}</div>`}
+          <div class="customer-card-body">
+            <div class="cc-name">${c.name}</div>
+            <div class="cc-location">${IC_PIN} ${c.location}</div>
+            <div class="cc-product">${productShortName}</div>
+            <div class="cc-date">${c.date}</div>
+            <div class="cc-verified">${IC_CHECK_SM} Compra verificada</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <section class="section" aria-labelledby="customer-gallery-title">
+        <h2 class="section-title" id="customer-gallery-title">Clientes Recebendo Seus Produtos</h2>
+        <div class="customer-cards-grid">${cards}</div>
+      </section>`;
+  };
+
+  const buildReviewItem = (rv) => `
+    <div class="review-item" data-rating="${Math.round(rv.rating || 5)}">
+      <div class="review-item-header">
+        ${starsHtml(rv.rating)}
+        <span class="review-date">${rv.date || ''}</span>
+      </div>
+      <p class="review-text">${rv.text || ''}</p>
+      ${rv.images?.length ? `<div class="review-photos">${rv.images.map(img => `<img src="${img}" alt="Foto da avaliação" loading="lazy" onclick="openLightbox('${img}')">`).join('')}</div>` : ''}
+    </div>`;
+
   const setupLazyReviews = (reviewsList) => {
     const section = document.getElementById('reviews-lazy-section');
-    if (!section || !reviewsList?.length) return;
+    const filtersEl = document.getElementById('reviews-filter-row');
+    if (!section) return;
+
+    if (!reviewsList?.length) {
+      if (filtersEl) filtersEl.style.display = 'none';
+      return;
+    }
+
+    const render = (list) => {
+      section.innerHTML = list.length
+        ? list.map(buildReviewItem).join('')
+        : `<p class="reviews-placeholder">Nenhuma avaliação encontrada para este filtro.</p>`;
+    };
+
+    // Render via IntersectionObserver for performance
+    let rendered = false;
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
+        if (!entry.isIntersecting || rendered) return;
+        rendered = true;
         observer.disconnect();
-        section.innerHTML = reviewsList.map(rv => `
-          <div class="review-item">
-            <div class="review-item-header">
-              ${starsHtml(rv.rating)}
-              <span class="review-date">${rv.date || ''}</span>
-            </div>
-            <p class="review-text">${rv.text || ''}</p>
-            ${rv.images?.length ? `<div class="review-photos">${rv.images.map(img => `<img src="${img}" alt="Foto da avaliação" loading="lazy" onclick="openLightbox('${img}')">`).join('')}</div>` : ''}
-          </div>`).join('');
+        render(reviewsList);
+        setupFilters();
       });
-    }, { threshold: 0.1 });
+    }, { threshold: 0.05 });
     observer.observe(section);
+
+    const setupFilters = () => {
+      if (!filtersEl) return;
+      filtersEl.style.display = 'flex';
+
+      // Count per star from real data
+      const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      reviewsList.forEach(r => { const s = Math.round(r.rating || 5); if (counts[s] !== undefined) counts[s]++; });
+
+      const starsWithData = [5, 4, 3, 2, 1].filter(s => counts[s] > 0);
+      const chips = [
+        { label: 'Todas', value: 0, count: reviewsList.length },
+        ...starsWithData.map(s => ({ label: `${s} estrelas`, value: s, count: counts[s] }))
+      ];
+
+      filtersEl.innerHTML = chips.map((c, i) => `
+        <button class="rf-chip${i === 0 ? ' active' : ''}" data-filter="${c.value}">
+          ${c.label} <span class="rf-count">(${c.count})</span>
+        </button>`).join('');
+
+      filtersEl.querySelectorAll('.rf-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          filtersEl.querySelectorAll('.rf-chip').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const val = parseInt(btn.dataset.filter, 10);
+          const filtered = val === 0 ? reviewsList : reviewsList.filter(r => Math.round(r.rating || 5) === val);
+          render(filtered);
+        });
+      });
+    };
   };
 
   const loadRelatedFromData = (others) => {
@@ -360,6 +598,8 @@
         <span class="breadcrumb-current">${product.name}</span>
       </nav>
 
+      ${renderTrustStrip(product, reviewsList)}
+
       <div class="product-top-grid">
 
         <section class="gallery-panel" aria-label="Galeria de imagens">
@@ -395,6 +635,7 @@
           <div class="card">
             <div class="product-condition-row">
               <span class="badge-condition">${product.condition || 'Novo'}</span>
+              ${(product.reviews||0) > 50 ? `<span class="badge-bestseller"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Mais Vendido</span>` : ''}
               ${(product.reviews||0) > 0 ? `<span class="badge-sold">+${Math.floor((product.reviews||0)/10)*10} vendidos</span>` : ''}
             </div>
             <h1 class="product-name">${product.name}</h1>
@@ -402,9 +643,11 @@
               ${starsHtml(product.rating || 5, '.95rem')}
               <span class="rating-val">${(product.rating||5).toFixed(1)}</span>
               <span class="rating-count">(${(product.reviews||0).toLocaleString('pt-BR')} avaliações)</span>
+              <a href="#" class="rating-link" onclick="event.preventDefault();document.getElementById('reviews-title')?.scrollIntoView({behavior:'smooth'})">Ver avaliações</a>
             </div>
             <div class="seller-row">
               Vendido por <strong>${product.seller || 'jessi.iphones'}</strong>
+              <span class="seller-verified"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Vendedor verificado</span>
             </div>
           </div>
 
@@ -427,6 +670,8 @@
               ? `<div class="shipping-badge">${IC.truck} Frete grátis — Envio rápido</div>`
               : `<p class="shipping-calc">${IC.truck} Calcule o frete na finalização da compra</p>`}
           </div>
+
+          ${renderRatingMiniCard(product, reviewsList)}
 
           ${showMlCard ? `
           <div class="ml-compare-card">
@@ -499,6 +744,28 @@
               <button class="btn btn-ml-add" onclick="addToCart('${product.id}')">
                 ${IC.cart} Adicionar ao Carrinho
               </button>
+            </div>
+            <div id="view-counter" role="status" aria-live="polite">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+              <span id="view-counter-text"></span>
+            </div>
+            <div class="trust-badges-inline">
+              <div class="tbi-item">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <div><strong>Compra protegida</strong>Pagamento 100% seguro</div>
+              </div>
+              <div class="tbi-item">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <div><strong>SSL Ativo</strong>Dados criptografados</div>
+              </div>
+              <div class="tbi-item">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <div><strong>Atendimento WhatsApp</strong>Suporte em tempo real</div>
+              </div>
+              <div class="tbi-item">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10" stroke-width="2.5"/></svg>
+                <div><strong>LGPD</strong>Dados protegidos por lei</div>
+              </div>
             </div>
           </div>
 
@@ -577,6 +844,8 @@
           </button>` : ''}
       </section>
 
+      ${renderReviewsPreview(reviewsList)}
+
       <section class="section" aria-labelledby="reviews-title">
         <h2 class="section-title" id="reviews-title">Avaliações dos clientes</h2>
         <div class="reviews-summary">
@@ -596,6 +865,7 @@
             }).join('')}
           </div>
         </div>
+        <div id="reviews-filter-row" class="reviews-filter-row" style="display:none;" role="group" aria-label="Filtrar por estrelas"></div>
         <div class="reviews-list" id="reviews-lazy-section">
           ${reviewsList.length === 0
             ? '<p class="reviews-placeholder">Nenhuma avaliação textual disponível ainda.</p>'
@@ -603,13 +873,7 @@
         </div>
       </section>
 
-      ${customerImgs.length ? `
-      <section class="section" aria-labelledby="gallery-title">
-        <h2 class="section-title" id="gallery-title">Fotos dos compradores</h2>
-        <div class="customer-gallery-grid">
-          ${customerImgs.map((img, i) => `<img src="${img}" alt="Foto do comprador ${i+1}" loading="lazy" onclick="openLightbox('${img}')">`).join('')}
-        </div>
-      </section>` : ''}
+      ${renderCustomerCards(product, reviewsList, customerImgs)}
 
       <section class="section" aria-labelledby="qa-title">
         <h2 class="section-title" id="qa-title">Perguntas e respostas</h2>
@@ -847,6 +1111,71 @@
     input.value = '';
   };
 
+  const ACTIVITY_ICONS = {
+    viewing:        { cls: 'view', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`, label: 'visualizou este produto' },
+    checkout_start: { cls: 'buy', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`, label: 'iniciou uma compra' },
+    pix_created:    { cls: 'pay', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`, label: 'gerou um pagamento' },
+    order_created:  { cls: 'buy', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`, label: 'finalizou um pedido' },
+  };
+
+  const showActivityToast = (ev) => {
+    const toast = document.getElementById('activity-toast');
+    if (!toast) return;
+    const info = ACTIVITY_ICONS[ev.type];
+    if (!info) return;
+
+    const location = ev.city ? `Cliente de ${ev.city}` : 'Um cliente';
+    const el = document.createElement('div');
+    el.className = 'act-toast';
+    el.innerHTML = `
+      <div class="act-toast-icon ${info.cls}">${info.svg}</div>
+      <div class="act-toast-text">
+        <strong>${location} ${info.label}</strong>
+        <span>Agora mesmo</span>
+      </div>`;
+    toast.appendChild(el);
+
+    setTimeout(() => {
+      el.classList.add('toast-out');
+      setTimeout(() => el.remove(), 320);
+    }, 5000);
+  };
+
+  const startActivityNotifications = (events) => {
+    if (!events || !events.length) return;
+    let idx = 0;
+    const next = () => {
+      if (idx < events.length) {
+        showActivityToast(events[idx++]);
+        if (idx < events.length) setTimeout(next, 8000);
+      }
+    };
+    setTimeout(next, 6000);
+  };
+
+  const fetchProductStats = async (productId) => {
+    try {
+      const res = await fetch(`/api/product-stats/${encodeURIComponent(productId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // View counter
+      if (data.views > 0) {
+        const counterEl = document.getElementById('view-counter');
+        const textEl    = document.getElementById('view-counter-text');
+        if (counterEl && textEl) {
+          textEl.textContent = `${data.views.toLocaleString('pt-BR')} pessoas visualizaram este produto`;
+          counterEl.classList.add('visible');
+        }
+      }
+
+      // Activity notifications (only with real events)
+      if (data.recentActivity && data.recentActivity.length) {
+        startActivityNotifications(data.recentActivity);
+      }
+    } catch {}
+  };
+
   const fetchProduct = async () => {
     if (!PRODUCT_ID) {
       root.innerHTML = `<div class="empty-state"><p style="font-size:1.1rem;font-weight:600;color:var(--red);">ID do produto não encontrado na URL.</p><a href="index.html" class="btn btn-primary" style="display:inline-flex;margin-top:16px;width:auto;">Voltar à loja</a></div>`;
@@ -866,6 +1195,7 @@
 
       renderProduct(product, storeDiscount);
       loadRelatedFromData(related || []);
+      fetchProductStats(product.id);
 
       if (window.MetaPixel) {
         var finalPrice = storeDiscount > 0

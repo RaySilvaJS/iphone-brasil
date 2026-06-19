@@ -1019,11 +1019,27 @@ tbody tr:last-child td { border-bottom: none; }
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost" onclick="loadCatalogs()">↺ Atualizar</button>
           <button class="btn btn-ghost" onclick="loadCatalogHistoryTab()">📜 Histórico</button>
+          <button class="btn btn-ghost" style="color:var(--red)" onclick="toggleTrashSection()">🗑 Lixeira</button>
         </div>
       </div>
 
       <!-- Catalog cards grid -->
       <div id="catalogs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:22px"></div>
+
+      <!-- Trash section -->
+      <div id="catalog-trash-section" style="display:none;margin-bottom:22px">
+        <div class="card">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+            <span>🗑 Lixeira de Produtos <span id="trash-count-badge" class="badge badge-red" style="font-size:11px;margin-left:6px"></span></span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" style="font-size:11px" onclick="loadTrashItems()">↺ Atualizar</button>
+              <button class="btn btn-ghost" style="font-size:11px" onclick="document.getElementById('catalog-trash-section').style.display='none'">✕ Fechar</button>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin:8px 0 14px">Produtos excluídos ficam aqui por <strong>30 dias</strong>. Você pode restaurar ou excluir permanentemente.</p>
+          <div id="trash-items-list"></div>
+        </div>
+      </div>
 
       <!-- History section (hidden by default) -->
       <div id="catalog-history-section" style="display:none">
@@ -2993,6 +3009,98 @@ async function loadCatalogHistoryTab() {
         </tr>`;
       }).join('')
     : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Nenhuma importação registrada</td></tr>';
+}
+
+// ═══════════════════════════════════════════════
+// TRASH (LIXEIRA)
+// ═══════════════════════════════════════════════
+
+function toggleTrashSection() {
+  const sec = document.getElementById('catalog-trash-section');
+  const isHidden = sec.style.display === 'none' || sec.style.display === '';
+  sec.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) loadTrashItems();
+}
+
+async function loadTrashItems() {
+  const list = document.getElementById('trash-items-list');
+  const badge = document.getElementById('trash-count-badge');
+  if (!list) return;
+  list.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:10px 0">Carregando...</p>';
+
+  const items = await api.get('/api/admin/trash');
+  if (!items) { list.innerHTML = '<p style="color:var(--red);font-size:13px">Erro ao carregar lixeira.</p>'; return; }
+
+  if (badge) badge.textContent = items.length || '';
+  if (!badge.textContent) badge.style.display = 'none'; else badge.style.display = '';
+
+  if (!items.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0">Lixeira vazia.</p>';
+    return;
+  }
+
+  const CATALOG_LABELS_MAP = { iphones: 'iPhones', android: 'Android', consoles: 'Consoles', smartwatches: 'Smartwatches', acessorios: 'Acessórios', informatica: 'Informática' };
+
+  list.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">Produto</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">Catálogo</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">Excluído por</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">Expira em</th>
+        <th style="padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)"></th>
+      </tr></thead>
+      <tbody>
+        ${items.map(t => {
+          const expiresIn = Math.max(0, Math.ceil((new Date(t.expiresAt) - Date.now()) / 86400000));
+          const urgent = expiresIn <= 5;
+          return `
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px;min-width:180px">
+              <div style="display:flex;align-items:center;gap:10px">
+                ${t.imageUrl ? `<img src="${esc(t.imageUrl)}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display='none'">` : '<div style="width:40px;height:40px;background:var(--border);border-radius:6px;flex-shrink:0"></div>'}
+                <div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(t.productName)}</div>
+                  <div style="font-size:10px;color:var(--muted)">${esc(t.productId)}</div>
+                  ${t.reason ? `<div style="font-size:10px;color:var(--muted);font-style:italic">${esc(t.reason)}</div>` : ''}
+                </div>
+              </div>
+            </td>
+            <td style="padding:10px;font-size:12px">${esc(CATALOG_LABELS_MAP[t.catalogKey] || t.catalogKey)}</td>
+            <td style="padding:10px;font-size:12px">${esc(t.deletedBy)}<br><span style="font-size:10px;color:var(--muted)">${fmtDate(t.deletedAt)}</span></td>
+            <td style="padding:10px;font-size:12px;color:${urgent ? 'var(--red)' : 'var(--muted)'}">
+              ${urgent ? '⚠ ' : ''}${expiresIn} dia${expiresIn !== 1 ? 's' : ''}
+            </td>
+            <td style="padding:10px;white-space:nowrap">
+              <button class="btn btn-ghost" style="font-size:11px;margin-right:4px" onclick="restoreTrashItem('${esc(t.trashId)}', '${esc(t.productName.replace(/'/g,"\\'"))}')">↩ Restaurar</button>
+              <button class="btn" style="background:var(--red);color:#fff;font-size:11px;border:none" onclick="permanentDeleteTrashItem('${esc(t.trashId)}', '${esc(t.productName.replace(/'/g,"\\'"))}')">🗑 Excluir</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function restoreTrashItem(trashId, name) {
+  if (!confirm(`Restaurar "${name}" ao catálogo original?`)) return;
+  const r = await api.post(`/api/admin/trash/${trashId}/restore`);
+  if (r?.success) {
+    alert(`✓ "${r.productName}" restaurado ao catálogo ${r.catalogKey}!`);
+    loadTrashItems();
+  } else {
+    alert('Erro ao restaurar: ' + (r?.error || 'Falha desconhecida.'));
+  }
+}
+
+async function permanentDeleteTrashItem(trashId, name) {
+  if (!confirm(`Excluir "${name}" PERMANENTEMENTE?\n\nEsta ação é irreversível. As imagens enviadas também serão removidas.`)) return;
+  const r = await api.del(`/api/admin/trash/${trashId}`);
+  if (r?.success) {
+    loadTrashItems();
+  } else {
+    alert('Erro ao excluir: ' + (r?.error || 'Falha desconhecida.'));
+  }
 }
 
 // ═══════════════════════════════════════════════

@@ -201,6 +201,11 @@
         <button id="ae-dup" style="${btn('#f0fdf4','#15803d')}" title="Duplicar produto">⧉</button>
         <button id="ae-del" style="${btn('#fef2f2','#dc2626')}" title="Arquivar/restaurar">🗑 Arquivar</button>
       </div>
+      <!-- Danger Zone -->
+      <div style="border-top:2px dashed #fecaca;padding:12px 18px;background:#fff8f8;flex-shrink:0;">
+        <div style="font-size:10px;font-weight:800;color:#b91c1c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">⚠ Zona de Perigo</div>
+        <button id="ae-delete-btn" style="${btn('#fee2e2','#b91c1c','width:100%;justify-content:center;border:1.5px solid #fca5a5;font-size:13px;padding:9px 14px;')}">🗑 Excluir Produto</button>
+      </div>
     `;
 
     document.body.appendChild(el);
@@ -234,6 +239,11 @@
       const willArchive = !document.getElementById('ae-f-archived').checked;
       document.getElementById('ae-f-archived').checked = willArchive;
       el.querySelector('#ae-del').textContent = willArchive ? '↩ Restaurar' : '🗑 Arquivar';
+    });
+
+    el.querySelector('#ae-delete-btn').addEventListener('click', () => {
+      if (!productData) return;
+      openDeleteModal();
     });
 
     // Image URL add
@@ -462,6 +472,97 @@
     } else {
       showToast(r.error || 'Erro ao salvar.', true);
     }
+  }
+
+  // ── Delete Confirmation Modal ─────────────────────────────────────────────────
+
+  function openDeleteModal() {
+    const existing = document.getElementById('ae-delete-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'ae-delete-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:299999;background:rgba(15,23,42,.8);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+    const prodName = (productData && (productData.name || productData.id)) || '?';
+
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:14px;width:min(460px,100%);box-shadow:0 24px 64px rgba(0,0,0,.4);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+        <div style="background:#7f1d1d;color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:22px;">🗑</span>
+          <div>
+            <div style="font-size:14px;font-weight:800;">Excluir Produto</div>
+            <div style="font-size:11px;opacity:.75;margin-top:1px;">Esta ação moverá o produto para a lixeira</div>
+          </div>
+        </div>
+        <div style="padding:20px;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0f172a;">Tem certeza que deseja excluir este produto?</p>
+          <p style="margin:0 0 16px;font-size:13px;color:#475569;line-height:1.5;">
+            O produto <strong style="color:#0f172a;">${prodName.replace(/</g,'&lt;')}</strong> será movido para a
+            <strong>lixeira</strong> e ficará disponível para restauração por <strong>30 dias</strong>.
+            Após esse prazo é excluído permanentemente.
+          </p>
+          <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:14px;margin-bottom:14px;">
+            <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#dc2626;">Para confirmar, digite <code style="background:#fee2e2;padding:1px 5px;border-radius:3px;font-size:12px;">EXCLUIR</code> abaixo:</p>
+            <input id="ae-del-typed" style="width:100%;padding:9px 11px;border:2px solid #fca5a5;border-radius:6px;font-size:15px;font-family:monospace;font-weight:700;box-sizing:border-box;outline:none;letter-spacing:.08em;text-align:center;" placeholder="EXCLUIR" autocomplete="off" spellcheck="false">
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px;">MOTIVO (OPCIONAL)</div>
+            <input id="ae-del-reason-input" style="width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;" placeholder="Ex: Produto descontinuado, duplicado, etc.">
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button id="ae-del-cancel-btn" style="${btn('#f1f5f9','#374151','flex:1;justify-content:center;')}">Cancelar</button>
+            <button id="ae-del-confirm-btn" style="background:#dc2626;color:#fff;border:none;padding:9px 14px;border-radius:6px;cursor:not-allowed;font-size:13px;font-weight:700;font-family:inherit;flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;opacity:.4;transition:opacity .15s;" disabled>🗑 Excluir Produto</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const input     = modal.querySelector('#ae-del-typed');
+    const confirmBtn = modal.querySelector('#ae-del-confirm-btn');
+
+    input.addEventListener('input', () => {
+      const ok = input.value.toUpperCase() === 'EXCLUIR';
+      confirmBtn.disabled = !ok;
+      confirmBtn.style.opacity    = ok ? '1'       : '0.4';
+      confirmBtn.style.cursor     = ok ? 'pointer'  : 'not-allowed';
+    });
+
+    modal.querySelector('#ae-del-cancel-btn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    confirmBtn.addEventListener('click', async () => {
+      if (confirmBtn.disabled) return;
+      const reason = (modal.querySelector('#ae-del-reason-input')?.value || '').trim();
+      confirmBtn.textContent = '⏳ Excluindo...';
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = '0.6';
+
+      const r = await api('DELETE', `/api/admin/catalog/${catalogKey}/${productData.id}`, { reason });
+
+      if (r.success) {
+        modal.remove();
+        // Animação de saída na card do catálogo
+        const card = document.querySelector(`.olx-adcard[data-product-id="${productData.id}"]`);
+        if (card) {
+          card.style.transition = 'opacity .3s,transform .3s';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(.95)';
+          setTimeout(() => card.remove(), 320);
+        }
+        closeDrawer();
+        showToast(`🗑 Produto movido para a lixeira. Restaure em até 30 dias.`);
+      } else {
+        showToast(r.error || 'Erro ao excluir produto.', true);
+        confirmBtn.textContent = '🗑 Excluir Produto';
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+      }
+    });
+
+    setTimeout(() => input.focus(), 60);
   }
 
   // ── New Product Modal ─────────────────────────────────────────────────────────
