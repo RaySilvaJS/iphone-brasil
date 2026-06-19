@@ -202,6 +202,11 @@ router.post('/system/deploy', adminAuth, (req, res) => {
         send('log', '⚡ Modo rápido — backup ignorado');
       }
 
+      // ── limpar arquivos não rastreados que bloqueiam o merge ──────────────
+      await new Promise(resolve => {
+        exec('git clean -fd --exclude=server/data --exclude=public/uploads --exclude=.env', { cwd: ROOT }, () => resolve());
+      });
+
       // ── git pull ──────────────────────────────────────────────────────────
       await runCmd('git pull origin main', 'git', ['pull', 'origin', 'main']);
 
