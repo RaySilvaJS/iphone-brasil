@@ -573,8 +573,6 @@
         <span class="breadcrumb-current">${product.name}</span>
       </nav>
 
-      ${renderTrustStrip(product, reviewsList)}
-
       <div class="product-top-grid">
 
         <section class="gallery-panel" aria-label="Galeria de imagens">
