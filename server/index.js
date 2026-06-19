@@ -283,8 +283,21 @@ const CATALOG_FILES = {
   acessorios:   'acessorios.json',
   informatica:  'informatica.json',
 };
-const catalogDataPath = path.join(__dirname, '..', 'public', 'data');
+// Catálogos ficam em server/data/catalogs/ para sobreviver a deploys (git pull não toca server/data/)
+// Na primeira execução, os seeds de public/data/ são copiados para cá automaticamente.
+const catalogDataPath = path.join(__dirname, 'data', 'catalogs');
+const catalogSeedPath = path.join(__dirname, '..', 'public', 'data');
 const _catalogCache = {};
+
+// Bootstrap: copiar seeds se a pasta ainda não existir
+if (!fs.existsSync(catalogDataPath)) {
+  fs.mkdirSync(catalogDataPath, { recursive: true });
+  for (const filename of Object.values(CATALOG_FILES)) {
+    const src = path.join(catalogSeedPath, filename);
+    const dst = path.join(catalogDataPath, filename);
+    if (fs.existsSync(src)) try { fs.copyFileSync(src, dst); } catch {}
+  }
+}
 
 const loadCatalogFile = (filename) => {
   if (_catalogCache[filename]) return _catalogCache[filename];

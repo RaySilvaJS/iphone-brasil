@@ -6,6 +6,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 server/logs/
+server/data/catalogs/
 
 # Arquivos de build
 dist/
