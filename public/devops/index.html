@@ -1151,7 +1151,11 @@ tbody tr:last-child td { border-bottom: none; }
       <!-- Header row -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
         <div id="catalogs-summary-text" style="font-size:13px;color:var(--muted)">Carregando catálogos...</div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label class="btn btn-blue" style="cursor:pointer;position:relative;gap:8px">
+            ⬆ Atualizar Todos
+            <input id="upload-all-input" type="file" accept=".json" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="uploadAllCatalogs(this)">
+          </label>
           <button class="btn btn-ghost" onclick="loadCatalogs()">↺ Atualizar</button>
           <button class="btn btn-ghost" onclick="loadCatalogHistoryTab()">📜 Histórico</button>
           <button class="btn btn-ghost" style="color:var(--red)" onclick="toggleTrashSection()">🗑 Lixeira</button>
@@ -1203,6 +1207,15 @@ tbody tr:last-child td { border-bottom: none; }
       <div id="catalog-backup-overlay" onclick="closeCatalogBackup()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299"></div>
 
       <!-- Upload report modal -->
+      <!-- Modal: upload em lote -->
+      <div id="catalog-batch-modal" style="display:none;position:fixed;inset:0;z-index:401;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
+        <div style="background:var(--bg2);border-radius:12px;padding:28px;width:min(520px,95vw);border:1px solid var(--border);max-height:90vh;overflow-y:auto">
+          <h3 style="margin:0 0 18px;font-size:15px;font-weight:700">⬆ Atualizar Catálogos em Lote</h3>
+          <div id="catalog-batch-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px"></div>
+          <button id="catalog-batch-close" class="btn btn-blue" style="width:100%;display:none" onclick="document.getElementById('catalog-batch-modal').style.display='none';loadCatalogs()">Fechar e Atualizar</button>
+        </div>
+      </div>
+
       <div id="catalog-report-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
         <div style="background:var(--bg2);border-radius:12px;padding:28px;max-width:480px;width:100%;border:1px solid var(--border);max-height:90vh;overflow-y:auto">
           <div id="catalog-report-content"></div>
@@ -3341,6 +3354,107 @@ async function uploadCatalog(key, input) {
   `;
   modal.style.display = 'flex';
   loadCatalogs(); // Refresh the grid
+}
+
+// Mapa inverso: nome do arquivo → chave do catálogo
+const CATALOG_FILENAME_MAP = {
+  'iphones.json':      'iphones',
+  'androids.json':     'android',
+  'consoles.json':     'consoles',
+  'smartwatches.json': 'smartwatches',
+  'acessorios.json':   'acessorios',
+  'informatica.json':  'informatica',
+};
+
+async function uploadAllCatalogs(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+
+  // Separar arquivos reconhecidos e não reconhecidos
+  const matched   = files.filter(f => CATALOG_FILENAME_MAP[f.name]);
+  const unmatched = files.filter(f => !CATALOG_FILENAME_MAP[f.name]);
+
+  if (!matched.length) {
+    alert('Nenhum arquivo reconhecido.\n\nNomes válidos: ' + Object.keys(CATALOG_FILENAME_MAP).join(', '));
+    return;
+  }
+
+  const modal   = document.getElementById('catalog-batch-modal');
+  const listEl  = document.getElementById('catalog-batch-list');
+  const closeBtn= document.getElementById('catalog-batch-close');
+
+  // Montar lista de itens com status
+  const itemIds = {};
+  listEl.innerHTML = matched.map(f => {
+    const key   = CATALOG_FILENAME_MAP[f.name];
+    const icon  = CATALOG_ICONS[key] || '📦';
+    const label = CATALOG_LABELS[key] || key;
+    const id    = `batch-item-${key}`;
+    itemIds[key] = id;
+    return `
+      <div id="${id}" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+        <span style="font-size:20px">${icon}</span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${esc(label)}</div>
+          <div style="font-size:11px;color:var(--muted)">${esc(f.name)} · ${fmtSize(f.size)}</div>
+        </div>
+        <span class="batch-status" style="font-size:12px;color:var(--muted)">⏳ Aguardando...</span>
+      </div>`;
+  }).join('') + (unmatched.length ? `
+    <div style="padding:8px 14px;font-size:12px;color:var(--yellow);border:1px solid rgba(210,153,34,.3);border-radius:8px;background:rgba(210,153,34,.08)">
+      ⚠ Ignorados (nome não reconhecido): ${unmatched.map(f => f.name).join(', ')}
+    </div>` : '');
+
+  closeBtn.style.display = 'none';
+  modal.style.display = 'flex';
+
+  // Processar cada arquivo sequencialmente para não sobrecarregar
+  let successCount = 0;
+  for (const file of matched) {
+    const key    = CATALOG_FILENAME_MAP[file.name];
+    const itemEl = document.getElementById(itemIds[key]);
+    const statusEl = itemEl?.querySelector('.batch-status');
+
+    if (statusEl) { statusEl.textContent = '⏳ Enviando...'; statusEl.style.color = 'var(--yellow)'; }
+
+    try {
+      const content = await file.text();
+
+      // Validar JSON
+      let parsed;
+      try { parsed = JSON.parse(content); } catch (e) {
+        if (statusEl) { statusEl.textContent = '✕ JSON inválido'; statusEl.style.color = 'var(--red)'; }
+        if (itemEl) itemEl.style.borderColor = 'var(--red)';
+        continue;
+      }
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        if (statusEl) { statusEl.textContent = '✕ Array vazio'; statusEl.style.color = 'var(--red)'; }
+        if (itemEl) itemEl.style.borderColor = 'var(--red)';
+        continue;
+      }
+
+      const result = await api.post(`/api/admin/catalogs/${key}/upload`, { content, originalName: file.name });
+
+      if (result?.ok) {
+        const diff = result.report?.diff ?? 0;
+        const diffStr = diff >= 0 ? `+${diff}` : String(diff);
+        const count = result.report?.newCount ?? parsed.length;
+        if (statusEl) { statusEl.textContent = `✓ ${count.toLocaleString('pt-BR')} produtos (${diffStr})`; statusEl.style.color = 'var(--green)'; }
+        if (itemEl) { itemEl.style.borderColor = 'var(--green)'; }
+        successCount++;
+      } else {
+        if (statusEl) { statusEl.textContent = '✕ ' + (result?.error || 'Erro'); statusEl.style.color = 'var(--red)'; }
+        if (itemEl) itemEl.style.borderColor = 'var(--red)';
+      }
+    } catch (err) {
+      if (statusEl) { statusEl.textContent = '✕ ' + err.message; statusEl.style.color = 'var(--red)'; }
+      if (itemEl) itemEl.style.borderColor = 'var(--red)';
+    }
+  }
+
+  closeBtn.style.display = 'block';
+  closeBtn.textContent = `✓ Concluído (${successCount}/${matched.length}) — Fechar e Atualizar`;
 }
 
 async function openCatalogBackups(key) {
