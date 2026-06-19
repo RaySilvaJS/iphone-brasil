@@ -54,8 +54,11 @@ const orig = {
   warn:  console.warn.bind(console)
 };
 
+// Strip ANSI escape codes (qrcode-terminal and other CLI tools emit these)
+const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*[mGKHFJA-Z]/g, '').replace(/\x1b\][^\x07]*\x07/g, '');
+
 const fmt = (a) =>
-  a.map(v => v instanceof Error ? v.stack : typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v)).join(' ');
+  stripAnsi(a.map(v => v instanceof Error ? v.stack : typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v)).join(' '));
 
 const push = (bucket, level, msg) => {
   const entry = { ts: Date.now(), level, msg };

@@ -409,6 +409,9 @@ tbody tr:last-child td { border-bottom: none; }
   #content { padding: 10px; }
 }
 
+/* ── WA BANNER ── */
+@keyframes waBlink { 0%,100%{opacity:1} 50%{opacity:.8} }
+
 /* ── TERMINAL ── */
 #page-terminal.active { display: flex; flex-direction: column; height: 100%; padding: 0; }
 .term-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; flex: 1; min-height: 0; height: 100%; }
@@ -446,6 +449,8 @@ tbody tr:last-child td { border-bottom: none; }
 .tlog-info  .tlog-msg { color: #c9d1d9; }
 .tlog-warn  .tlog-msg { color: var(--yellow); }
 .tlog-error .tlog-msg { color: var(--red); }
+.tlog-qr { border-bottom: 2px solid rgba(88,166,255,.3); padding-bottom: 4px; margin-bottom: 4px; }
+.qr-pre { font-family: 'Fira Code','Cascadia Code','Consolas',monospace; font-size: 5.5px; line-height: 1; white-space: pre; color: #e6edf3; flex: 1; }
 .term-input-row { display: flex; align-items: center; gap: 0; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; padding: 0 4px 0 0; }
 .term-prompt { padding: 0 10px; color: var(--green); font-family: monospace; font-size: 14px; font-weight: 700; flex-shrink: 0; }
 .term-input {
@@ -533,6 +538,14 @@ tbody tr:last-child td { border-bottom: none; }
       🔔 <span class="notif-label">Notificações </span><span id="notif-count"></span>
     </button>
   </div>
+  <!-- Banner de alerta WhatsApp desconectado -->
+  <div id="wa-alert-banner" style="display:none;background:#f85149;color:#fff;padding:10px 20px;align-items:center;gap:12px;flex-shrink:0;animation:waBlink 1.5s ease-in-out infinite;border-bottom:2px solid #ff6b6b;">
+    <span style="font-size:18px">⚠️</span>
+    <span style="font-weight:700;font-size:13px;flex:1">WHATSAPP DESCONECTADO — Pedidos não serão enviados ao grupo admin. Acesse a aba WhatsApp para reconectar.</span>
+    <button onclick="showPage('whatsapp')" style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap">Ir para WhatsApp →</button>
+    <button onclick="document.getElementById('wa-alert-banner').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+  </div>
+
   <div id="content">
 
     <!-- ═══ DASHBOARD ═══ -->
@@ -2667,14 +2680,36 @@ function startLiveLogs() {
   };
 }
 
+// Detect QR code lines: mostly Unicode block-drawing chars
+const QR_RE = /^[▀-▟█▄▀▌▐▖-▟ \t]+$/;
+function isQrLine(msg) { return QR_RE.test(msg.trim()) && msg.trim().length > 4; }
+
 function appendLiveLine(entry) {
   const out = document.getElementById('live-output');
   if (!out) return;
-  const el = document.createElement('div');
-  el.className = `tlog tlog-${entry.level || 'info'}`;
-  const t = new Date(entry.ts).toLocaleTimeString('pt-BR', { hour12: false });
-  el.innerHTML = `<span class="tlog-ts">${t}</span><span class="tlog-msg">${esc(entry.msg)}</span>`;
-  out.appendChild(el);
+
+  const msg = entry.msg || '';
+  const t   = new Date(entry.ts).toLocaleTimeString('pt-BR', { hour12: false });
+
+  // QR code lines — merge with previous QR block or start new one
+  if (isQrLine(msg)) {
+    const last = out.lastElementChild;
+    if (last && last.classList.contains('tlog-qr')) {
+      // Append to existing QR block
+      last.querySelector('pre').textContent += '\n' + msg;
+    } else {
+      const el = document.createElement('div');
+      el.className = 'tlog tlog-qr';
+      el.innerHTML = `<span class="tlog-ts">${t}</span><pre class="qr-pre">${esc(msg)}</pre>`;
+      out.appendChild(el);
+    }
+  } else {
+    const el = document.createElement('div');
+    el.className = `tlog tlog-${entry.level || 'info'}`;
+    el.innerHTML = `<span class="tlog-ts">${t}</span><span class="tlog-msg">${esc(msg)}</span>`;
+    out.appendChild(el);
+  }
+
   // Cap at 600 lines to avoid memory bloat
   while (out.children.length > 600) out.removeChild(out.firstChild);
   out.scrollTop = out.scrollHeight;
@@ -4422,6 +4457,26 @@ async function init() {
   // Load initial page — SITE is the primary tab
   showPage('site');
   loadNotifications();
+
+  // ── WA global status watchdog (checa a cada 30s) ───────────────────────────
+  async function checkWaBanner() {
+    try {
+      const wa = await api.get('/api/admin/whatsapp');
+      const banner = document.getElementById('wa-alert-banner');
+      if (!banner) return;
+      const disc = wa && wa.status !== 'connected' && wa.status !== 'qr' && wa.status !== 'connecting' && wa.status !== 'reconnecting';
+      if (disc) {
+        const reason = wa.lastDisconnectReason ? ` (${wa.lastDisconnectReason})` : '';
+        banner.querySelector('span:nth-child(2)').textContent =
+          `WHATSAPP DESCONECTADO${reason} — Pedidos não serão enviados ao grupo admin. Acesse a aba WhatsApp para reconectar.`;
+        banner.style.display = 'flex';
+      } else {
+        banner.style.display = 'none';
+      }
+    } catch {}
+  }
+  checkWaBanner();
+  setInterval(checkWaBanner, 30000);
 
   // System stats refresh every 10s (SSE handles tracker realtime)
   setInterval(() => {
