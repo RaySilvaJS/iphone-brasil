@@ -82,6 +82,9 @@ class Cart {
     }
     this.saveCart();
     this.updateUI();
+    if (window.MetaPixel) {
+      window.MetaPixel.addToCart({ id: normalized.id, name: normalized.nome, value: normalized.preco });
+    }
     // Track cart add event for abandoned cart detection
     if (window.JBR_track) {
       const session = JSON.parse(localStorage.getItem('user-session') || 'null');
@@ -231,6 +234,13 @@ function proceedToCheckout() {
     return;
   }
   cart.saveCart();
+  if (window.MetaPixel) {
+    window.MetaPixel.initiateCheckout({
+      value:    cart.getTotal(),
+      ids:      cart.items.map(function (i) { return String(i.id); }),
+      numItems: cart.getCount()
+    });
+  }
   window.location.href = '/checkout.html?source=cart';
 }
 

@@ -866,6 +866,13 @@
 
       renderProduct(product, storeDiscount);
       loadRelatedFromData(related || []);
+
+      if (window.MetaPixel) {
+        var finalPrice = storeDiscount > 0
+          ? Math.round(product.price * (1 - storeDiscount / 100) * 100) / 100
+          : product.price;
+        window.MetaPixel.viewContent({ id: product.id, name: product.name, value: finalPrice });
+      }
     } catch (e) {
       root.innerHTML = `<div class="empty-state"><p style="font-size:1.1rem;font-weight:600;color:var(--red);">Erro ao carregar o produto.</p><button class="btn btn-primary" style="display:inline-flex;margin-top:16px;width:auto;" onclick="location.reload()">Tentar novamente</button></div>`;
     }

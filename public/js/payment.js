@@ -71,6 +71,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     hist.push({ data: new Date().toISOString(), paymentId });
                     localStorage.setItem('historico-pedidos', JSON.stringify(hist));
                 } catch (e) {}
+                try {
+                    if (window.MetaPixel) {
+                        const summary = JSON.parse(localStorage.getItem('checkout-summary') || 'null');
+                        const ids      = summary ? summary.produto.map(p => String(p.id)).filter(Boolean) : [];
+                        const numItems = summary ? summary.quantidade : 1;
+                        window.MetaPixel.purchase({
+                            orderId:  paymentId,
+                            value:    currentAmount || (summary ? summary.total_final : 0),
+                            ids,
+                            numItems
+                        });
+                    }
+                } catch (e) {}
                 return;
             }
 
