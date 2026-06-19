@@ -313,26 +313,6 @@
     const filled = Math.min(5, Math.round(rating));
     const stars  = '★'.repeat(filled) + '☆'.repeat(5 - filled);
 
-    // Distribution bars from real reviewsList data
-    const dist = [5, 4, 3, 2, 1].map(star => ({
-      star,
-      count: reviewsList.filter(r => Math.round(r.rating) === star).length
-    }));
-    const total = dist.reduce((acc, d) => acc + d.count, 0) || 1;
-
-    const barsHtml = reviewsList.length
-      ? `<div class="rmk-dist-bars">
-          ${dist.map(d => {
-            const pct = Math.round(d.count / total * 100);
-            return `<div class="rmk-bar-row">
-              <span class="rmk-bar-label">${d.star}</span>
-              <div class="rmk-bar-track"><div class="rmk-bar-fill" style="width:${pct}%"></div></div>
-              <span class="rmk-bar-count">${d.count}</span>
-            </div>`;
-          }).join('')}
-        </div><hr class="rmk-divider">`
-      : '';
-
     return `
       <div class="card rating-mini-card" role="complementary" aria-label="Resumo das avaliações">
         <div class="rmk-stars-row">
@@ -340,11 +320,6 @@
           <span class="rmk-score">${rating.toFixed(1)}&thinsp;/&thinsp;5</span>
         </div>
         <div class="rmk-base">Baseado em ${reviews.toLocaleString('pt-BR')} avaliações verificadas</div>
-        ${barsHtml}
-        <div class="rmk-verified">
-          ${IC_CHECK_SM}
-          Compras verificadas por compradores reais
-        </div>
         <button class="rmk-btn" onclick="document.getElementById('reviews-title')?.scrollIntoView({behavior:'smooth',block:'start'})">
           Ver todas as avaliações
         </button>
