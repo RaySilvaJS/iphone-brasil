@@ -1,8 +1,26 @@
 'use strict';
 const https = require('https');
+const fs    = require('fs');
+const path  = require('path');
 
-const TOKEN   = () => process.env.TELEGRAM_BOT_TOKEN || '';
-const CHAT_ID = () => process.env.TELEGRAM_CHAT_ID   || '';
+const CONFIG_PATH = path.join(__dirname, 'data', 'config.json');
+const ALERTS_PATH = path.join(__dirname, 'data', 'alerts.json');
+
+const _readJson = (p) => { try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return {}; } };
+
+// Priority: env var → config.json.telegram → alerts.json.telegram (migration fallback)
+const TOKEN   = () => process.env.TELEGRAM_BOT_TOKEN
+  || _readJson(CONFIG_PATH).telegram?.botToken
+  || _readJson(ALERTS_PATH).telegram?.botToken
+  || '';
+const CHAT_ID = () => process.env.TELEGRAM_CHAT_ID
+  || _readJson(CONFIG_PATH).telegram?.chatId
+  || _readJson(ALERTS_PATH).telegram?.chatId
+  || '';
+
+// Track last send result for diagnostics
+let _lastSent  = null;  // { at, preview, ok }
+let _lastError = null;  // { at, message }
 
 // Anti-spam: sessionId → timestamp; only one notification per session (new visitor)
 const notifiedSessions = new Map();
@@ -26,9 +44,10 @@ setInterval(() => {
 }, 30 * 60 * 1000).unref();
 
 // ── Low-level HTTP POST to Telegram API ─────────────────────────────────────
-function tgPost(text) {
-  const tok = TOKEN(), cid = CHAT_ID();
-  if (!tok || !cid) return;
+function tgPost(text, overrideToken, overrideChatId) {
+  const tok = overrideToken || TOKEN();
+  const cid = overrideChatId || CHAT_ID();
+  if (!tok || !cid) return Promise.resolve(false);
   const body = JSON.stringify({ chat_id: cid, text, parse_mode: 'HTML', disable_web_page_preview: true });
   const opts = {
     hostname: 'api.telegram.org',
@@ -36,11 +55,48 @@ function tgPost(text) {
     method:   'POST',
     headers:  { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
   };
-  const req = https.request(opts, res => { res.resume(); });
-  req.on('error', () => {});
-  req.setTimeout(8000, () => req.destroy());
-  req.write(body);
-  req.end();
+  return new Promise((resolve) => {
+    const req = https.request(opts, res => {
+      res.resume();
+      const ok = res.statusCode === 200;
+      if (ok) {
+        _lastSent = { at: new Date().toISOString(), preview: text.slice(0, 80).replace(/<[^>]+>/g, ''), ok: true };
+      } else {
+        _lastError = { at: new Date().toISOString(), message: `HTTP ${res.statusCode}` };
+      }
+      resolve(ok);
+    });
+    req.on('error', (e) => {
+      _lastError = { at: new Date().toISOString(), message: e.message };
+      resolve(false);
+    });
+    req.setTimeout(8000, () => { req.destroy(); resolve(false); });
+    req.write(body);
+    req.end();
+  });
+}
+
+// ── Public send (unified credentials) ────────────────────────────────────────
+function send(text) { return tgPost(text); }
+
+// ── Status / diagnostics ──────────────────────────────────────────────────────
+function isConfigured() { return !!(TOKEN() && CHAT_ID()); }
+
+function getStatus() {
+  const cfg     = _readJson(CONFIG_PATH);
+  const alerts  = _readJson(ALERTS_PATH);
+  let source = 'none';
+  if (process.env.TELEGRAM_BOT_TOKEN) source = 'env';
+  else if (cfg.telegram?.botToken)    source = 'config';
+  else if (alerts.telegram?.botToken) source = 'alerts';
+  return {
+    configured: isConfigured(),
+    source,
+    botTokenSet: !!TOKEN(),
+    chatIdSet:   !!CHAT_ID(),
+    lastSent:    _lastSent,
+    lastError:   _lastError,
+  };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -206,4 +262,4 @@ function notifyEvent(type, data = {}) {
   addHistory({ type, sentAt: now, preview: previews[type] || type });
 }
 
-module.exports = { notifyPaidVisitor, notifyEvent, history };
+module.exports = { notifyPaidVisitor, notifyEvent, history, send, isConfigured, getStatus };

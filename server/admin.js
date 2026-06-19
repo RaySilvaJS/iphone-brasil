@@ -10,6 +10,7 @@ const tracker = require('./tracker');
 const audit = require('./audit');
 const alerts = require('./alerts');
 const { sendToClient } = require('./whatsapp');
+const telegram = require('./telegram');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(__dirname, 'data');
@@ -975,7 +976,7 @@ router.get('/site/paid-traffic', adminAuth, (req, res) => {
       },
       campaigns: campaignsWithRate,
       activePaid,
-      telegramEnabled: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+      telegramEnabled: telegram.isConfigured(),
       telegramHistory: tgHistory,
     });
   } catch (e) {
@@ -1077,6 +1078,49 @@ router.get('/analytics/export', adminAuth, (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="analytics-${period}.csv"`);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.send('﻿' + [headers, ...rows].join('\r\n')); // BOM for Excel UTF-8
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// TELEGRAM — configuração centralizada + diagnóstico + teste
+// ════════════════════════════════════════════════════════════════════════════
+
+router.get('/telegram/status', adminAuth, (req, res) => {
+  res.json({
+    ok: true,
+    status:  telegram.getStatus(),
+    history: telegram.history.slice(0, 100),
+  });
+});
+
+router.post('/telegram/test', adminAuth, async (req, res) => {
+  if (!telegram.isConfigured()) {
+    return res.status(400).json({ ok: false, error: 'Telegram não configurado. Salve o Bot Token e Chat ID primeiro.' });
+  }
+  const text = `🔔 <b>Teste do DevOps</b>\n\nMensagem enviada do painel DevOps em ${new Date().toLocaleString('pt-BR')}.\n\n✅ Integração funcionando corretamente!`;
+  const ok = await telegram.send(text);
+  res.json({ ok, error: ok ? null : 'Falha ao enviar. Verifique o token e chat ID.' });
+});
+
+router.get('/telegram/config', adminAuth, (req, res) => {
+  const cfg = loadConfig();
+  const tg  = cfg.telegram || {};
+  res.json({
+    ok: true,
+    config: {
+      botToken: tg.botToken ? `***${String(tg.botToken).slice(-6)}` : '',
+      chatId:   tg.chatId   || '',
+      source:   telegram.getStatus().source,
+    },
+  });
+});
+
+router.post('/telegram/config', adminAuth, (req, res) => {
+  const { botToken, chatId } = req.body || {};
+  if (!botToken || !chatId) return res.status(400).json({ ok: false, error: 'botToken e chatId são obrigatórios.' });
+  const cfg = loadConfig();
+  cfg.telegram = { ...(cfg.telegram || {}), botToken: botToken.trim(), chatId: chatId.trim() };
+  saveConfig(cfg);
+  res.json({ ok: true });
 });
 
 module.exports = router;

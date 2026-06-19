@@ -1,8 +1,8 @@
 'use strict';
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
-const os = require('os');
+const fs       = require('fs');
+const path     = require('path');
+const os       = require('os');
+const telegram = require('./telegram');
 
 const CONFIG_PATH = path.join(__dirname, 'data', 'config.json');
 const ALERTS_PATH = path.join(__dirname, 'data', 'alerts.json');
@@ -36,26 +36,6 @@ let _errorWindow = [];         // [ts] recent error timestamps
 let _lastFired = {};           // { ruleId: timestamp }
 let _waDisconnectedSince = null;
 
-// ── Telegram sender ───────────────────────────────────────────────────────────
-function sendTelegram(token, chatId, text) {
-  return new Promise((resolve) => {
-    const body = JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' });
-    const req = https.request({
-      hostname: 'api.telegram.org',
-      path: `/bot${token}/sendMessage`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
-    }, (res) => {
-      res.resume();
-      resolve(res.statusCode === 200);
-    });
-    req.on('error', () => resolve(false));
-    req.setTimeout(10000, () => { req.destroy(); resolve(false); });
-    req.write(body);
-    req.end();
-  });
-}
-
 // ── Fire an alert ─────────────────────────────────────────────────────────────
 async function fire(ruleId, label, message, cfg) {
   const now = Date.now();
@@ -80,10 +60,10 @@ async function fire(ruleId, label, message, cfg) {
     fs.writeFileSync(path.join(__dirname, 'data', 'security.json'), JSON.stringify(sec, null, 2));
   } catch {}
 
-  // Send Telegram
-  if (cfg.telegram?.enabled && cfg.telegram.botToken && cfg.telegram.chatId) {
+  // Send Telegram (uses centralized credentials from config.json / env)
+  if (telegram.isConfigured()) {
     const text = `🚨 <b>${label}</b>\n\n${message}\n\n<i>${new Date().toLocaleString('pt-BR')}</i>`;
-    const ok = await sendTelegram(cfg.telegram.botToken, cfg.telegram.chatId, text);
+    const ok = await telegram.send(text);
     if (!ok) console.warn('[ALERT] Falha ao enviar mensagem no Telegram.');
   }
 }
@@ -233,6 +213,5 @@ module.exports = {
   loadAlerts,
   saveAlerts,
   defaultAlerts,
-  sendTelegram,
   fire,
 };

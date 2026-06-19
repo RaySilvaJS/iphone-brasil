@@ -1390,10 +1390,7 @@ tbody tr:last-child td { border-bottom: none; }
             <h3 style="font-size:15px;font-weight:700">💰 Tráfego Pago — Facebook Ads / Instagram / Google Ads</h3>
             <p style="font-size:12px;color:var(--muted);margin-top:2px">Visitantes captados por campanhas pagas monitorados em tempo real.</p>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span id="paid-tg-status" class="badge badge-blue" style="font-size:11px">⌛ verificando...</span>
-            <button class="btn btn-ghost" onclick="loadSitePaid()">↺ Atualizar</button>
-          </div>
+          <button class="btn btn-ghost" onclick="loadSitePaid()">↺ Atualizar</button>
         </div>
 
         <!-- KPIs -->
@@ -1435,13 +1432,43 @@ tbody tr:last-child td { border-bottom: none; }
           </div>
         </div>
 
-        <!-- Telegram notifications history -->
-        <div class="card" style="padding:16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 style="margin:0">📨 Últimas Notificações Enviadas ao Telegram</h3>
-            <div id="paid-tg-config" style="font-size:11px;color:var(--muted)"></div>
+        <!-- Telegram: status + config + histórico -->
+        <div class="card" style="padding:0;margin-top:0">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--bg3);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">📨 Telegram</h3>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <span id="paid-tg-status" class="badge badge-blue" style="font-size:11px">⌛ verificando...</span>
+              <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="testTelegram()">Enviar Mensagem de Teste</button>
+            </div>
           </div>
-          <div class="ev-feed" id="paid-tg-feed"></div>
+
+          <div class="grid-2" style="padding:16px;gap:16px">
+            <!-- Config / diagnóstico -->
+            <div>
+              <h4 style="margin:0 0 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Configuração</h4>
+              <div id="tg-config-panel" style="display:grid;gap:10px">
+                <!-- filled by JS -->
+              </div>
+              <div style="margin-top:16px;display:grid;gap:8px">
+                <div>
+                  <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Bot Token</label>
+                  <input id="tg-input-token" class="input" style="width:100%" placeholder="Cole o token do @BotFather"/>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Chat ID</label>
+                  <input id="tg-input-chatid" class="input" style="width:100%" placeholder="-100xxxxxxxxxx"/>
+                </div>
+                <button class="btn btn-blue" onclick="saveTelegramConfig()">💾 Salvar Configuração</button>
+                <div id="tg-save-feedback" style="font-size:12px;display:none"></div>
+              </div>
+            </div>
+
+            <!-- Últimas notificações -->
+            <div>
+              <h4 style="margin:0 0 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Histórico de Notificações</h4>
+              <div class="ev-feed" id="paid-tg-feed" style="max-height:320px;overflow-y:auto"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3669,22 +3696,41 @@ function siteExport(type, format) {
 
 // ── Paid Traffic ─────────────────────────────────────────────────────────────
 async function loadSitePaid() {
-  const data = await api.get('/api/admin/site/paid-traffic');
+  const [data, tgData] = await Promise.all([
+    api.get('/api/admin/site/paid-traffic'),
+    api.get('/api/admin/telegram/status'),
+  ]);
   if (!data) return;
 
-  const { today, campaigns, activePaid, telegramEnabled, telegramHistory } = data;
+  const { today, campaigns, activePaid } = data;
+  const telegramEnabled = data.telegramEnabled;
+  const tgStatus  = tgData?.status || {};
+  const tgHistory = tgData?.history || data.telegramHistory || [];
 
   // Telegram status badge
-  const tgStatus = document.getElementById('paid-tg-status');
-  const tgConfig = document.getElementById('paid-tg-config');
-  if (tgStatus) {
-    tgStatus.textContent = telegramEnabled ? '✅ Telegram Ativo' : '⚠️ Não configurado';
-    tgStatus.className = 'badge ' + (telegramEnabled ? 'badge-green' : 'badge-yellow');
+  const tgBadge = document.getElementById('paid-tg-status');
+  if (tgBadge) {
+    tgBadge.textContent = telegramEnabled ? '🟢 Conectado' : '🔴 Não configurado';
+    tgBadge.className = 'badge ' + (telegramEnabled ? 'badge-green' : 'badge-red');
   }
-  if (tgConfig && !telegramEnabled) {
-    tgConfig.innerHTML = '<span style="color:var(--yellow)">Adicione TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID ao .env</span>';
-  } else if (tgConfig && telegramEnabled) {
-    tgConfig.innerHTML = '<span style="color:var(--green)">Bot conectado — notificações ativas</span>';
+
+  // Diagnóstico
+  const tgPanel = document.getElementById('tg-config-panel');
+  if (tgPanel) {
+    const srcLabel = { env: 'Variável de ambiente (.env)', config: 'Painel DevOps (config.json)', alerts: 'Módulo de Alertas (alerts.json)', none: '—' };
+    const rows = [
+      { label: 'Status',          val: telegramEnabled ? '<span style="color:var(--green)">🟢 Conectado</span>' : '<span style="color:var(--red)">🔴 Não configurado</span>' },
+      { label: 'Bot Token',       val: tgStatus.botTokenSet ? '<span style="color:var(--green)">✓ Configurado</span>' : '<span style="color:var(--muted)">—</span>' },
+      { label: 'Chat ID',         val: tgStatus.chatIdSet   ? '<span style="color:var(--green)">✓ Configurado</span>' : '<span style="color:var(--muted)">—</span>' },
+      { label: 'Fonte da config', val: esc(srcLabel[tgStatus.source] || tgStatus.source || '—') },
+      { label: 'Último envio',    val: tgStatus.lastSent  ? esc(fmtDate(tgStatus.lastSent.at))  + ' <span style="color:var(--green)">✓ sucesso</span>' : '<span style="color:var(--muted)">—</span>' },
+      { label: 'Último erro',     val: tgStatus.lastError ? esc(fmtDate(tgStatus.lastError.at)) + ' <span style="color:var(--red)">✕ ' + esc(tgStatus.lastError.message) + '</span>' : '<span style="color:var(--muted)">—</span>' },
+    ];
+    tgPanel.innerHTML = rows.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:6px 0;border-bottom:1px solid var(--bg3)">
+        <span style="color:var(--muted)">${r.label}</span>
+        <span>${r.val}</span>
+      </div>`).join('');
   }
 
   // KPI cards
@@ -3754,18 +3800,18 @@ async function loadSitePaid() {
   // Telegram history feed
   const tgFeed = document.getElementById('paid-tg-feed');
   if (tgFeed) {
-    if (!telegramHistory.length) {
+    if (!tgHistory.length) {
       tgFeed.innerHTML = telegramEnabled
         ? '<div class="empty-state" style="padding:12px">Nenhuma notificação enviada ainda hoje.</div>'
-        : '<div class="empty-state" style="padding:12px">Configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID no arquivo .env para ativar as notificações.</div>';
+        : '<div class="empty-state" style="padding:12px">Configure o Bot Token e Chat ID acima para ativar as notificações.</div>';
     } else {
       const tgIcons = {
         paid_visitor: '🚀', signup: '📝', login: '🔑',
         order_created: '📋', pix_created: '💳', pix_paid: '✅',
         checkout_start: '🛒', cart_abandoned: '🛒',
       };
-      tgFeed.innerHTML = telegramHistory.map(n => {
-        const icon = tgIcons[n.type] || '📨';
+      tgFeed.innerHTML = tgHistory.map(n => {
+        const icon = tgIcons[n.type] || '🚨';
         const t = n.sentAt ? new Date(n.sentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
         return `<div class="ev-item">
           <span class="ev-time">${t}</span>
@@ -3774,6 +3820,48 @@ async function loadSitePaid() {
         </div>`;
       }).join('');
     }
+  }
+}
+
+// ── Telegram: salvar config + testar ─────────────────────────────────────────
+async function saveTelegramConfig() {
+  const botToken = document.getElementById('tg-input-token')?.value.trim();
+  const chatId   = document.getElementById('tg-input-chatid')?.value.trim();
+  const fb       = document.getElementById('tg-save-feedback');
+
+  if (!botToken || !chatId) {
+    if (fb) { fb.style.color = 'var(--red)'; fb.textContent = 'Preencha o Bot Token e o Chat ID.'; fb.style.display = ''; }
+    return;
+  }
+  try {
+    const r = await api.post('/api/admin/telegram/config', { botToken, chatId });
+    if (fb) {
+      fb.style.color   = r?.ok ? 'var(--green)' : 'var(--red)';
+      fb.textContent   = r?.ok ? '✓ Configuração salva! Recarregando status...' : (r?.error || 'Erro ao salvar.');
+      fb.style.display = '';
+      if (r?.ok) setTimeout(() => loadSitePaid(), 1000);
+      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 4000);
+    }
+  } catch(e) {
+    if (fb) { fb.style.color = 'var(--red)'; fb.textContent = 'Erro: ' + e.message; fb.style.display = ''; }
+  }
+}
+
+async function testTelegram() {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  try {
+    const r = await api.post('/api/admin/telegram/test', {});
+    if (r?.ok) {
+      alert('✅ Mensagem de teste enviada com sucesso! Verifique seu Telegram.');
+    } else {
+      alert('❌ Falha: ' + (r?.error || 'Erro desconhecido. Verifique o token e chat ID.'));
+    }
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar Mensagem de Teste'; }
+    loadSitePaid();
   }
 }
 
