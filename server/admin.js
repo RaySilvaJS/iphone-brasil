@@ -402,6 +402,61 @@ router.get('/pm2/status', adminAuth, (req, res) => {
   });
 });
 
+// ---- Terminal: execute any command ----
+router.post('/terminal/exec', adminAuth, (req, res) => {
+  const { cmd } = req.body || {};
+  if (!cmd || typeof cmd !== 'string' || !cmd.trim()) {
+    return res.status(400).json({ error: 'cmd required' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const sse = (type, text) => {
+    try { res.write(`data: ${JSON.stringify({ type, text })}\n\n`); } catch {}
+  };
+
+  sse('start', cmd.trim());
+  logger.deploy(`[TERMINAL] $ ${cmd.trim()}`);
+
+  const child = spawn(cmd.trim(), [], { cwd: ROOT, shell: true, env: process.env });
+
+  child.stdout.on('data', d => sse('stdout', d.toString()));
+  child.stderr.on('data', d => sse('stderr', d.toString()));
+  child.on('close', code => { sse('exit', String(code ?? 0)); res.end(); });
+  child.on('error', err => { sse('error', err.message); res.end(); });
+
+  req.on('close', () => { try { child.kill('SIGTERM'); } catch {} });
+});
+
+// ---- Terminal: live server log stream (SSE) ----
+router.get('/terminal/logs', adminAuth, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const send = (entry) => {
+    try { res.write(`data: ${JSON.stringify(entry)}\n\n`); } catch {}
+  };
+
+  // Send last 150 entries as history (oldest first)
+  const history = logger.get('app').slice(0, 150).reverse();
+  history.forEach(send);
+
+  // Heartbeat to keep connection alive
+  const hb = setInterval(() => { try { res.write(': ping\n\n'); } catch {} }, 25000);
+
+  // Subscribe to new entries
+  const unsub = logger.subscribe(send);
+
+  req.on('close', () => { clearInterval(hb); unsub(); });
+});
+
 // ---- Logs ----
 router.get('/logs', adminAuth, (req, res) => {
   const { type = 'app', limit = '200', q = '' } = req.query;

@@ -408,6 +408,63 @@ tbody tr:last-child td { border-bottom: none; }
   .card { padding: 12px; }
   #content { padding: 10px; }
 }
+
+/* ── TERMINAL ── */
+#page-terminal { display: flex; flex-direction: column; height: 100%; padding: 0; }
+.term-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; flex: 1; min-height: 0; height: 100%; }
+.term-panel { display: flex; flex-direction: column; background: #0a0e14; border: 1px solid var(--border); overflow: hidden; }
+.term-panel:first-child { border-right: none; border-radius: 10px 0 0 10px; }
+.term-panel:last-child { border-radius: 0 10px 10px 0; }
+.term-titlebar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--bg3); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.term-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.term-dot.red { background: #ff5f57; }
+.term-dot.yellow { background: #febc2e; }
+.term-dot.green { background: #28c840; }
+.term-dot.pulse { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+.term-title { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: .3px; flex: 1; }
+.term-clear-btn { background: none; border: none; color: var(--muted); font-size: 11px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.term-clear-btn:hover { background: var(--bg); color: var(--text); }
+.term-output {
+  flex: 1; overflow-y: auto; padding: 12px 14px;
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+  font-size: 12px; line-height: 1.6; color: #c9d1d9; min-height: 0;
+  scroll-behavior: smooth;
+}
+.term-output::-webkit-scrollbar { width: 5px; }
+.term-output::-webkit-scrollbar-track { background: transparent; }
+.term-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.tline { white-space: pre-wrap; word-break: break-all; padding: 1px 0; margin: 0; font-size: 12px; }
+.tline-cmd { color: #79c0ff; font-weight: 700; margin-top: 8px; }
+.tline-cmd::before { content: '$ '; color: var(--green); }
+.tline-out { color: #e6edf3; }
+.tline-err { color: #f85149; }
+.tline-sys { color: var(--muted); font-style: italic; }
+.tlog { display: flex; gap: 8px; padding: 1px 0; font-size: 11.5px; font-family: 'Fira Code', monospace; white-space: pre-wrap; word-break: break-all; border-bottom: 1px solid rgba(48,54,61,.4); }
+.tlog-ts { color: #484f58; flex-shrink: 0; font-size: 10px; padding-top: 1px; }
+.tlog-msg { flex: 1; }
+.tlog-info  .tlog-msg { color: #c9d1d9; }
+.tlog-warn  .tlog-msg { color: var(--yellow); }
+.tlog-error .tlog-msg { color: var(--red); }
+.term-input-row { display: flex; align-items: center; gap: 0; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; padding: 0 4px 0 0; }
+.term-prompt { padding: 0 10px; color: var(--green); font-family: monospace; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.term-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #e6edf3; font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 13px; padding: 10px 0; caret-color: var(--green);
+}
+.term-run-btn {
+  background: var(--green); border: none; color: #000; font-weight: 700;
+  padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  flex-shrink: 0; transition: opacity .15s;
+}
+.term-run-btn:hover { opacity: .8; }
+.term-run-btn:disabled { opacity: .4; cursor: not-allowed; }
+@media (max-width: 768px) {
+  .term-layout { grid-template-columns: 1fr; }
+  .term-panel:first-child { border-right: 1px solid var(--border); border-radius: 10px 10px 0 0; border-bottom: none; }
+  .term-panel:last-child { border-radius: 0 0 10px 10px; max-height: 220px; }
+}
 </style>
 </head>
 <body>
@@ -452,6 +509,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="security"><span class="ni-icon">🔒</span> Segurança</div>
     <div class="nav-item" data-page="audit"><span class="ni-icon">📜</span> Auditoria</div>
     <div class="nav-item" data-page="alerts"><span class="ni-icon">🔔</span> Alertas</div>
+    <div class="nav-item" data-page="terminal"><span class="ni-icon">💻</span> Terminal</div>
     <div class="nav-section">Dados</div>
     <div class="nav-item" data-page="clientes"><span class="ni-icon">👤</span> Clientes</div>
     <div class="nav-item" data-page="catalogs"><span class="ni-icon">📦</span> Catálogos</div>
@@ -780,6 +838,40 @@ tbody tr:last-child td { border-bottom: none; }
             <tbody id="users-tbody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ═══ TERMINAL ═══ -->
+    <div class="page" id="page-terminal" style="padding:0;overflow:hidden">
+      <div class="term-layout">
+
+        <!-- painel esquerdo: execução de comandos -->
+        <div class="term-panel">
+          <div class="term-titlebar">
+            <span class="term-dot red"></span>
+            <span class="term-dot yellow"></span>
+            <span class="term-dot green"></span>
+            <span class="term-title">Terminal — servidor</span>
+            <button class="term-clear-btn" onclick="clearTermOutput()">limpar</button>
+          </div>
+          <div id="term-output" class="term-output"></div>
+          <div class="term-input-row">
+            <span class="term-prompt">$</span>
+            <input id="term-input" class="term-input" placeholder="digite um comando e pressione Enter..." autocomplete="off" autocorrect="off" spellcheck="false">
+            <button id="term-run-btn" class="term-run-btn" onclick="termRun()">↵ Run</button>
+          </div>
+        </div>
+
+        <!-- painel direito: logs ao vivo -->
+        <div class="term-panel">
+          <div class="term-titlebar">
+            <span class="term-dot green pulse" id="live-dot"></span>
+            <span class="term-title">Logs ao vivo — servidor</span>
+            <button class="term-clear-btn" onclick="clearLiveOutput()">limpar</button>
+          </div>
+          <div id="live-output" class="term-output"></div>
+        </div>
+
       </div>
     </div>
 
@@ -1657,7 +1749,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados' };
+const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -1694,6 +1786,7 @@ function loadPage(name) {
   else if (name === 'files') loadFiles('');
   else if (name === 'security') loadSecurity();
   else if (name === 'audit') loadAudit();
+  else if (name === 'terminal') initTerminal();
   else if (name === 'clientes') loadClientes();
   else if (name === 'alerts') loadAlerts();
   else if (name === 'orders') loadOrders();
@@ -2511,6 +2604,162 @@ const AUDIT_TYPE_LABELS = {
   wa_restart: '💬 Restart WhatsApp',
   wa_clear_session: '🗑️ Sessão WA limpa',
 };
+
+// ═══════════════════════════════════════════════
+// TERMINAL
+// ═══════════════════════════════════════════════
+let _termHistory = [];
+let _termHistIdx  = -1;
+let _liveLogsSse  = null;
+let _termRunning  = false;
+
+function initTerminal() {
+  const input = document.getElementById('term-input');
+  if (!input) return;
+
+  // Only bind keyboard handler once
+  if (!input._termBound) {
+    input._termBound = true;
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); termRun(); return; }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (_termHistIdx < _termHistory.length - 1) {
+          _termHistIdx++;
+          input.value = _termHistory[_termHistIdx];
+          setTimeout(() => input.setSelectionRange(input.value.length, input.value.length), 0);
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (_termHistIdx > 0) { _termHistIdx--; input.value = _termHistory[_termHistIdx]; }
+        else { _termHistIdx = -1; input.value = ''; }
+      }
+    });
+  }
+
+  input.focus();
+  startLiveLogs();
+}
+
+function startLiveLogs() {
+  if (_liveLogsSse) { _liveLogsSse.close(); _liveLogsSse = null; }
+  const dot = document.getElementById('live-dot');
+
+  const url = `/api/admin/terminal/logs?adminToken=${encodeURIComponent(adminToken)}`;
+  _liveLogsSse = new EventSource(url);
+
+  _liveLogsSse.onopen = () => { if (dot) dot.classList.add('pulse'); };
+
+  _liveLogsSse.onmessage = (e) => {
+    try {
+      const entry = JSON.parse(e.data);
+      appendLiveLine(entry);
+    } catch {}
+  };
+
+  _liveLogsSse.onerror = () => {
+    if (dot) dot.classList.remove('pulse');
+    _liveLogsSse.close();
+    _liveLogsSse = null;
+    setTimeout(() => {
+      if (currentPage === 'terminal') startLiveLogs();
+    }, 4000);
+  };
+}
+
+function appendLiveLine(entry) {
+  const out = document.getElementById('live-output');
+  if (!out) return;
+  const el = document.createElement('div');
+  el.className = `tlog tlog-${entry.level || 'info'}`;
+  const t = new Date(entry.ts).toLocaleTimeString('pt-BR', { hour12: false });
+  el.innerHTML = `<span class="tlog-ts">${t}</span><span class="tlog-msg">${esc(entry.msg)}</span>`;
+  out.appendChild(el);
+  // Cap at 600 lines to avoid memory bloat
+  while (out.children.length > 600) out.removeChild(out.firstChild);
+  out.scrollTop = out.scrollHeight;
+}
+
+function clearLiveOutput() {
+  const el = document.getElementById('live-output');
+  if (el) el.innerHTML = '';
+}
+
+function clearTermOutput() {
+  const el = document.getElementById('term-output');
+  if (el) el.innerHTML = '';
+}
+
+function termAppend(cls, text) {
+  const out = document.getElementById('term-output');
+  if (!out) return;
+  const el = document.createElement('pre');
+  el.className = `tline ${cls}`;
+  el.textContent = text;
+  out.appendChild(el);
+  out.scrollTop = out.scrollHeight;
+}
+
+async function termRun() {
+  if (_termRunning) return;
+  const input = document.getElementById('term-input');
+  const btn   = document.getElementById('term-run-btn');
+  const cmd   = (input?.value || '').trim();
+  if (!cmd) return;
+
+  _termRunning = true;
+  input.value = '';
+  if (btn) btn.disabled = true;
+  if (input) input.disabled = true;
+
+  _termHistory.unshift(cmd);
+  if (_termHistory.length > 100) _termHistory.pop();
+  _termHistIdx = -1;
+
+  termAppend('tline-cmd', cmd);
+
+  try {
+    const resp = await fetch('/api/admin/terminal/exec', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body:    JSON.stringify({ cmd }),
+    });
+
+    if (!resp.ok) {
+      termAppend('tline-err', `Erro HTTP ${resp.status}: ${resp.statusText}`);
+      return;
+    }
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const parts = buf.split('\n\n');
+      buf = parts.pop();
+      for (const chunk of parts) {
+        const line = chunk.trim();
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const ev = JSON.parse(line.slice(6));
+          if      (ev.type === 'stdout') termAppend('tline-out', ev.text);
+          else if (ev.type === 'stderr') termAppend('tline-err', ev.text);
+          else if (ev.type === 'exit')   termAppend('tline-sys', `[processo encerrado — código ${ev.text}]`);
+          else if (ev.type === 'error')  termAppend('tline-err', `[erro: ${ev.text}]`);
+        } catch {}
+      }
+    }
+  } catch (err) {
+    termAppend('tline-err', `Erro de rede: ${err.message}`);
+  } finally {
+    _termRunning = false;
+    if (btn)   btn.disabled   = false;
+    if (input) { input.disabled = false; input.focus(); }
+  }
+}
 
 // ═══════════════════════════════════════════════
 // CLIENTES

@@ -6,6 +6,9 @@ const path = require('path');
 const MAX = 2000;
 const store = { app: [], errors: [], whatsapp: [], deploy: [] };
 
+// Live subscribers (SSE clients)
+const subscribers = new Set();
+
 // ── File logging ──────────────────────────────────────────────────────────────
 const LOG_DIR = path.join(__dirname, 'logs');
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB per file before rotation
@@ -58,6 +61,7 @@ const push = (bucket, level, msg) => {
   const entry = { ts: Date.now(), level, msg };
   store[bucket] = [entry, ...store[bucket]].slice(0, MAX);
   writeFile(bucket, entry);
+  if (bucket === 'app') subscribers.forEach(fn => { try { fn(entry); } catch {} });
 };
 
 // ── console overrides ────────────────────────────────────────────────────────
@@ -105,5 +109,10 @@ module.exports = {
     } catch { return []; }
   },
 
-  LOG_DIR
+  LOG_DIR,
+
+  subscribe: (fn) => {
+    subscribers.add(fn);
+    return () => subscribers.delete(fn);
+  },
 };
