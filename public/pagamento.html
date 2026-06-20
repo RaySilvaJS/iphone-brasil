@@ -143,19 +143,6 @@
     }
     .pay-steps-ol li::marker { font-weight: 700; color: var(--text); }
 
-    /* QR Code — desktop only */
-    .pay-qr-desktop {
-      display: none;
-      justify-content: center;
-      padding: 4px 0 16px;
-    }
-    .pay-qr-desktop img {
-      width: 150px; height: 150px;
-      border-radius: 10px; border: 1.5px solid var(--border);
-      background: #fff;
-    }
-    @media (min-width: 520px) { .pay-qr-desktop { display: flex; } }
-
     /* PIX Code field */
     .pay-code-box {
       background: #F9FAFB;
@@ -387,10 +374,8 @@
         <li>Cole o código abaixo</li>
       </ol>
 
-      <!-- QR Code — desktop only -->
-      <div class="pay-qr-desktop">
-        <img id="qr-code-image" src="" alt="QR Code PIX"/>
-      </div>
+      <!-- img oculto mantido para compat com payment.js -->
+      <img id="qr-code-image" src="" alt="" style="display:none;"/>
 
       <!-- Código PIX -->
       <div class="pay-code-box" onclick="copyPixCode()">
