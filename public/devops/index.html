@@ -518,6 +518,8 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-section">Dados</div>
     <div class="nav-item" data-page="clientes"><span class="ni-icon">👤</span> Clientes</div>
     <div class="nav-item" data-page="catalogs"><span class="ni-icon">📦</span> Catálogos</div>
+    <div class="nav-item" data-page="produtos"><span class="ni-icon">📱</span> Produtos</div>
+    <div class="nav-item" data-page="cupons"><span class="ni-icon">🎟️</span> Cupons</div>
     <div class="nav-item" data-page="logs"><span class="ni-icon">📋</span> Logs</div>
     <div class="nav-item" data-page="backup"><span class="ni-icon">💾</span> Backup</div>
     <div class="nav-item" data-page="files"><span class="ni-icon">📁</span> Arquivos</div>
@@ -1693,6 +1695,203 @@ tbody tr:last-child td { border-bottom: none; }
 
     </div><!-- /page-site -->
 
+    <!-- ═══ PRODUTOS PERSONALIZADOS ═══ -->
+    <div class="page" id="page-produtos">
+      <div class="grid-2" style="align-items:start;gap:16px">
+
+        <!-- Formulário -->
+        <div class="card">
+          <h3 id="prod-form-title">Adicionar Produto</h3>
+          <input type="hidden" id="prod-edit-id"/>
+          <div style="display:grid;gap:10px">
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">ID do produto</label>
+              <input id="prod-id" class="input" style="width:100%" placeholder="iphone-16-preto-128gb"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Nome</label>
+              <input id="prod-name" class="input" style="width:100%" placeholder="iPhone 16 Preto 128GB"/>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Modelo</label>
+                <input id="prod-model" class="input" style="width:100%" placeholder="16"/>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Preço (R$)</label>
+                <input id="prod-price" type="number" class="input" style="width:100%" placeholder="4999"/>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Condição</label>
+                <select id="prod-condition" class="input" style="width:100%">
+                  <option value="Novo">Novo</option>
+                  <option value="Seminovo">Seminovo</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Cor</label>
+                <input id="prod-color" class="input" style="width:100%" placeholder="Preto"/>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Armazenamento</label>
+                <input id="prod-storage" class="input" style="width:100%" placeholder="128GB"/>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Estoque</label>
+                <input id="prod-stock" type="number" min="1" value="1" class="input" style="width:100%"/>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">URLs das imagens (uma por linha)</label>
+              <textarea id="prod-images" class="input" rows="3" style="width:100%;font-size:12px;resize:vertical" placeholder="https://http2.mlstatic.com/..."></textarea>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Processador</label>
+              <input id="prod-cpu" class="input" style="width:100%" placeholder="A18 Pro"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Bateria</label>
+              <input id="prod-battery" class="input" style="width:100%" placeholder="Até 22h de uso"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Descrição</label>
+              <textarea id="prod-desc" class="input" rows="3" style="width:100%;resize:vertical" placeholder="Descrição do produto..."></textarea>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-blue" id="prod-save-btn" onclick="saveProduto()">Adicionar Produto</button>
+              <button class="btn btn-ghost" id="prod-cancel-btn" onclick="resetProdutoForm()" style="display:none">Cancelar</button>
+            </div>
+            <div id="prod-feedback" style="font-size:12px;color:var(--green);display:none"></div>
+          </div>
+        </div>
+
+        <!-- Lista de produtos -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="margin:0;font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Produtos cadastrados</h3>
+            <button class="btn btn-ghost" onclick="loadProdutos()">↺ Atualizar</button>
+          </div>
+          <div id="prod-list" style="display:flex;flex-direction:column;gap:10px">
+            <div class="empty-state">Carregando...</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /page-produtos -->
+
+    <!-- ═══ CUPONS DE DESCONTO ═══ -->
+    <div class="page" id="page-cupons">
+      <div class="grid-2" style="align-items:start;gap:16px">
+
+        <!-- Formulário de criação/edição -->
+        <div class="card">
+          <h3 id="coupon-form-title-dv">Criar Novo Cupom</h3>
+          <input type="hidden" id="coupon-edit-id-dv"/>
+          <div style="display:grid;gap:10px">
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Nome do cupom</label>
+              <input id="cv-name" class="input" style="width:100%" placeholder="Black Friday 20% OFF"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Código <small style="text-transform:none">(maiúsculas)</small></label>
+              <input id="cv-code" class="input" style="width:100%;letter-spacing:2px;font-weight:700" placeholder="BLACK20" oninput="this.value=this.value.toUpperCase()"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Descrição</label>
+              <input id="cv-desc" class="input" style="width:100%" placeholder="20% OFF em tudo"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Tipo de desconto</label>
+              <select id="cv-type" class="input" style="width:100%" onchange="onDvCouponTypeChange()">
+                <option value="percent">% Percentual (ex: 10%)</option>
+                <option value="fixed">R$ Fixo (ex: R$ 100 OFF)</option>
+                <option value="free_shipping">Frete grátis</option>
+                <option value="pix_extra">Desconto extra no PIX</option>
+                <option value="first_purchase">Primeira compra</option>
+              </select>
+            </div>
+            <div id="cv-value-wrap">
+              <label id="cv-value-label" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Valor do desconto (%)</label>
+              <input id="cv-value" type="number" min="0" class="input" style="width:100%" placeholder="10"/>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Valor mínimo (R$)</label>
+                <input id="cv-min-value" type="number" min="0" class="input" style="width:100%" placeholder="0 = sem mínimo"/>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Limite total de usos</label>
+                <input id="cv-max-uses" type="number" min="0" class="input" style="width:100%" placeholder="0 = ilimitado"/>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Limite por usuário</label>
+                <input id="cv-max-user" type="number" min="0" class="input" style="width:100%" placeholder="0 = ilimitado"/>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Pagamento</label>
+                <select id="cv-payment" class="input" style="width:100%">
+                  <option value="">Qualquer forma</option>
+                  <option value="pix">Somente PIX</option>
+                  <option value="cartao">Somente Cartão</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Origem (UTM source)</label>
+              <select id="cv-source" class="input" style="width:100%">
+                <option value="">Qualquer origem</option>
+                <option value="facebook">Facebook / Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="google">Google</option>
+                <option value="email">E-mail</option>
+              </select>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Data início</label>
+                <input id="cv-start" type="date" class="input" style="width:100%"/>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Data expiração</label>
+                <input id="cv-expires" type="date" class="input" style="width:100%"/>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+                <input type="checkbox" id="cv-first-only" style="width:15px;height:15px"/> Apenas 1ª compra
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+                <input type="checkbox" id="cv-active" checked style="width:15px;height:15px"/> Cupom ativo
+              </label>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-blue" id="coupon-save-btn-dv" onclick="saveCouponDv()">Criar Cupom</button>
+              <button class="btn btn-ghost" id="coupon-cancel-btn-dv" onclick="resetCouponFormDv()" style="display:none">Cancelar</button>
+            </div>
+            <div id="coupon-feedback-dv" style="font-size:12px;display:none"></div>
+          </div>
+        </div>
+
+        <!-- Lista de cupons -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="margin:0;font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Cupons cadastrados</h3>
+            <button class="btn btn-ghost" onclick="loadCupons()">↺ Atualizar</button>
+          </div>
+          <div id="coupon-list-dv" style="display:flex;flex-direction:column;gap:10px">
+            <div class="empty-state">Carregando...</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /page-cupons -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -1775,7 +1974,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados' };
+const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados', produtos: '📱 Produtos Personalizados', cupons: '🎟️ Cupons de Desconto' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -1820,6 +2019,8 @@ function loadPage(name) {
   else if (name === 'catalogs') loadCatalogs();
   else if (name === 'analytics') loadAnalytics();
   else if (name === 'settings') loadSettings();
+  else if (name === 'produtos') loadProdutos();
+  else if (name === 'cupons') loadCupons();
 }
 
 function refreshCurrent() { loadPage(currentPage); }
@@ -4849,6 +5050,317 @@ async function finResend(id) {
   try {
     await api.patch(`/api/admin/orders/${id}`, { status: 'pending', adminNote: 'Reenvio de comprovante solicitado' });
     await loadFinOrders();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════
+// PRODUTOS PERSONALIZADOS
+// ═══════════════════════════════════════════════
+const fmtBRL2 = (v) => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+async function loadProdutos() {
+  const el = document.getElementById('prod-list');
+  if (!el) return;
+  el.innerHTML = '<div class="empty-state">Carregando...</div>';
+  try {
+    const products = await api.get('/api/products');
+    if (!products || !products.length) {
+      el.innerHTML = '<div class="empty-state">Nenhum produto personalizado cadastrado ainda.</div>';
+      return;
+    }
+    el.innerHTML = products.map(p => `
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        ${p.images && p.images[0] ? `<img src="${esc(p.images[0])}" style="width:56px;height:56px;object-fit:contain;border-radius:6px;background:#fff;flex-shrink:0" onerror="this.style.display='none'"/>` : ''}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name||p.id)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(p.model||'')} · ${esc(p.color||'')} · ${esc(p.storage||'')} · ${esc(p.condition||'')}</div>
+          <div style="font-size:16px;font-weight:800;color:var(--green);margin-top:4px">${fmtBRL2(p.price)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Estoque: ${p.stock||0} · ${p.sold?'<span style="color:var(--red)">Vendido</span>':'<span style="color:var(--green)">Disponível</span>'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editProduto('${esc(p.id)}')">Editar</button>
+          <button class="btn btn-yellow" style="font-size:11px;padding:4px 10px" onclick="markProdutoSold('${esc(p.id)}')">Vendido</button>
+          <button class="btn btn-red" style="font-size:11px;padding:4px 10px" onclick="deleteProduto('${esc(p.id)}')">Remover</button>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">Erro: ${e.message}</div>`;
+  }
+}
+
+async function editProduto(id) {
+  const p = await api.get(`/api/products/${id}`);
+  if (!p) return;
+  document.getElementById('prod-edit-id').value   = p.id;
+  document.getElementById('prod-id').value         = p.id;
+  document.getElementById('prod-id').disabled      = true;
+  document.getElementById('prod-name').value        = p.name || '';
+  document.getElementById('prod-model').value       = p.model || '';
+  document.getElementById('prod-price').value       = p.price || '';
+  document.getElementById('prod-condition').value   = p.condition || 'Novo';
+  document.getElementById('prod-color').value       = p.color || '';
+  document.getElementById('prod-storage').value     = p.storage || '';
+  document.getElementById('prod-stock').value       = p.stock || 1;
+  document.getElementById('prod-images').value      = (p.images||[]).filter(s=>s.startsWith('http')).join('\n');
+  document.getElementById('prod-cpu').value         = (p.specs||{}).Processador || '';
+  document.getElementById('prod-battery').value     = (p.specs||{}).Bateria || '';
+  document.getElementById('prod-desc').value        = p.description || '';
+  document.getElementById('prod-form-title').textContent = 'Editar Produto';
+  document.getElementById('prod-save-btn').textContent  = 'Salvar Alterações';
+  document.getElementById('prod-cancel-btn').style.display = '';
+}
+
+function resetProdutoForm() {
+  document.getElementById('prod-edit-id').value = '';
+  document.getElementById('prod-id').disabled   = false;
+  ['prod-id','prod-name','prod-model','prod-price','prod-color','prod-storage','prod-cpu','prod-battery','prod-desc','prod-images'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('prod-stock').value = '1';
+  document.getElementById('prod-condition').value = 'Novo';
+  document.getElementById('prod-form-title').textContent = 'Adicionar Produto';
+  document.getElementById('prod-save-btn').textContent = 'Adicionar Produto';
+  document.getElementById('prod-cancel-btn').style.display = 'none';
+  const fb = document.getElementById('prod-feedback');
+  if (fb) fb.style.display = 'none';
+}
+
+async function saveProduto() {
+  const btn      = document.getElementById('prod-save-btn');
+  const fb       = document.getElementById('prod-feedback');
+  const editId   = document.getElementById('prod-edit-id').value;
+  const id       = document.getElementById('prod-id').value.trim();
+  const name     = document.getElementById('prod-name').value.trim();
+  const model    = document.getElementById('prod-model').value.trim();
+  const price    = parseFloat(document.getElementById('prod-price').value);
+  const color    = document.getElementById('prod-color').value.trim();
+  const stock    = parseInt(document.getElementById('prod-stock').value||'1', 10);
+  const storage  = document.getElementById('prod-storage').value.trim();
+  const cpu      = document.getElementById('prod-cpu').value.trim();
+  const battery  = document.getElementById('prod-battery').value.trim();
+  const desc     = document.getElementById('prod-desc').value.trim();
+  const imageUrls = (document.getElementById('prod-images').value||'').split('\n').map(s=>s.trim()).filter(s=>s.startsWith('http'));
+
+  if (!id || !name || !model || isNaN(price) || !color || !stock) {
+    showProdFeedback('Preencha todos os campos obrigatórios.', false); return;
+  }
+
+  btn.disabled = true; btn.textContent = '...';
+  const method = editId ? 'PUT' : 'POST';
+  const url    = editId ? `/api/admin/product/${editId}` : '/api/admin/product';
+  const payload = { id, name, model, price, condition: document.getElementById('prod-condition').value, color, stock, storage, description: desc, specs: { Processador: cpu, Memória: storage, Bateria: battery } };
+  if (imageUrls.length) payload.images = imageUrls;
+
+  try {
+    const r = await api.call(method, url, payload);
+    if (!r || !r.success) throw new Error(r?.error || 'Erro desconhecido');
+    showProdFeedback(editId ? 'Produto atualizado!' : 'Produto adicionado!', true);
+    resetProdutoForm();
+    await loadProdutos();
+  } catch(e) {
+    showProdFeedback(e.message, false);
+  } finally {
+    btn.disabled = false; btn.textContent = document.getElementById('prod-edit-id').value ? 'Salvar Alterações' : 'Adicionar Produto';
+  }
+}
+
+function showProdFeedback(msg, ok) {
+  const fb = document.getElementById('prod-feedback');
+  if (!fb) return;
+  fb.textContent = msg;
+  fb.style.color = ok ? 'var(--green)' : 'var(--red)';
+  fb.style.display = 'block';
+}
+
+async function markProdutoSold(id) {
+  if (!confirm('Marcar este produto como vendido?')) return;
+  await api.call('POST', `/api/products/${id}/sold`, {});
+  await loadProdutos();
+}
+
+async function deleteProduto(id) {
+  if (!confirm('Remover este produto? Esta ação não pode ser desfeita.')) return;
+  await api.del(`/api/products/${id}`);
+  await loadProdutos();
+}
+
+// ═══════════════════════════════════════════════
+// CUPONS DE DESCONTO
+// ═══════════════════════════════════════════════
+const DV_COUPON_LABELS = { percent:'% Percentual', fixed:'R$ Fixo', free_shipping:'Frete grátis', pix_extra:'Extra PIX', first_purchase:'1ª Compra' };
+
+function onDvCouponTypeChange() {
+  const type  = document.getElementById('cv-type')?.value;
+  const wrap  = document.getElementById('cv-value-wrap');
+  const label = document.getElementById('cv-value-label');
+  if (!wrap || !label) return;
+  wrap.style.display = type === 'free_shipping' ? 'none' : '';
+  if (label) label.textContent = type === 'fixed' ? 'Valor fixo (R$)' : 'Valor do desconto (%)';
+}
+
+async function loadCupons() {
+  const el = document.getElementById('coupon-list-dv');
+  if (!el) return;
+  el.innerHTML = '<div class="empty-state">Carregando...</div>';
+  try {
+    const d = await api.get('/api/admin/coupons');
+    if (!d?.ok) throw new Error(d?.error || 'Erro');
+    window._dvCoupons = d.coupons;
+    if (!d.coupons.length) { el.innerHTML = '<div class="empty-state">Nenhum cupom cadastrado ainda.</div>'; return; }
+
+    el.innerHTML = d.coupons.map(c => {
+      const expired  = c.expiresAt && new Date(c.expiresAt) < new Date();
+      const sc       = !c.active ? 'var(--muted)' : expired ? 'var(--red)' : 'var(--green)';
+      const sl       = !c.active ? 'Inativo' : expired ? 'Expirado' : 'Ativo';
+      const valLabel = c.type==='percent'||c.type==='pix_extra' ? `${c.value}% OFF` : c.type==='fixed' ? `${fmtBRL2(c.value)} OFF` : c.type==='free_shipping' ? 'Frete grátis' : `${c.value}`;
+      return `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:grid;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+                <code style="background:var(--bg);color:var(--purple);padding:2px 8px;border-radius:4px;font-size:14px;font-weight:700;letter-spacing:1px">${esc(c.code)}</code>
+                <span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;background:${sc}22;color:${sc};border:1px solid ${sc}44">${sl}</span>
+                <span style="font-size:10px;color:var(--muted);background:var(--bg);padding:2px 6px;border-radius:4px">${DV_COUPON_LABELS[c.type]||c.type}</span>
+              </div>
+              <div style="font-size:13px;font-weight:600">${esc(c.name||c.code)}</div>
+              ${c.description?`<div style="font-size:11px;color:var(--muted)">${esc(c.description)}</div>`:''}
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:20px;font-weight:800;color:var(--purple)">${valLabel}</div>
+              <div style="font-size:11px;color:var(--muted)">${c.maxUses?`${c.usedCount||0}/${c.maxUses} usos`:`${c.usedCount||0} usos`}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+            ${c.expiresAt?`<span>📅 Expira: ${new Date(c.expiresAt).toLocaleDateString('pt-BR')}</span>`:'<span>📅 Sem expiração</span>'}
+            ${c.minValue?`<span>💰 Mín. ${fmtBRL2(c.minValue)}</span>`:''}
+            ${c.paymentMethod?`<span>💳 Só ${c.paymentMethod==='pix'?'PIX':'Cartão'}</span>`:''}
+            ${c.source?`<span>📡 ${c.source}</span>`:''}
+            ${c.firstPurchaseOnly?`<span>🆕 1ª compra</span>`:''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editCouponDv('${c.id}')">Editar</button>
+            <button class="btn ${c.active?'btn-red':'btn-green'}" style="font-size:11px;padding:4px 10px" onclick="toggleCouponDv('${c.id}',${!c.active})">${c.active?'Desativar':'Ativar'}</button>
+            <button class="btn btn-red" style="font-size:11px;padding:4px 10px" onclick="deleteCouponDv('${c.id}')">Excluir</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">Erro: ${e.message}</div>`;
+  }
+}
+
+async function saveCouponDv() {
+  const btn    = document.getElementById('coupon-save-btn-dv');
+  const fb     = document.getElementById('coupon-feedback-dv');
+  const editId = document.getElementById('coupon-edit-id-dv').value;
+  const type   = document.getElementById('cv-type').value;
+  const maxUses = parseInt(document.getElementById('cv-max-uses').value||'0',10);
+  const maxUser = parseInt(document.getElementById('cv-max-user').value||'0',10);
+  const minVal  = parseFloat(document.getElementById('cv-min-value').value||'0');
+  const expiresVal = document.getElementById('cv-expires').value;
+
+  const payload = {
+    name:            document.getElementById('cv-name').value.trim(),
+    code:            document.getElementById('cv-code').value.trim().toUpperCase(),
+    description:     document.getElementById('cv-desc').value.trim(),
+    type,
+    value:           parseFloat(document.getElementById('cv-value').value||'0'),
+    minValue:        minVal > 0 ? minVal : null,
+    maxUses:         maxUses > 0 ? maxUses : null,
+    maxUsesPerUser:  maxUser > 0 ? maxUser : null,
+    paymentMethod:   document.getElementById('cv-payment').value || null,
+    source:          document.getElementById('cv-source').value || null,
+    firstPurchaseOnly: document.getElementById('cv-first-only').checked,
+    startDate:       document.getElementById('cv-start').value || null,
+    expiresAt:       expiresVal ? (expiresVal + 'T23:59:59') : null,
+    active:          document.getElementById('cv-active').checked,
+  };
+
+  if (!payload.code || !payload.name) {
+    showCouponFbDv('Código e nome são obrigatórios.', false); return;
+  }
+
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const url    = editId ? `/api/admin/coupons/${editId}` : '/api/admin/coupons';
+    const method = editId ? 'PUT' : 'POST';
+    const d = await api.call(method, url, payload);
+    if (!d?.ok) throw new Error(d?.error || 'Erro desconhecido');
+    showCouponFbDv(editId ? '✓ Cupom atualizado!' : '✓ Cupom criado!', true);
+    resetCouponFormDv();
+    await loadCupons();
+  } catch(e) {
+    showCouponFbDv(e.message, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = document.getElementById('coupon-edit-id-dv').value ? 'Salvar Alterações' : 'Criar Cupom';
+  }
+}
+
+function showCouponFbDv(msg, ok) {
+  const fb = document.getElementById('coupon-feedback-dv');
+  if (!fb) return;
+  fb.textContent = msg;
+  fb.style.color = ok ? 'var(--green)' : 'var(--red)';
+  fb.style.display = 'block';
+}
+
+function resetCouponFormDv() {
+  document.getElementById('coupon-edit-id-dv').value = '';
+  ['cv-name','cv-code','cv-desc','cv-value','cv-min-value','cv-max-uses','cv-max-user','cv-start','cv-expires'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('cv-active').checked    = true;
+  document.getElementById('cv-first-only').checked = false;
+  document.getElementById('cv-type').value         = 'percent';
+  onDvCouponTypeChange();
+  document.getElementById('coupon-form-title-dv').textContent = 'Criar Novo Cupom';
+  document.getElementById('coupon-save-btn-dv').textContent   = 'Criar Cupom';
+  document.getElementById('coupon-cancel-btn-dv').style.display = 'none';
+  const fb = document.getElementById('coupon-feedback-dv'); if (fb) fb.style.display = 'none';
+}
+
+function editCouponDv(id) {
+  const all = window._dvCoupons || [];
+  const c   = all.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('coupon-edit-id-dv').value = c.id;
+  document.getElementById('cv-name').value            = c.name || '';
+  document.getElementById('cv-code').value            = c.code || '';
+  document.getElementById('cv-desc').value            = c.description || '';
+  document.getElementById('cv-type').value            = c.type || 'percent';
+  onDvCouponTypeChange();
+  document.getElementById('cv-value').value           = c.value || '';
+  document.getElementById('cv-min-value').value       = c.minValue || '';
+  document.getElementById('cv-max-uses').value        = c.maxUses || '';
+  document.getElementById('cv-max-user').value        = c.maxUsesPerUser || '';
+  document.getElementById('cv-payment').value         = c.paymentMethod || '';
+  document.getElementById('cv-source').value          = c.source || '';
+  document.getElementById('cv-first-only').checked   = !!c.firstPurchaseOnly;
+  document.getElementById('cv-active').checked        = !!c.active;
+  if (c.startDate)  document.getElementById('cv-start').value   = c.startDate.slice(0,10);
+  if (c.expiresAt)  document.getElementById('cv-expires').value = c.expiresAt.slice(0,10);
+  document.getElementById('coupon-form-title-dv').textContent      = 'Editar Cupom';
+  document.getElementById('coupon-save-btn-dv').textContent        = 'Salvar Alterações';
+  document.getElementById('coupon-cancel-btn-dv').style.display    = '';
+  document.getElementById('page-cupons').scrollIntoView({ behavior:'smooth' });
+}
+
+async function toggleCouponDv(id, active) {
+  try {
+    const d = await api.put(`/api/admin/coupons/${id}`, { active });
+    if (!d?.ok) throw new Error(d?.error);
+    await loadCupons();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function deleteCouponDv(id) {
+  if (!confirm('Excluir este cupom permanentemente?')) return;
+  try {
+    const d = await api.del(`/api/admin/coupons/${id}`);
+    if (!d?.ok) throw new Error(d?.error);
+    await loadCupons();
   } catch(e) { alert('Erro: ' + e.message); }
 }
 

@@ -1018,7 +1018,7 @@ app.post('/api/shipping', async (req, res) => {
 });
 
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(publicPath, 'admin.html'));
+  res.redirect(301, '/devops');
 });
 
 // ===================== AUTH RATE LIMITING =====================
