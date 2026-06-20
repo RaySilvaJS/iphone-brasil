@@ -7,6 +7,7 @@ const { getSocket, sendPaymentRequest } = require('./whatsapp');
 const { generatePix } = require('./pix');
 const tracker = require('./tracker');
 const audit = require('./audit');
+const { validateCoupon, recordCouponUse } = require('./coupons');
 
 const paymentsPath = path.join(__dirname, 'data', 'payments.json');
 const usersPath    = path.join(__dirname, 'data', 'users.json');
@@ -64,10 +65,32 @@ router.post('/generate', async (req, res) => {
   const enderecos = user.enderecos || [];
   if (enderecos.length === 0) return res.status(400).json({ success: false, error: 'Cadastre um endereço de entrega antes de finalizar a compra.' });
 
-  const { productId, amount, productName, addressId, paymentMethod, installments, cardName, cardNumber, cardExpiry, cardCvv, cardLast4, seguro, seguroLabel } = req.body;
-  if (!amount) return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
+  const { productId, amount: rawAmount, productName, addressId, paymentMethod, installments, cardName, cardNumber, cardExpiry, cardCvv, cardLast4, seguro, seguroLabel, couponCode } = req.body;
+  if (!rawAmount) return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
 
   const address = enderecos.find(a => a.id === addressId) || enderecos.find(a => a.principal) || enderecos[0];
+
+  // Aplica cupom no servidor (validação dupla — o cliente pode ter manipulado o valor)
+  let couponDiscount = 0;
+  let couponFreeShipping = false;
+  let couponResult = null;
+  if (couponCode) {
+    const payments = loadPayments();
+    const isFirstPurchase = payments.filter(p => p.userId === user.id).length === 0;
+    couponResult = validateCoupon(couponCode, {
+      amount: rawAmount,
+      userId: user.id,
+      productId,
+      paymentMethod: paymentMethod === 'cartao' ? 'cartao' : 'pix',
+      isFirstPurchase,
+    });
+    if (couponResult.valid) {
+      couponDiscount = couponResult.discount || 0;
+      couponFreeShipping = couponResult.freeShipping || false;
+    }
+  }
+
+  const amount = Math.max(0, rawAmount - couponDiscount);
 
   const payments = loadPayments();
   const paymentId = uuidv4();
@@ -118,6 +141,9 @@ router.post('/generate', async (req, res) => {
     clientEmail:     user.email || null,
     clientPhone:     user.whatsapp || null,
     clientCpf:       user.cpf || null,
+    couponCode:      couponCode || null,
+    couponDiscount:  couponDiscount || 0,
+    couponFreeShipping: couponFreeShipping || false,
     groupMessageId:  null,
     proofGroupMessageId: null,
     address,
@@ -160,6 +186,10 @@ router.post('/generate', async (req, res) => {
   }
 
   savePayments(payments);
+  // Registra uso do cupom após salvar o pedido
+  if (couponCode && couponResult && couponResult.valid) {
+    try { recordCouponUse(couponCode, paymentId); } catch (e) { console.error('[Cupom] Erro ao registrar uso:', e.message); }
+  }
   tracker.record('order_created', { productId, productName, amount });
   if (pixCode) tracker.record('pix_generated', { productId, amount });
   audit.append('order_created', user.email, req.ip, { paymentId, shortId, productName, amount, pixGenerated: !!pixCode });

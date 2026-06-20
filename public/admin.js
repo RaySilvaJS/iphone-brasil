@@ -418,11 +418,241 @@ function getAdminToken() {
   return t;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// COUPON MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const COUPON_TYPE_LABELS = {
+  percent:        '% Percentual',
+  fixed:          'R$ Fixo',
+  free_shipping:  'Frete grátis',
+  pix_extra:      'Extra no PIX',
+  first_purchase: '1ª compra',
+};
+
+window.onCouponTypeChange = function() {
+  const type = document.getElementById('c-type')?.value;
+  const wrap  = document.getElementById('c-value-wrap');
+  const label = document.getElementById('c-value-label');
+  if (!wrap || !label) return;
+  if (type === 'free_shipping') {
+    wrap.style.display = 'none';
+  } else {
+    wrap.style.display = '';
+    label.firstChild.textContent = (type === 'fixed')
+      ? 'Valor fixo (R$)'
+      : 'Valor do desconto (%)';
+  }
+};
+
+window.saveCoupon = async function() {
+  const editId = document.getElementById('coupon-edit-id')?.value;
+  const fb     = document.getElementById('coupon-feedback');
+  const btn    = document.getElementById('coupon-save-btn');
+  const type   = document.getElementById('c-type')?.value;
+  const maxUses = parseInt(document.getElementById('c-max-uses')?.value || '0', 10);
+  const maxUser = parseInt(document.getElementById('c-max-user')?.value || '0', 10);
+  const minVal  = parseFloat(document.getElementById('c-min-value')?.value || '0');
+
+  const payload = {
+    name:            document.getElementById('c-name')?.value.trim(),
+    code:            document.getElementById('c-code')?.value.trim().toUpperCase(),
+    description:     document.getElementById('c-desc')?.value.trim(),
+    type,
+    value:           parseFloat(document.getElementById('c-value')?.value || '0'),
+    minValue:        minVal > 0 ? minVal : null,
+    maxUses:         maxUses > 0 ? maxUses : null,
+    maxUsesPerUser:  maxUser > 0 ? maxUser : null,
+    paymentMethod:   document.getElementById('c-payment')?.value || null,
+    source:          document.getElementById('c-source')?.value || null,
+    firstPurchaseOnly: document.getElementById('c-first-only')?.checked || false,
+    startDate:       document.getElementById('c-start')?.value || null,
+    expiresAt:       document.getElementById('c-expires')?.value ? (document.getElementById('c-expires').value + 'T23:59:59') : null,
+    active:          document.getElementById('c-active')?.checked !== false,
+  };
+
+  if (!payload.code) { if (fb) { fb.textContent = 'Código é obrigatório.'; fb.style.color = '#f87171'; } return; }
+  if (!payload.name) { if (fb) { fb.textContent = 'Nome é obrigatório.'; fb.style.color = '#f87171'; } return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    const url    = editId ? `/api/admin/coupons/${editId}` : '/api/admin/coupons';
+    const method = editId ? 'PUT' : 'POST';
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': getAdminToken() },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Erro desconhecido.');
+    if (fb) { fb.textContent = editId ? 'Cupom atualizado!' : 'Cupom criado com sucesso!'; fb.style.color = '#86efac'; }
+    resetCouponForm();
+    await loadCoupons();
+  } catch (e) {
+    if (fb) { fb.textContent = e.message; fb.style.color = '#f87171'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = document.getElementById('coupon-edit-id')?.value ? 'Salvar alterações' : 'Criar Cupom'; }
+  }
+};
+
+window.resetCouponForm = function() {
+  ['coupon-edit-id','c-name','c-code','c-desc','c-value','c-min-value','c-max-uses','c-max-user','c-start','c-expires'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const cActive = document.getElementById('c-active');
+  if (cActive) cActive.checked = true;
+  const cFirst = document.getElementById('c-first-only');
+  if (cFirst) cFirst.checked = false;
+  const cType = document.getElementById('c-type');
+  if (cType) { cType.value = 'percent'; window.onCouponTypeChange(); }
+  const title = document.getElementById('coupon-form-title');
+  if (title) title.textContent = 'Criar Novo Cupom';
+  const saveBtn = document.getElementById('coupon-save-btn');
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Criar Cupom'; }
+  const cancelBtn = document.getElementById('coupon-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  const fb = document.getElementById('coupon-feedback');
+  if (fb) { fb.textContent = ''; }
+};
+
+window.editCoupon = function(id) {
+  const allData = window._couponsData || [];
+  const c = allData.find(x => x.id === id);
+  if (!c) return;
+
+  document.getElementById('coupon-edit-id').value = c.id;
+  document.getElementById('c-name').value         = c.name || '';
+  document.getElementById('c-code').value         = c.code || '';
+  document.getElementById('c-desc').value         = c.description || '';
+  document.getElementById('c-type').value         = c.type || 'percent';
+  window.onCouponTypeChange();
+  document.getElementById('c-value').value        = c.value || '';
+  document.getElementById('c-min-value').value    = c.minValue || '';
+  document.getElementById('c-max-uses').value     = c.maxUses || '';
+  document.getElementById('c-max-user').value     = c.maxUsesPerUser || '';
+  document.getElementById('c-payment').value      = c.paymentMethod || '';
+  document.getElementById('c-source').value       = c.source || '';
+  document.getElementById('c-first-only').checked = !!c.firstPurchaseOnly;
+  document.getElementById('c-active').checked     = !!c.active;
+  if (c.startDate) document.getElementById('c-start').value   = c.startDate.slice(0, 10);
+  if (c.expiresAt) document.getElementById('c-expires').value = c.expiresAt.slice(0, 10);
+
+  const title = document.getElementById('coupon-form-title');
+  if (title) title.textContent = 'Editar Cupom';
+  const saveBtn = document.getElementById('coupon-save-btn');
+  if (saveBtn) { saveBtn.textContent = 'Salvar alterações'; }
+  const cancelBtn = document.getElementById('coupon-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = '';
+
+  // Scroll to form
+  document.getElementById('cupons-section')?.scrollIntoView({ behavior: 'smooth' });
+};
+
+window.deleteCoupon = async function(id) {
+  if (!confirm('Excluir este cupom?')) return;
+  try {
+    const r = await fetch(`/api/admin/coupons/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Token': getAdminToken() },
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+    await loadCoupons();
+  } catch (e) { alert('Erro: ' + e.message); }
+};
+
+window.toggleCouponActive = async function(id, active) {
+  try {
+    const r = await fetch(`/api/admin/coupons/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': getAdminToken() },
+      body: JSON.stringify({ active }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+    await loadCoupons();
+  } catch (e) { alert('Erro: ' + e.message); }
+};
+
+window.loadCoupons = async function() {
+  const container = document.getElementById('coupon-list');
+  if (!container) return;
+  try {
+    const r = await fetch('/api/admin/coupons', { headers: { 'X-Admin-Token': getAdminToken() } });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+    window._couponsData = d.coupons;
+
+    if (!d.coupons.length) {
+      container.innerHTML = '<p style="color:#888;font-size:13px;">Nenhum cupom cadastrado ainda. Crie o primeiro!</p>';
+      return;
+    }
+
+    container.innerHTML = d.coupons.map(c => {
+      const isExpired = c.expiresAt && new Date(c.expiresAt) < new Date();
+      const statusColor = !c.active ? '#6B7280' : isExpired ? '#DC2626' : '#16A34A';
+      const statusLabel = !c.active ? 'Inativo' : isExpired ? 'Expirado' : 'Ativo';
+      const typeLabel = COUPON_TYPE_LABELS[c.type] || c.type;
+      const valueLabel = c.type === 'percent' || c.type === 'pix_extra'
+        ? `${c.value}% OFF`
+        : c.type === 'fixed'
+        ? `${fmtBRL(c.value)} OFF`
+        : c.type === 'free_shipping'
+        ? 'Frete grátis'
+        : `${c.value}`;
+
+      const expiresLabel = c.expiresAt
+        ? `Expira: ${new Date(c.expiresAt).toLocaleDateString('pt-BR')}`
+        : 'Sem expiração';
+      const usageLabel = c.maxUses
+        ? `${c.usedCount || 0}/${c.maxUses} usos`
+        : `${c.usedCount || 0} usos`;
+
+      return `
+        <div style="background:#1a1a2e;border:1px solid ${statusColor}30;border-radius:10px;padding:14px 16px;display:grid;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <code style="background:#0d0d1a;color:#a5b4fc;padding:3px 8px;border-radius:6px;font-size:14px;font-weight:700;letter-spacing:1px;">${c.code}</code>
+                <span style="font-size:12px;padding:2px 8px;border-radius:4px;font-weight:600;background:${statusColor}20;color:${statusColor};">${statusLabel}</span>
+                <span style="font-size:11px;color:#9CA3AF;background:#111827;padding:2px 7px;border-radius:4px;">${typeLabel}</span>
+              </div>
+              <div style="font-size:13px;color:#e2e8f0;margin-top:5px;font-weight:600;">${c.name || c.code}</div>
+              ${c.description ? `<div style="font-size:12px;color:#9CA3AF;margin-top:2px;">${c.description}</div>` : ''}
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:20px;font-weight:800;color:#a5b4fc;">${valueLabel}</div>
+              <div style="font-size:11px;color:#6B7280;">${usageLabel}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#6B7280;">
+            <span>📅 ${expiresLabel}</span>
+            ${c.minValue ? `<span>💰 Mín. ${fmtBRL(c.minValue)}</span>` : ''}
+            ${c.paymentMethod ? `<span>💳 Só ${c.paymentMethod === 'pix' ? 'PIX' : 'Cartão'}</span>` : ''}
+            ${c.source ? `<span>📡 ${c.source}</span>` : ''}
+            ${c.firstPurchaseOnly ? `<span>🆕 1ª compra</span>` : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="button button-secondary" style="font-size:11px;padding:5px 10px;" onclick="editCoupon('${c.id}')">Editar</button>
+            <button class="button button-secondary" style="font-size:11px;padding:5px 10px;background:${c.active ? '#7F1D1D20' : '#14532D20'};color:${c.active ? '#f87171' : '#86efac'};"
+              onclick="toggleCouponActive('${c.id}', ${!c.active})">${c.active ? 'Desativar' : 'Ativar'}</button>
+            <button class="button button-secondary" style="font-size:11px;padding:5px 10px;background:#7F1D1D20;color:#f87171;" onclick="deleteCoupon('${c.id}')">Excluir</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    if (container) container.innerHTML = `<p style="color:#f87171;font-size:13px;">Erro: ${e.message}</p>`;
+  }
+};
+
 window.addEventListener('DOMContentLoaded', async () => {
   await loadAdminProducts();
   await loadPaymentProofs();
   await loadPixConfig();
   await loadFinancialDashboard();
   await loadFinancialOrders();
+  await loadCoupons();
 });
 

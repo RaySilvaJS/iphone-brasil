@@ -1256,6 +1256,54 @@ router.post('/telegram/config', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── COUPON MANAGEMENT ────────────────────────────────────────────────────────
+const { createCoupon, updateCoupon, deleteCoupon, getCouponStats, loadCoupons } = require('./coupons');
+
+router.get('/coupons', adminAuth, (req, res) => {
+  try {
+    const coupons = loadCoupons();
+    res.json({ ok: true, coupons });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+router.post('/coupons', adminAuth, (req, res) => {
+  try {
+    const coupon = createCoupon(req.body || {});
+    res.json({ ok: true, coupon });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
+router.put('/coupons/:id', adminAuth, (req, res) => {
+  try {
+    const coupon = updateCoupon(req.params.id, req.body || {});
+    res.json({ ok: true, coupon });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
+router.delete('/coupons/:id', adminAuth, (req, res) => {
+  try {
+    const removed = deleteCoupon(req.params.id);
+    res.json({ ok: true, removed });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
+router.get('/coupons/:id/stats', adminAuth, (req, res) => {
+  try {
+    const stats = getCouponStats(req.params.id);
+    res.json({ ok: true, ...stats });
+  } catch (e) {
+    res.status(404).json({ ok: false, error: e.message });
+  }
+});
+
 module.exports = router;
 module.exports.loadConfig = loadConfig;
 module.exports.loadSecurity = loadSecurity;

@@ -1311,6 +1311,135 @@ app.patch('/api/auth/addresses/:id/principal', (req, res) => {
   res.json({ success: true, addresses: users[idx].enderecos });
 });
 
+// ── Guest Checkout — cria conta automática vinculada ao WhatsApp ─────────────
+app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
+  const { nome, whatsapp, cpf } = req.body || {};
+  if (!nome || !whatsapp || !cpf) {
+    return res.status(400).json({ error: 'Nome, WhatsApp e CPF são obrigatórios.' });
+  }
+  if (!validateCPF(cpf)) {
+    return res.status(400).json({ error: 'CPF inválido.' });
+  }
+  const digits = whatsapp.replace(/\D/g, '');
+  if (digits.length < 10 || digits.length > 11) {
+    return res.status(400).json({ error: 'WhatsApp inválido. Informe DDD + número.' });
+  }
+
+  const users = loadUsers();
+  // Verifica se já existe conta com esse WhatsApp ou CPF — faz login automático
+  let user = users.find(u => u.whatsapp === digits || u.cpf === cpf.replace(/\D/g, ''));
+  if (user) {
+    if (!user.token) user.token = uuidv4();
+    user.lastLogin = new Date().toISOString();
+    saveUsers(users);
+    return res.json({
+      success: true,
+      existing: true,
+      token: user.token,
+      user: { id: user.id, nome: user.nome, email: user.email, whatsapp: user.whatsapp, cpf: user.cpf, role: user.role || 'user' },
+    });
+  }
+
+  // Cria conta guest com e-mail fictício e senha temporária
+  const tempEmail = `guest_${digits}@jessi.local`;
+  const tempPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+  const newUser = {
+    id:        uuidv4(),
+    nome:      nome.trim(),
+    cpf:       cpf.replace(/\D/g, ''),
+    whatsapp:  digits,
+    email:     tempEmail,
+    senha:     bcrypt.hashSync(tempPassword, 10),
+    token:     uuidv4(),
+    isGuest:   true,
+    createdAt: new Date().toISOString(),
+  };
+  users.push(newUser);
+  saveUsers(users);
+  tracker.record('signup', { email: newUser.email, type: 'guest' });
+  res.json({
+    success: true,
+    existing: false,
+    token: newUser.token,
+    user: { id: newUser.id, nome: newUser.nome, email: newUser.email, whatsapp: newUser.whatsapp, cpf: newUser.cpf, role: 'user' },
+  });
+});
+
+// ── WhatsApp OTP — envia código de 6 dígitos via WhatsApp ────────────────────
+const _otpStore = new Map(); // whatsapp → { code, expiresAt }
+
+app.post('/api/auth/otp/send', authRateLimit(5, 5 * 60 * 1000), async (req, res) => {
+  const { whatsapp } = req.body || {};
+  if (!whatsapp) return res.status(400).json({ error: 'WhatsApp obrigatório.' });
+  const digits = whatsapp.replace(/\D/g, '');
+  if (digits.length < 10 || digits.length > 11) {
+    return res.status(400).json({ error: 'Número inválido.' });
+  }
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  _otpStore.set(digits, { code, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min
+
+  try {
+    const { getSocket } = require('./whatsapp');
+    const sock = getSocket();
+    if (sock) {
+      const jid = digits.startsWith('55') ? digits : '55' + digits;
+      await sock.sendMessage(`${jid}@s.whatsapp.net`, {
+        text: `*jessi.iphones*\n\nSeu código de acesso é: *${code}*\n\nVálido por 10 minutos. Não compartilhe com ninguém.`
+      });
+    }
+  } catch (e) {
+    console.error('[OTP] Erro ao enviar código:', e.message);
+  }
+
+  res.json({ success: true, message: 'Código enviado para o WhatsApp.' });
+});
+
+app.post('/api/auth/otp/verify', authRateLimit(10, 5 * 60 * 1000), (req, res) => {
+  const { whatsapp, code } = req.body || {};
+  if (!whatsapp || !code) return res.status(400).json({ error: 'Campos obrigatórios.' });
+  const digits = whatsapp.replace(/\D/g, '');
+  const stored = _otpStore.get(digits);
+
+  if (!stored || stored.code !== String(code).trim() || Date.now() > stored.expiresAt) {
+    return res.status(401).json({ error: 'Código inválido ou expirado.' });
+  }
+
+  _otpStore.delete(digits);
+  const users = loadUsers();
+  let user = users.find(u => u.whatsapp === digits);
+
+  if (!user) {
+    // Conta não existe ainda — retorna sinal para coletar dados adicionais
+    return res.json({ success: true, needsProfile: true, whatsapp: digits });
+  }
+
+  user.token = uuidv4();
+  user.lastLogin = new Date().toISOString();
+  saveUsers(users);
+  tracker.record('login', { email: user.email, method: 'otp' });
+  res.json({
+    success: true,
+    needsProfile: false,
+    token: user.token,
+    user: { id: user.id, nome: user.nome, email: user.email, whatsapp: user.whatsapp, cpf: user.cpf, role: user.role || 'user' },
+  });
+});
+
+// ── Coupon validation (pública, autenticada ou não) ───────────────────────────
+const { validateCoupon } = require('./coupons');
+
+app.post('/api/coupons/validate', (req, res) => {
+  const { code, amount, productId, category, paymentMethod, source } = req.body || {};
+  const authUser = getAuthUser(req);
+  const userId = authUser ? authUser.id : null;
+  const isFirstPurchase = authUser ? !(authUser.enderecos && authUser.enderecos.length > 0) : true;
+
+  const result = validateCoupon(code, { amount, userId, productId, category, paymentMethod, isFirstPurchase, source });
+  if (!result.valid) return res.status(400).json({ success: false, error: result.error });
+  res.json({ success: true, ...result });
+});
+
 // ── Visitor tracker beacon ────────────────────────────────────────────────────
 app.post('/api/track/heartbeat', (req, res) => {
   res.status(204).end();
@@ -1389,6 +1518,126 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
+// ── Recuperação de Checkout Abandonado ───────────────────────────────────────
+// Verifica a cada 10 minutos se há pedidos PIX pendentes com 30min, 6h ou 24h
+function startAbandonedCheckoutRecovery() {
+  const paymentsPath = path.join(__dirname, 'data', 'payments.json');
+  const { getSocket } = require('./whatsapp');
+
+  const toWAJid = (phone) => {
+    if (!phone) return null;
+    const d = String(phone).replace(/\D/g, '');
+    const full = d.startsWith('55') ? d : '55' + d;
+    return full.length >= 12 && full.length <= 13 ? `${full}@s.whatsapp.net` : null;
+  };
+
+  const sendRecovery = async (payment, label, msg) => {
+    const sock = getSocket();
+    if (!sock) return;
+    const jid = toWAJid(payment.clientPhone);
+    if (!jid) return;
+
+    try {
+      await sock.sendMessage(jid, { text: msg });
+      console.log(`[Recovery] ${label} enviado para ${jid} — pedido ${payment.shortId}`);
+    } catch (e) {
+      console.error(`[Recovery] Erro ao enviar ${label}:`, e.message);
+    }
+  };
+
+  const check = async () => {
+    let payments;
+    try { payments = JSON.parse(fs.readFileSync(paymentsPath, 'utf-8')); } catch { return; }
+
+    const now = Date.now();
+    const changed = [];
+
+    for (const p of payments) {
+      if (p.paymentMethod !== 'pix') continue;
+      if (!['pending', 'awaiting_validation'].includes(p.status)) continue;
+      if (!p.clientPhone) continue;
+
+      const createdAt = new Date(p.createdAt).getTime();
+      const elapsed   = now - createdAt;
+      const name      = p.clientName || 'cliente';
+      const value     = Number(p.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const prod      = p.productName || 'produto';
+
+      const sentFlags = p.recoverySent || {};
+
+      // 30 minutos
+      if (!sentFlags.m30 && elapsed >= 30 * 60 * 1000 && elapsed < 2 * 60 * 60 * 1000) {
+        await sendRecovery(p, '30min', [
+          `👋 *Oi, ${name}!*`,
+          '',
+          `Percebemos que seu pedido de *${prod}* por *${value}* ainda está aguardando o pagamento PIX.`,
+          '',
+          `📋 *Pedido:* #${p.shortId || p.id.slice(0,8)}`,
+          `💰 *Valor:* ${value}`,
+          '',
+          '📋 *Código PIX — Copia e Cola:*',
+          p.qrCode || '(código não disponível)',
+          '',
+          '⏰ Pague agora para garantir o seu produto!',
+          '',
+          '_Caso já tenha pago, envie o comprovante nesta conversa._',
+        ].join('\n'));
+        sentFlags.m30 = new Date().toISOString();
+        changed.push({ id: p.id, recoverySent: sentFlags });
+      }
+
+      // 6 horas
+      else if (!sentFlags.h6 && elapsed >= 6 * 60 * 60 * 1000 && elapsed < 20 * 60 * 60 * 1000) {
+        await sendRecovery(p, '6h', [
+          `🔥 *${name}, sua oferta ainda está disponível!*`,
+          '',
+          `Ainda não identificamos o pagamento do seu pedido de *${prod}*.`,
+          '',
+          `💰 *Valor:* ${value}`,
+          `📋 *Pedido:* #${p.shortId || p.id.slice(0,8)}`,
+          '',
+          '📋 *Código PIX — Copia e Cola:*',
+          p.qrCode || '(código não disponível)',
+          '',
+          'Pague agora antes que o estoque acabe! 🛍️',
+        ].join('\n'));
+        sentFlags.h6 = new Date().toISOString();
+        changed.push({ id: p.id, recoverySent: sentFlags });
+      }
+
+      // 24 horas
+      else if (!sentFlags.h24 && elapsed >= 24 * 60 * 60 * 1000 && elapsed < 30 * 60 * 60 * 1000) {
+        await sendRecovery(p, '24h', [
+          `⏳ *${name}, última chance!*`,
+          '',
+          `Seu pedido de *${prod}* por *${value}* ainda está reservado, mas pode ser cancelado em breve por falta de pagamento.`,
+          '',
+          '📋 *Código PIX — Copia e Cola:*',
+          p.qrCode || '(código não disponível)',
+          '',
+          'Se precisar de ajuda, é só falar aqui. Estamos prontos para te atender! 🙂',
+        ].join('\n'));
+        sentFlags.h24 = new Date().toISOString();
+        changed.push({ id: p.id, recoverySent: sentFlags });
+      }
+    }
+
+    // Salva flags de envio
+    if (changed.length) {
+      for (const ch of changed) {
+        const idx = payments.findIndex(p => p.id === ch.id);
+        if (idx !== -1) payments[idx].recoverySent = ch.recoverySent;
+      }
+      try { fs.writeFileSync(paymentsPath, JSON.stringify(payments, null, 2), 'utf-8'); } catch {}
+    }
+  };
+
+  // Roda na inicialização e depois a cada 10 min
+  setTimeout(check, 60 * 1000); // 1 min após start
+  setInterval(check, 10 * 60 * 1000);
+  console.log('[Recovery] Recuperação de checkout abandonado ativada.');
+}
+
 app.listen(PORT, async () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
   console.log(`WhatsApp fallback para ${WHATSAPP_NUMBER}`);
@@ -1399,4 +1648,5 @@ app.listen(PORT, async () => {
     console.error('Erro ao conectar ao WhatsApp:', error);
   }
   alerts.start();
+  startAbandonedCheckoutRecovery();
 });

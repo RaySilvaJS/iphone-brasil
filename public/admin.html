@@ -117,6 +117,106 @@
           </div>
           <div id="proof-list" class="catalog-grid"></div>
         </section>
+
+        <!-- CUPONS DE DESCONTO -->
+        <section class="section-block" id="cupons-section">
+          <div class="section-heading">
+            <span>Marketing</span>
+            <h2>Gerenciar Cupons de Desconto</h2>
+            <p>Crie e gerencie cupons para Facebook Ads, Instagram, TikTok, primeira compra, PIX e muito mais.</p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start;">
+
+            <!-- Formulário de criação -->
+            <div class="catalog-filter glass-card">
+              <h3 id="coupon-form-title">Criar Novo Cupom</h3>
+              <input type="hidden" id="coupon-edit-id"/>
+
+              <label>Nome do cupom<input id="c-name" type="text" placeholder="Black Friday 20% OFF"/></label>
+              <label>Código <small>(maiúsculas)</small><input id="c-code" type="text" placeholder="BLACK20" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"/></label>
+              <label>Descrição<input id="c-desc" type="text" placeholder="20% de desconto em todos os produtos"/></label>
+
+              <label>Tipo de desconto
+                <select id="c-type" onchange="onCouponTypeChange()">
+                  <option value="percent">Percentual (ex: 10%)</option>
+                  <option value="fixed">Valor fixo (ex: R$ 100 OFF)</option>
+                  <option value="free_shipping">Frete grátis</option>
+                  <option value="pix_extra">Desconto extra no PIX</option>
+                  <option value="first_purchase">Primeira compra</option>
+                </select>
+              </label>
+
+              <div id="c-value-wrap">
+                <label id="c-value-label">Valor do desconto (%)
+                  <input id="c-value" type="number" min="0" placeholder="10"/>
+                </label>
+              </div>
+
+              <label>Valor mínimo do pedido (R$)
+                <input id="c-min-value" type="number" min="0" placeholder="0 = sem mínimo"/>
+              </label>
+              <label>Limite total de usos
+                <input id="c-max-uses" type="number" min="0" placeholder="0 = ilimitado"/>
+              </label>
+              <label>Limite por usuário
+                <input id="c-max-user" type="number" min="0" placeholder="0 = ilimitado"/>
+              </label>
+
+              <label>Válido somente para pagamento
+                <select id="c-payment">
+                  <option value="">Qualquer forma</option>
+                  <option value="pix">PIX</option>
+                  <option value="cartao">Cartão</option>
+                </select>
+              </label>
+
+              <label>Origem do tráfego (UTM source)
+                <select id="c-source">
+                  <option value="">Qualquer origem</option>
+                  <option value="facebook">Facebook/Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="google">Google</option>
+                  <option value="email">E-mail</option>
+                </select>
+              </label>
+
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="c-first-only" style="width:16px;height:16px;"/>
+                Apenas primeira compra
+              </label>
+
+              <label>Data de início
+                <input id="c-start" type="date"/>
+              </label>
+              <label>Data de expiração
+                <input id="c-expires" type="date"/>
+              </label>
+
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="c-active" checked style="width:16px;height:16px;"/>
+                Cupom ativo
+              </label>
+
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <button class="button button-primary" onclick="saveCoupon()" id="coupon-save-btn">Criar Cupom</button>
+                <button class="button button-secondary" onclick="resetCouponForm()" id="coupon-cancel-btn" style="display:none">Cancelar</button>
+              </div>
+              <p id="coupon-feedback" style="color:#b5b2ff;margin-top:8px;font-size:13px;"></p>
+            </div>
+
+            <!-- Lista de cupons -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="margin:0;font-size:1rem;">Cupons cadastrados</h3>
+                <button class="button button-secondary" style="font-size:12px;padding:6px 12px;" onclick="loadCoupons()">Atualizar</button>
+              </div>
+              <div id="coupon-list" style="display:flex;flex-direction:column;gap:10px;min-height:60px;">
+                <p style="color:#666;font-size:13px;">Carregando...</p>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 

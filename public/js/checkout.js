@@ -1,8 +1,7 @@
 // checkout.js
 document.addEventListener('DOMContentLoaded', () => {
-  if (window.Auth && !window.Auth.requireLogin(true)) return;
-
-  const authSession = (() => { try { return JSON.parse(localStorage.getItem('user-session')); } catch { return null; } })();
+  // Guest checkout — não exige login prévio
+  let authSession = (() => { try { return JSON.parse(localStorage.getItem('user-session')); } catch { return null; } })();
 
   // ── Items ─────────────────────────────────────────────────────────────────────
   const query       = new URLSearchParams(window.location.search);
@@ -133,9 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadAddresses() {
+    if (!authSession?.token) { addresses = []; renderAddresses(); return; }
     try {
       const r = await fetch('/api/auth/addresses', {
-        headers: { 'x-auth-token': authSession ? authSession.token : '' }
+        headers: { 'x-auth-token': authSession.token }
       });
       const data = await r.json();
       addresses = (data && data.addresses) || [];
@@ -285,6 +285,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.innerHTML = '<span class="co-spinner"></span> Salvando...';
 
     try {
+      // Se guest ainda não autenticado, coleta dados primeiro
+      if (!authSession?.token) {
+        const authed = await ensureAuth();
+        if (!authed || !authSession?.token) { showAddrErr('Por favor, preencha seus dados pessoais.'); return; }
+      }
+
       const res = await fetch('/api/auth/addresses', {
         method: 'POST',
         headers: {
@@ -399,18 +405,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Billing ───────────────────────────────────────────────────────────────────
   function renderBilling() {
-    if (!authSession) { billingBody.innerHTML = '<p class="co-muted">Não autenticado.</p>'; return; }
+    if (!authSession) {
+      billingBody.innerHTML = `
+        <div style="padding:4px 0 8px">
+          <p style="margin:0 0 10px;font-size:13px;color:#6B7280;">Seus dados serão solicitados ao finalizar a compra. Nenhuma senha necessária.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#16A34A;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Compra sem cadastro
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#16A34A;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Login automático pelo WhatsApp
+            </div>
+          </div>
+          <p style="margin:10px 0 0;font-size:11px;color:#9CA3AF;">Já tem conta? <a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="color:#2563EB;font-weight:600">Fazer login</a></p>
+        </div>`;
+      return;
+    }
     const cpfRaw  = authSession.cpf || '';
     const cpfMask = cpfRaw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    const isGuest = authSession.email && authSession.email.includes('@jessi.local');
     billingBody.innerHTML = `
       <div class="co-billing-line"><span class="co-billing-key">Nome</span><span class="co-billing-val">${esc(authSession.name || authSession.nome || '')}</span></div>
-      <div class="co-billing-line"><span class="co-billing-key">E-mail</span><span class="co-billing-val">${esc(authSession.email || '')}</span></div>
-      ${cpfRaw ? `<div class="co-billing-line"><span class="co-billing-key">CPF</span><span class="co-billing-val">${esc(cpfMask)}</span></div>` : ''}`;
+      ${!isGuest ? `<div class="co-billing-line"><span class="co-billing-key">E-mail</span><span class="co-billing-val">${esc(authSession.email || '')}</span></div>` : ''}
+      <div class="co-billing-line"><span class="co-billing-key">WhatsApp</span><span class="co-billing-val">${esc(authSession.whatsapp || '')}</span></div>
+      ${cpfRaw ? `<div class="co-billing-line"><span class="co-billing-key">CPF</span><span class="co-billing-val">${esc(cpfMask)}</span></div>` : ''}
+      ${isGuest ? `<p style="margin:8px 0 0;font-size:11px;color:#9CA3AF;">Compra como visitante · <a href="login.html" style="color:#2563EB;font-weight:600">Criar conta completa</a></p>` : ''}`;
+  }
+
+  // ── PIX Countdown ─────────────────────────────────────────────────────────────
+  function startPixCountdown() {
+    const el = $('co-pix-countdown');
+    if (!el) return;
+    // 15 min = 900 seg
+    const endKey = 'pix-countdown-end';
+    let endTime = parseInt(sessionStorage.getItem(endKey) || '0', 10);
+    if (!endTime || endTime < Date.now()) {
+      endTime = Date.now() + 15 * 60 * 1000;
+      sessionStorage.setItem(endKey, endTime);
+    }
+
+    function tick() {
+      const remaining = Math.max(0, endTime - Date.now());
+      const m = Math.floor(remaining / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      if (remaining <= 0) {
+        el.textContent = '00:00';
+        const bar = $('co-pix-countdown-bar');
+        if (bar) bar.style.display = 'none';
+        return;
+      }
+      setTimeout(tick, 1000);
+    }
+    tick();
   }
 
   // ── Totals ────────────────────────────────────────────────────────────────────
   function updateTotal() {
-    const frete   = shippingData ? (hasFreteGratis ? 0 : shippingData.price) : null;
+    const efectiveFrete = hasFreteGratis || couponFreeShipping;
+    const frete   = shippingData ? (efectiveFrete ? 0 : shippingData.price) : null;
     const pixDisc = payMethod === 'pix' ? Math.round((subtotal + insuranceAmt) * 0.05 * 100) / 100 : 0;
     const total   = subtotal + insuranceAmt + (frete || 0) - couponDiscount - pixDisc;
 
@@ -438,7 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
       shippingValEl.textContent = 'A calcular';
       shippingValEl.className   = 'co-sum-val';
     } else if (frete === 0) {
-      shippingValEl.innerHTML = '<span style="color:#16A34A;font-weight:700">GRÁTIS</span>';
+      const tag = couponFreeShipping ? 'GRÁTIS (cupom)' : 'GRÁTIS';
+      shippingValEl.innerHTML = `<span style="color:#16A34A;font-weight:700">${tag}</span>`;
     } else {
       shippingValEl.textContent = fmt(frete);
       shippingValEl.className   = 'co-sum-val';
@@ -537,32 +591,88 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Coupon ────────────────────────────────────────────────────────────────────
-  const COUPONS = { 'JESSI10': 0.10, 'PROMO15': 0.15 };
+  let appliedCouponCode = null;
+  let couponFreeShipping = false;
 
-  window.applyCoupon = function() {
-    const code     = ($('co-coupon')?.value || '').trim().toUpperCase();
+  window.applyCoupon = async function() {
+    const btn       = document.querySelector('.co-coupon-btn');
+    const code      = ($('co-coupon')?.value || '').trim().toUpperCase();
     const couponMsg = $('co-coupon-msg');
     const couponRow = $('co-coupon-row');
     const couponVal = $('co-coupon-val');
 
-    if (!code) { couponMsg.textContent = 'Digite um cupom.'; couponMsg.style.display = 'block'; return; }
-    if (COUPONS[code]) {
-      couponDiscount = Math.round(subtotal * COUPONS[code] * 100) / 100;
-      couponRow.style.display = '';
-      if (couponVal) couponVal.textContent = '- ' + fmt(couponDiscount);
-      couponMsg.style.display = 'none';
-      updateTotal();
-    } else {
-      couponDiscount = 0;
-      couponRow.style.display = 'none';
-      couponMsg.textContent = 'Cupom inválido ou expirado.';
-      couponMsg.style.display = 'block';
+    if (!code) {
+      if (couponMsg) { couponMsg.textContent = 'Digite o código do cupom.'; couponMsg.style.color = '#DC2626'; couponMsg.style.display = 'block'; }
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    if (couponMsg) couponMsg.style.display = 'none';
+
+    try {
+      const r = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': authSession?.token || '' },
+        body: JSON.stringify({
+          code,
+          amount: subtotal,
+          paymentMethod: payMethod,
+          source: new URLSearchParams(window.location.search).get('utm_source') || null,
+        }),
+      });
+      const data = await r.json();
+
+      if (!data.success) {
+        couponDiscount = 0;
+        appliedCouponCode = null;
+        couponFreeShipping = false;
+        if (couponRow) couponRow.style.display = 'none';
+        if (couponMsg) { couponMsg.textContent = data.error || 'Cupom inválido.'; couponMsg.style.color = '#DC2626'; couponMsg.style.display = 'block'; }
+      } else {
+        couponDiscount = data.discount || 0;
+        appliedCouponCode = data.code;
+        couponFreeShipping = data.freeShipping || false;
+
+        if (couponRow) couponRow.style.display = '';
+        if (couponVal) couponVal.textContent = couponFreeShipping ? 'Frete grátis' : '- ' + fmt(couponDiscount);
+        if (couponMsg) {
+          const desc = data.description || `Cupom ${data.code} aplicado!`;
+          couponMsg.textContent = '✓ ' + desc;
+          couponMsg.style.color = '#16A34A';
+          couponMsg.style.display = 'block';
+        }
+        updateTotal();
+      }
+    } catch {
+      if (couponMsg) { couponMsg.textContent = 'Erro ao validar cupom. Tente novamente.'; couponMsg.style.color = '#DC2626'; couponMsg.style.display = 'block'; }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Aplicar'; }
     }
   };
+
+  // Aplicar cupom com Enter
+  const couponInput = $('co-coupon');
+  if (couponInput) {
+    couponInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); window.applyCoupon(); } });
+    // Limpa desconto se apagar o código
+    couponInput.addEventListener('input', () => {
+      if (!couponInput.value.trim()) {
+        couponDiscount = 0;
+        appliedCouponCode = null;
+        couponFreeShipping = false;
+        const row = $('co-coupon-row');
+        const msg = $('co-coupon-msg');
+        if (row) row.style.display = 'none';
+        if (msg) msg.style.display = 'none';
+        updateTotal();
+      }
+    });
+  }
 
   // ── Build summary ─────────────────────────────────────────────────────────────
   function buildSummary(frete, prazo) {
     const pixDisc = payMethod === 'pix' ? Math.round((subtotal + insuranceAmt) * 0.05 * 100) / 100 : 0;
+    const efectiveFrete = (hasFreteGratis || couponFreeShipping) ? 0 : (frete || 0);
     return {
       produto: orderItems.map(item => ({
         id: item.id || null,
@@ -575,17 +685,113 @@ document.addEventListener('DOMContentLoaded', () => {
       })),
       quantidade: orderItems.reduce((s, i) => s + i.quantidade, 0),
       subtotal,
-      frete,
+      frete: efectiveFrete,
       prazo,
       seguro: insuranceAmt || 0,
       seguroLabel: insurance ? insurance.label : null,
       descontoCupom: couponDiscount,
+      couponCode: appliedCouponCode || null,
+      couponFreeShipping,
       descontoPix: pixDisc,
-      total_final: Math.max(0, subtotal + insuranceAmt + frete - couponDiscount - pixDisc),
-      hasFreteGratis,
+      total_final: Math.max(0, subtotal + insuranceAmt + efectiveFrete - couponDiscount - pixDisc),
+      hasFreteGratis: hasFreteGratis || couponFreeShipping,
       source,
       paymentMethod: payMethod,
     };
+  }
+
+  // ── Guest checkout — coleta dados e cria conta automaticamente ───────────────
+  async function ensureAuth() {
+    // Se já tem sessão, está ok
+    if (authSession && authSession.token) return true;
+
+    // Mostra modal de dados do guest
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.id = 'guest-modal-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px;';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+          <h3 style="margin:0 0 4px;font-size:18px;font-weight:800;color:#111827;">Quase lá! 🎉</h3>
+          <p style="margin:0 0 18px;font-size:13px;color:#6B7280;">Informe seus dados para finalizar a compra. Não é necessário criar uma senha.</p>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <input id="guest-nome" type="text" placeholder="Nome completo *" autocomplete="name"
+              style="padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"/>
+            <input id="guest-whatsapp" type="tel" placeholder="WhatsApp (DDD + número) *" inputmode="numeric" autocomplete="tel"
+              style="padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"/>
+            <input id="guest-cpf" type="text" placeholder="CPF (somente números) *" inputmode="numeric" maxlength="14"
+              style="padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"/>
+            <p id="guest-err" style="margin:0;font-size:12px;color:#DC2626;display:none;"></p>
+            <button id="guest-submit" style="background:#16A34A;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+              Continuar com a compra
+            </button>
+            <p style="margin:0;font-size:11px;color:#9CA3AF;text-align:center;">Seus dados são protegidos com SSL e nunca serão compartilhados.</p>
+          </div>
+        </div>`;
+
+      document.body.appendChild(overlay);
+
+      // CPF mask
+      const cpfEl = overlay.querySelector('#guest-cpf');
+      cpfEl.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g,'').slice(0,11);
+        if (v.length > 9) v = v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
+        else if (v.length > 6) v = v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
+        else if (v.length > 3) v = v.slice(0,3)+'.'+v.slice(3);
+        e.target.value = v;
+      });
+      // WhatsApp mask
+      const waEl = overlay.querySelector('#guest-whatsapp');
+      waEl.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g,'').slice(0,11);
+        if (v.length > 7) v = '('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
+        else if (v.length > 2) v = '('+v.slice(0,2)+') '+v.slice(2);
+        e.target.value = v;
+      });
+
+      overlay.querySelector('#guest-submit').addEventListener('click', async () => {
+        const nome     = overlay.querySelector('#guest-nome').value.trim();
+        const whatsapp = overlay.querySelector('#guest-whatsapp').value;
+        const cpf      = overlay.querySelector('#guest-cpf').value;
+        const errEl    = overlay.querySelector('#guest-err');
+        const btn      = overlay.querySelector('#guest-submit');
+
+        if (!nome || nome.length < 3)          { errEl.textContent = 'Informe o nome completo.'; errEl.style.display='block'; return; }
+        if (whatsapp.replace(/\D/g,'').length < 10) { errEl.textContent = 'WhatsApp inválido.'; errEl.style.display='block'; return; }
+        if (cpf.replace(/\D/g,'').length !== 11)    { errEl.textContent = 'CPF inválido.'; errEl.style.display='block'; return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Aguarde...';
+
+        try {
+          const r = await fetch('/api/auth/guest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, whatsapp: whatsapp.replace(/\D/g,''), cpf: cpf.replace(/\D/g,'') }),
+          });
+          const d = await r.json();
+          if (!d.success) {
+            errEl.textContent = d.error || 'Erro ao continuar.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Continuar com a compra';
+            return;
+          }
+          // Salva sessão
+          authSession = { ...d.user, token: d.token, name: d.user.nome };
+          localStorage.setItem('user-session', JSON.stringify(authSession));
+          overlay.remove();
+          renderBilling();
+          // Salva endereço se já foi preenchido mas não tinha conta
+          resolve(true);
+        } catch {
+          errEl.textContent = 'Erro de conexão. Tente novamente.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Continuar com a compra';
+        }
+      });
+    });
   }
 
   // ── Pay button ────────────────────────────────────────────────────────────────
@@ -593,6 +799,13 @@ document.addEventListener('DOMContentLoaded', () => {
     payBtn.addEventListener('click', async () => {
       if (!selectedAddressId) { alert('Salve o endereço de entrega para continuar.'); return; }
       if (!shippingData)      { alert('Aguarde o cálculo do frete.'); return; }
+
+      // Se não está logado, coleta dados do guest primeiro
+      const authed = await ensureAuth();
+      if (!authed) return;
+
+      // Se guest acabou de criar conta, precisa salvar o endereço
+      if (!authSession?.token) return;
 
       const summary = buildSummary(hasFreteGratis ? 0 : shippingData.price, shippingData.deadline);
       localStorage.setItem('checkout-summary', JSON.stringify(summary));
@@ -613,6 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userId:        authSession ? authSession.id : null,
         addressId:     selectedAddressId,
         paymentMethod: payMethod,
+        couponCode:    appliedCouponCode || null,
         ...(cardInfo || {}),
         seguro:        summary.seguro || 0,
         seguroLabel:   summary.seguroLabel || null,
@@ -628,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!data.success || !data.paymentId) throw new Error('Erro ao gerar pagamento.');
+        if (!data.success || !data.paymentId) throw new Error(data.error || 'Erro ao gerar pagamento.');
 
         const dest = payMethod === 'card'
           ? 'pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=cartao'
@@ -638,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error(err);
         payBtn.disabled = false;
         refreshPayBtn();
-        alert('Erro ao processar pedido. Tente novamente.');
+        alert(err.message || 'Erro ao processar pedido. Tente novamente.');
       }
     });
   }
@@ -649,4 +863,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCepAutoFill();
   loadAddresses();
   updateTotal();
+  startPixCountdown();
 });

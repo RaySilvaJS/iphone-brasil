@@ -850,6 +850,7 @@
                 ${IC.cart} Adicionar ao Carrinho
               </button>
             </div>
+            <div id="urgency-widgets"></div>
             <div id="view-counter" role="status" aria-live="polite">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
               <span id="view-counter-text"></span>
@@ -1264,6 +1265,11 @@
       if (!res.ok) return;
       const data = await res.json();
 
+      // ── Urgência: pessoas visualizando agora ──────────────────────────────────
+      // Adiciona floor mínimo para sempre mostrar atividade realista
+      const viewingNow = Math.max(data.viewingNow || 0, Math.floor(Math.random() * 3) + 2);
+      renderUrgencyWidgets(viewingNow, data.views || 0);
+
       // View counter
       if (data.views > 0) {
         const counterEl = document.getElementById('view-counter');
@@ -1279,6 +1285,42 @@
         startActivityNotifications(data.recentActivity);
       }
     } catch {}
+  };
+
+  // ── Render urgency widgets ────────────────────────────────────────────────────
+  const renderUrgencyWidgets = (viewingNow, totalViews) => {
+    const container = document.getElementById('urgency-widgets');
+    if (!container) return;
+
+    // Estoque simulado: entre 3 e 9, decrementando conforme vendas
+    const fakeSales = Math.floor(totalViews / 8) + Math.floor(Math.random() * 5) + 3;
+    const fakeStock = Math.max(2, 12 - Math.floor(fakeSales / 4));
+    const lowStock  = fakeStock <= 5;
+
+    container.innerHTML = `
+      <div class="urgency-bar urgency-viewing">
+        <span class="urgency-dot pulse-red"></span>
+        <strong>${viewingNow} ${viewingNow === 1 ? 'pessoa visualizando' : 'pessoas visualizando'}</strong> este produto agora
+      </div>
+      ${lowStock ? `
+      <div class="urgency-bar urgency-stock">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <strong>⚡ Restam apenas ${fakeStock} unidades</strong> em estoque
+      </div>` : ''}
+      <div class="urgency-bar urgency-sales">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <strong>${fakeSales} vendas</strong> realizadas nas últimas 24 horas
+      </div>`;
+
+    container.classList.add('visible');
+
+    // Anima contador de visualizadores a cada 30s
+    setInterval(() => {
+      const delta = Math.floor(Math.random() * 3) - 1; // -1, 0 ou +1
+      const novo = Math.max(1, viewingNow + delta);
+      const viewEl = container.querySelector('.urgency-viewing strong');
+      if (viewEl) viewEl.textContent = `${novo} ${novo === 1 ? 'pessoa visualizando' : 'pessoas visualizando'}`;
+    }, 30000);
   };
 
   const fetchProduct = async () => {
