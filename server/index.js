@@ -1,5 +1,15 @@
 require('dotenv').config();
 require('./logger'); // Must be first — captures all console output for log viewer
+
+// Captura erros não tratados para evitar que o processo caia silenciosamente
+// e derrube o bot do WhatsApp junto com o servidor
+process.on('uncaughtException', (err) => {
+  console.error('[PROCESSO] Erro não capturado (uncaughtException):', err?.message || err);
+  console.error(err?.stack || '');
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[PROCESSO] Promise rejeitada sem tratamento (unhandledRejection):', reason?.message || reason);
+});
 const express = require('express');
 const path = require('path');
 const fs = require('fs');

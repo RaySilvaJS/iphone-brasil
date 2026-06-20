@@ -1,4 +1,4 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage, Browsers, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const path   = require('path');
 const fs     = require('fs');
@@ -82,7 +82,40 @@ const initWhatsApp = async () => {
 
   if (!_isInitializing) { console.log('[WA] Init cancelado por chamada mais recente.'); return; }
 
-  const sock = makeWASocket({ auth: authState, logger: pino({ level: 'silent' }) });
+  // Busca versão mais recente do protocolo WA (evita desconexões por versão desatualizada)
+  let waVersion;
+  try {
+    const { version } = await fetchLatestBaileysVersion();
+    waVersion = version;
+    console.log(`[WA] Versão do protocolo: ${version.join('.')}`);
+  } catch {
+    waVersion = [2, 3000, 1015901307]; // fallback seguro
+  }
+
+  const sock = makeWASocket({
+    version: waVersion,
+    auth: authState,
+    logger: pino({ level: 'silent' }),
+
+    // Fingerprint realista — evita detecção como bot
+    browser: Browsers.appropriate('Chrome'),
+
+    // Keep-alive a cada 25s (WhatsApp fecha conexões ociosas em ~30s)
+    keepAliveIntervalMs: 25_000,
+
+    // Não aparece como "online" — reduz detecção de comportamento automatizado
+    markOnlineOnConnect: false,
+
+    // Não sincroniza histórico completo — economiza memória e evita timeouts
+    syncFullHistory: false,
+
+    // Timeout de conexão em 60s
+    connectTimeoutMs: 60_000,
+
+    // Necessário para que o WA consiga reenviar mensagens retidas
+    getMessage: async () => undefined,
+  });
+
   socketInstance  = sock;
   _isInitializing = false;
 
@@ -358,7 +391,11 @@ const initWhatsApp = async () => {
 
   sock.ev.on('creds.update', async () => {
     if (sock !== socketInstance) return;
-    await saveCreds();
+    try {
+      await saveCreds();
+    } catch (e) {
+      console.error('[WA] CRÍTICO: falha ao salvar credenciais — próxima reconexão exigirá novo QR Code:', e.message);
+    }
   });
 
   return sock;
