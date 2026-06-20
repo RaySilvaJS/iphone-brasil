@@ -16,7 +16,7 @@
     const style = document.createElement('style');
     style.textContent = `
       #cookie-consent-banner {
-        position: fixed; left: 0; right: 0; bottom: 0; z-index: 99999;
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 10002;
         height: auto; min-height: 0;
         background: #111827; color: #F3F4F6;
         padding: 14px 16px;

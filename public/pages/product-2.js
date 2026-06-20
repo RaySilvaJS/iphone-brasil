@@ -109,7 +109,8 @@
     }
   };
 
-  window.addToCart = async (productId) => {
+  window.addToCart = async (productId, btn) => {
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
     try {
       const r = await fetch(`/api/products/${encodeURIComponent(productId)}`);
       if (!r.ok) throw new Error();
@@ -121,7 +122,10 @@
         product.freteGratis = ex.freteGratis;
       }
       if (window.cart) window.cart.addItem(product, 1);
-    } catch {}
+    } catch {
+    } finally {
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+    }
   };
 
   const startChat = async (model) => {
@@ -132,11 +136,12 @@
     } catch { alert('Falha ao iniciar o chat.'); }
   };
 
-  window.buyNow = async (productId) => {
+  window.buyNow = async (productId, btn) => {
     if (window.Auth && !window.Auth.isLoggedIn()) {
       window.location.href = 'login.html?redirect=' + encodeURIComponent('product.html?id=' + productId);
       return;
     }
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
     await window.addToCart(productId);
     // Salva o item como compra direta (lido pelo checkout.html?source=buy)
     const cartItem = window.cart && window.cart.items && window.cart.items.find(i => String(i.id) === String(productId));
@@ -838,10 +843,10 @@
 
           <div class="card">
             <div class="actions-grid">
-              <button class="btn btn-secondary" onclick="buyNow('${product.id}')">
+              <button class="btn btn-secondary" onclick="buyNow('${product.id}', this)">
                 ${IC.buy} Comprar Agora
               </button>
-              <button class="btn btn-ml-add" onclick="addToCart('${product.id}')">
+              <button class="btn btn-ml-add" onclick="addToCart('${product.id}', this)">
                 ${IC.cart} Adicionar ao Carrinho
               </button>
             </div>
@@ -1114,9 +1119,9 @@
       }
 
       document.querySelectorAll('[onclick*="buyNow("]').forEach(b =>
-        b.setAttribute('onclick', `buyNow('${p.id}')`));
+        b.setAttribute('onclick', `buyNow('${p.id}', this)`));
       document.querySelectorAll('[onclick*="addToCart("]').forEach(b =>
-        b.setAttribute('onclick', `addToCart('${p.id}')`));
+        b.setAttribute('onclick', `addToCart('${p.id}', this)`));
 
       const newMlUrl = p.url || (String(p.id).startsWith('MLB') ? 'https://www.mercadolivre.com.br/p/' + p.id : '');
       const elMlML    = document.getElementById('ml-price-ml');

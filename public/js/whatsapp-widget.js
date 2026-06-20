@@ -11,7 +11,7 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      z-index: 9000;
+      z-index: 10003;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -207,7 +207,17 @@
       btn.setAttribute('aria-expanded', 'false');
     };
 
-    btn.addEventListener('click', () => isOpen ? close() : open());
+    const WPP_SESSION_KEY = 'wpp-widget-shown';
+
+    btn.addEventListener('click', () => {
+      if (isOpen) {
+        close();
+      } else {
+        open();
+        // Marcar como visto para não reabrir automaticamente nesta sessão
+        try { sessionStorage.setItem(WPP_SESSION_KEY, '1'); } catch (e) {}
+      }
+    });
 
     document.addEventListener('click', (e) => {
       if (!widget.contains(e.target)) close();
@@ -217,7 +227,16 @@
       if (e.key === 'Escape' && isOpen) close();
     });
 
-    setTimeout(open, 3500);
-    setTimeout(close, 9000);
+    // Auto-abrir apenas uma vez por sessão de navegação
+    let alreadyShown = false;
+    try { alreadyShown = !!sessionStorage.getItem(WPP_SESSION_KEY); } catch (e) {}
+
+    if (!alreadyShown) {
+      setTimeout(() => {
+        open();
+        try { sessionStorage.setItem(WPP_SESSION_KEY, '1'); } catch (e) {}
+      }, 3500);
+      setTimeout(close, 9000);
+    }
   });
 })();

@@ -424,8 +424,8 @@ const _buildProductCardHTML = (product) => {
       </div>
 
       <div class="olx-adcard__actions">
-        <button class="button button-primary" type="button" onclick="buyNow('${product.id}')">Comprar Agora</button>
-        <button class="button button-secondary" type="button" onclick="addToCart('${product.id}')">Adicionar ao Carrinho</button>
+        <button class="button button-primary" type="button" onclick="buyNow('${product.id}', this)">Comprar Agora</button>
+        <button class="button button-secondary" type="button" onclick="addToCart('${product.id}', this)">Adicionar ao Carrinho</button>
       </div>
 
   </div>
@@ -607,32 +607,42 @@ async function getProduct(productId) {
   return null;
 }
 
-async function addToCart(productId) {
-  const product = await getProduct(productId);
-  if (product) {
-    const extras = getOrCreateCardExtras(productId);
-    product.descontoHoje = extras.descontoHoje;
-    product.brinde = extras.brinde;
-    product.freteGratis = extras.freteGratis;
-    window.cart.addItem(product, 1);
+async function addToCart(productId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Adicionando...'; }
+  try {
+    const product = await getProduct(productId);
+    if (product) {
+      const extras = getOrCreateCardExtras(productId);
+      product.descontoHoje = extras.descontoHoje;
+      product.brinde = extras.brinde;
+      product.freteGratis = extras.freteGratis;
+      window.cart.addItem(product, 1);
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Adicionar ao Carrinho'; }
   }
 }
 
-async function buyNow(productId) {
+async function buyNow(productId, btn) {
   if (window.Auth && !window.Auth.isLoggedIn()) {
     window.location.href = 'login.html?redirect=' + encodeURIComponent('product.html?id=' + productId);
     return;
   }
-  const product = await getProduct(productId);
-  if (product) {
-    const extras = getOrCreateCardExtras(productId);
-    product.descontoHoje = extras.descontoHoje;
-    product.brinde       = extras.brinde;
-    product.freteGratis  = extras.freteGratis;
-    window.cart.addItem(product, 1);
-    _showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {
-      window.location.href = '/cart.html';
-    });
+  if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
+  try {
+    const product = await getProduct(productId);
+    if (product) {
+      const extras = getOrCreateCardExtras(productId);
+      product.descontoHoje = extras.descontoHoje;
+      product.brinde       = extras.brinde;
+      product.freteGratis  = extras.freteGratis;
+      window.cart.addItem(product, 1);
+      _showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {
+        window.location.href = '/cart.html';
+      });
+    }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Comprar Agora'; }
   }
 }
 
