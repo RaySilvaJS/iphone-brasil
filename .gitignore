@@ -20,6 +20,11 @@ build/
 server/auth_info/*
 !server/auth_info/.gitkeep
 
+# Dados de runtime — gerados pelo servidor, NÃO commitar
+# (usuários, pedidos, cupons, comprovantes — dados sensíveis e dinâmicos)
+server/data/*.json
+server/data/proofs/
+
 # Sistema
 .DS_Store
 Thumbs.db
