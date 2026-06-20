@@ -137,10 +137,6 @@
   };
 
   window.buyNow = async (productId, btn) => {
-    if (window.Auth && !window.Auth.isLoggedIn()) {
-      window.location.href = 'login.html?redirect=' + encodeURIComponent('product.html?id=' + productId);
-      return;
-    }
     if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
     await window.addToCart(productId);
     // Salva o item como compra direta (lido pelo checkout.html?source=buy)

@@ -139,6 +139,14 @@
       color: #16A34A;
     }
 
+    /* Smart repositioning: when CTA buttons occupy the bottom-right, shift left */
+    #wpp-widget.wpp-avoid-cta {
+      right: auto;
+      left: 24px;
+      align-items: flex-start;
+      transition: left .25s ease, right .25s ease;
+    }
+
     @media (max-width: 480px) {
       #wpp-widget {
         bottom: 16px;
@@ -154,6 +162,9 @@
       #wpp-btn svg {
         width: 26px;
         height: 26px;
+      }
+      #wpp-widget.wpp-avoid-cta {
+        left: 16px;
       }
     }
   `;
@@ -238,5 +249,50 @@
       }, 3500);
       setTimeout(close, 9000);
     }
+
+    // ── Smart CTA overlap detection ───────────────────────────────────────────
+    // Detecta quando botões de compra estão na área do widget e desloca para esquerda
+    // CTAs principais que nunca podem ser bloqueados pelo widget
+    const CTA_QUERY = '.btn-secondary, .btn-ml-add, .co-pay-btn, .actions-grid button';
+
+    let _rafPending = false;
+
+    const _checkOverlap = () => {
+      const vW = window.innerWidth;
+      const vH = window.innerHeight;
+      const margin = vW <= 480 ? 16 : 24;
+      const btnSize = vW <= 480 ? 50 : 56;
+
+      // Área ocupada pelo widget (bottom-right): adiciona buffer de 32px
+      const wppX1 = vW - margin - btnSize - 32;
+      const wppY1 = vH - margin - btnSize - 32;
+
+      let overlapping = false;
+      try {
+        const ctaEls = document.querySelectorAll(CTA_QUERY);
+        for (let i = 0; i < ctaEls.length && !overlapping; i++) {
+          const r = ctaEls[i].getBoundingClientRect();
+          if (r.width > 0 && r.height > 0 &&
+              r.right  > wppX1 && r.bottom > wppY1 &&
+              r.left   < vW    && r.top    < vH) {
+            overlapping = true;
+          }
+        }
+      } catch (e) {}
+
+      widget.classList.toggle('wpp-avoid-cta', overlapping);
+    };
+
+    const _scheduleCheck = () => {
+      if (_rafPending) return;
+      _rafPending = true;
+      requestAnimationFrame(() => { _rafPending = false; _checkOverlap(); });
+    };
+
+    window.addEventListener('scroll', _scheduleCheck, { passive: true });
+    window.addEventListener('resize', _scheduleCheck, { passive: true });
+    // Re-checa após conteúdo dinâmico carregar (produto via fetch)
+    setTimeout(_checkOverlap, 600);
+    setTimeout(_checkOverlap, 1500);
   });
 })();
