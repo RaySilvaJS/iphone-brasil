@@ -95,6 +95,14 @@ const initWhatsApp = async () => {
       console.log('[WA] QR Code gerado. Aguardando escaneamento...');
       qrcode.generate(qr, { small: true });
       state.status = 'qr'; state.qr = qr; state.qrAt = new Date().toISOString();
+      // Envia QR Code como imagem no Telegram para reconexão remota
+      try {
+        const tg = require('./telegram');
+        tg.sendWhatsAppQR(qr).then(ok => {
+          if (ok) console.log('[WA] QR Code enviado ao Telegram com sucesso.');
+          else    console.log('[WA] Falha ao enviar QR Code ao Telegram (Telegram não configurado ou erro de rede).');
+        });
+      } catch {}
     }
 
     if (connection === 'close') {

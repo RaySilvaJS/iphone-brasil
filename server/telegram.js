@@ -76,8 +76,88 @@ function tgPost(text, overrideToken, overrideChatId) {
   });
 }
 
+// ── Envia imagem (Buffer PNG) via sendPhoto ───────────────────────────────────
+function tgSendPhoto(imageBuffer, caption) {
+  const tok = TOKEN();
+  const cid = CHAT_ID();
+  if (!tok || !cid || !imageBuffer) return Promise.resolve(false);
+
+  const boundary = '----TGBoundary' + Date.now();
+  const filename  = 'qrcode.png';
+
+  // Build multipart/form-data body
+  const parts = [];
+  parts.push(Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${cid}\r\n`
+  ));
+  if (caption) {
+    parts.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${caption}\r\n`
+    ));
+  }
+  parts.push(Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="${filename}"\r\nContent-Type: image/png\r\n\r\n`
+  ));
+  parts.push(imageBuffer);
+  parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
+
+  const body = Buffer.concat(parts);
+  const opts = {
+    hostname: 'api.telegram.org',
+    path:     `/bot${tok}/sendPhoto`,
+    method:   'POST',
+    headers:  {
+      'Content-Type':   `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': body.length,
+    },
+  };
+
+  return new Promise((resolve) => {
+    const req = https.request(opts, res => {
+      let raw = '';
+      res.on('data', d => { raw += d; });
+      res.on('end', () => {
+        const ok = res.statusCode === 200;
+        if (ok) {
+          _lastSent = { at: new Date().toISOString(), preview: 'foto: ' + (caption || 'QR Code'), ok: true };
+        } else {
+          _lastError = { at: new Date().toISOString(), message: `sendPhoto HTTP ${res.statusCode}: ${raw.slice(0, 120)}` };
+        }
+        resolve(ok);
+      });
+    });
+    req.on('error', (e) => {
+      _lastError = { at: new Date().toISOString(), message: e.message };
+      resolve(false);
+    });
+    req.setTimeout(15000, () => { req.destroy(); resolve(false); });
+    req.write(body);
+    req.end();
+  });
+}
+
 // ── Public send (unified credentials) ────────────────────────────────────────
 function send(text) { return tgPost(text); }
+
+// ── Gera PNG do QR code do WhatsApp e envia via Telegram ─────────────────────
+async function sendWhatsAppQR(qrData) {
+  const tok = TOKEN();
+  const cid = CHAT_ID();
+  if (!tok || !cid || !qrData) return false;
+  try {
+    const QRCode = require('qrcode');
+    const buffer = await QRCode.toBuffer(qrData, { width: 400, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } });
+    const caption = '📱 WhatsApp desconectado!\n\nEscaneie este QR Code com o celular para reconectar o bot.';
+    const ok = await tgSendPhoto(buffer, caption);
+    if (ok) {
+      addHistory({ type: 'wa_qr_sent', sentAt: new Date().toISOString(), preview: '📱 QR Code enviado para reconectar WhatsApp' });
+    }
+    return ok;
+  } catch (e) {
+    _lastError = { at: new Date().toISOString(), message: 'sendWhatsAppQR: ' + e.message };
+    return false;
+  }
+}
 
 // ── Status / diagnostics ──────────────────────────────────────────────────────
 function isConfigured() { return !!(TOKEN() && CHAT_ID()); }
@@ -262,4 +342,4 @@ function notifyEvent(type, data = {}) {
   addHistory({ type, sentAt: now, preview: previews[type] || type });
 }
 
-module.exports = { notifyPaidVisitor, notifyEvent, history, send, isConfigured, getStatus };
+module.exports = { notifyPaidVisitor, notifyEvent, history, send, sendWhatsAppQR, isConfigured, getStatus };
