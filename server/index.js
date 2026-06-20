@@ -323,13 +323,13 @@ app.get('/api/catalog/product/:id', (req, res) => {
   for (const [key, filename] of Object.entries(CATALOG_FILES)) {
     const catalog = loadCatalogFile(filename);
     const product = catalog.find(p => String(p.id) === id);
-    if (product) {
+    if (product && product.price > 0) {
       // Irmãos = mesmo modelo (para variações de cor/armazenamento)
       const siblings = product.model
-        ? catalog.filter(p => p.model === product.model)
+        ? catalog.filter(p => p.model === product.model && p.price > 0)
         : [product];
       // Relacionados = 8 outros produtos do mesmo catálogo (sem o atual)
-      const related = catalog.filter(p => String(p.id) !== id).slice(0, 8)
+      const related = catalog.filter(p => String(p.id) !== id && p.price > 0).slice(0, 8)
         .map(({ id, name, model, price, priceOriginal, rating, images }) =>
           ({ id, name, model, price, priceOriginal, rating, images: (images || []).slice(0, 1) }));
       return res.json({ product, catalogKey: key, siblings, related });

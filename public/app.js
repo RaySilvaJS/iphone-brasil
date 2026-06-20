@@ -547,6 +547,7 @@ const fetchProducts = async () => {
       if (titleEl) titleEl.textContent = CATALOG_LABELS[key] || 'Produtos';
     }
 
+    products = products.filter(p => p.price && p.price > 0);
     console.log('[RENDER] Iniciando render | Produtos encontrados:', products.length);
     currentProducts = products;
     currentPage = 1;
