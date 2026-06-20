@@ -174,7 +174,7 @@
       </div>
       <style>@keyframes buyLoadSpin{to{transform:rotate(360deg)}}</style>`;
     document.body.appendChild(ov);
-    setTimeout(() => { ov.remove(); _showInsuranceModal(); }, 1600);
+    setTimeout(() => { ov.remove(); _showInsuranceModal(); }, 400);
   }
 
   // ── Modal de seguro ──────────────────────────────────────────────────────────

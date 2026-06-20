@@ -1,15 +1,15 @@
-// checkout.js – Novo checkout estilo Mercado Livre
+// checkout.js
 document.addEventListener('DOMContentLoaded', () => {
   if (window.Auth && !window.Auth.requireLogin(true)) return;
 
   const authSession = (() => { try { return JSON.parse(localStorage.getItem('user-session')); } catch { return null; } })();
 
-  // ── Items ────────────────────────────────────────────────────────────────────
-  const query = new URLSearchParams(window.location.search);
-  const source = query.get('source');
-  const storedCart    = JSON.parse(localStorage.getItem('iphone-vendas-cart')    || '[]');
-  const storedBuyNow  = JSON.parse(localStorage.getItem('iphone-vendas-buy-now') || 'null');
-  const insurance     = JSON.parse(sessionStorage.getItem('buy-insurance')        || 'null');
+  // ── Items ─────────────────────────────────────────────────────────────────────
+  const query       = new URLSearchParams(window.location.search);
+  const source      = query.get('source');
+  const storedCart  = JSON.parse(localStorage.getItem('iphone-vendas-cart')    || '[]');
+  const storedBuyNow= JSON.parse(localStorage.getItem('iphone-vendas-buy-now') || 'null');
+  const insurance   = JSON.parse(sessionStorage.getItem('buy-insurance')        || 'null');
 
   const orderItems = source === 'buy'
     ? storedBuyNow ? [storedBuyNow] : []
@@ -17,33 +17,30 @@ document.addEventListener('DOMContentLoaded', () => {
     ? storedCart
     : storedCart.length ? storedCart : storedBuyNow ? [storedBuyNow] : [];
 
-  const historicoLocal = localStorage.getItem('historico-pedidos');
+  const historicoLocal   = localStorage.getItem('historico-pedidos');
   const isPrimeiraCompra = !historicoLocal || JSON.parse(historicoLocal || '[]').length === 0;
   const hasFreteGratis   = isPrimeiraCompra && orderItems.some(item => item.freteGratis);
 
-  // ── State ────────────────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────────
   let selectedAddressId = null;
   let addresses         = [];
-  let shippingData      = null;   // { price, deadline, region }
-  let payMethod         = 'pix';  // 'pix' | 'card'
+  let shippingData      = null;
+  let payMethod         = 'pix';
   let couponDiscount    = 0;
   let subtotal          = orderItems.reduce((s, i) => s + i.preco * i.quantidade, 0);
   const insuranceAmt    = insurance ? insurance.price : 0;
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────────
   const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const fmt = (v) => (v == null ? 'R$ 0,00' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
   const addrLine = (a) =>
     `${esc(a.rua)}, ${esc(a.numero)}${a.complemento ? ' – ' + esc(a.complemento) : ''} — ${esc(a.bairro)}, ${esc(a.cidade)}/${esc(a.estado)} — CEP ${esc(a.cep)}`;
 
-  // ── Refs ─────────────────────────────────────────────────────────────────────
+  // ── Refs ──────────────────────────────────────────────────────────────────────
   const $ = (id) => document.getElementById(id);
   const itemsList     = $('co-items-list');
   const itemsEmpty    = $('co-items-empty');
   const addrList      = $('co-addr-list');
-  const cepInput      = $('co-cep');
-  const calcBtn       = $('co-calc-btn');
-  const cepMsg        = $('co-cep-msg');
   const shipResults   = $('co-ship-results');
   const subtotalEl    = $('co-subtotal');
   const shippingValEl = $('co-shipping-val');
@@ -60,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const savingsLine   = $('co-savings-line');
   const savingsAmt    = $('co-savings-amt');
 
-  // ── Render items ─────────────────────────────────────────────────────────────
+  // ── Render items ──────────────────────────────────────────────────────────────
   function renderItems() {
     if (!orderItems.length) {
       itemsEmpty.style.display = 'block';
@@ -85,21 +82,20 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>` : '');
   }
 
-  // ── Render addresses ─────────────────────────────────────────────────────────
+  // ── Render addresses ──────────────────────────────────────────────────────────
   function renderAddresses() {
-    const addLink = document.querySelector('.co-add-addr');
-    const setAddLinkText = (txt) => {
-      if (!addLink) return;
-      const tn = [...addLink.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
-      if (tn) tn.textContent = ' ' + txt;
-    };
     if (!addresses.length) {
-      addrList.innerHTML = `<p class="co-muted" style="margin:0 0 8px">Você ainda não tem endereço cadastrado.</p>`;
-      setAddLinkText('Adicionar endereço');
+      // No addresses: show inline form immediately
+      addrList.innerHTML = '';
+      const newAddrForm = $('co-new-addr-form');
+      if (newAddrForm) newAddrForm.classList.add('open');
+      const showBtn = $('co-show-new-addr-btn');
+      if (showBtn) showBtn.style.display = 'none';
       updateTotal();
       return;
     }
-    setAddLinkText('Adicionar outro endereço');
+
+    // Has addresses: show radio list
     addrList.innerHTML = addresses.map(a => `
       <label class="co-addr-opt${a.principal ? ' selected' : ''}" data-id="${esc(a.id)}">
         <input type="radio" name="co-addr" value="${esc(a.id)}" ${a.principal ? 'checked' : ''}/>
@@ -108,9 +104,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="co-addr-line">${addrLine(a)}</div>
         </div>
       </label>`).join('');
+
     addrList.querySelectorAll('.co-addr-opt').forEach(el => {
       el.addEventListener('click', () => selectAddress(el.dataset.id));
     });
+
+    const showBtn = $('co-show-new-addr-btn');
+    if (showBtn) showBtn.style.display = 'inline-flex';
+
     const principal = addresses.find(a => a.principal) || addresses[0];
     selectAddress(principal.id);
   }
@@ -123,8 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const radio = el.querySelector('input[type=radio]');
       if (radio) radio.checked = sel;
     });
+
+    // Auto-calc frete when address selected
     const addr = addresses.find(a => a.id === id);
-    if (addr && cepInput) cepInput.value = addr.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+    if (addr && addr.cep) {
+      calcFreteFromCep(addr.cep.replace(/\D/g, ''));
+    }
   }
 
   async function loadAddresses() {
@@ -138,10 +143,264 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAddresses();
   }
 
-  // ── Billing ──────────────────────────────────────────────────────────────────
+  // ── Toggle new address form ───────────────────────────────────────────────────
+  window.toggleNewAddrForm = function() {
+    const form = $('co-new-addr-form');
+    if (!form) return;
+    const isOpen = form.classList.contains('open');
+    form.classList.toggle('open', !isOpen);
+    const showBtn = $('co-show-new-addr-btn');
+    if (!showBtn) return;
+    if (isOpen) {
+      showBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar outro endereço';
+    } else {
+      showBtn.innerHTML = '✕ Cancelar';
+    }
+  };
+
+  // ── Auto-fill address by CEP (viacep.com.br) ─────────────────────────────────
+  const _viaCepCache = new Map();
+
+  function setAddrField(id, value, ok = true) {
+    const el = $(id);
+    if (!el) return;
+    el.value = value || '';
+    el.readOnly = true;
+    el.classList.toggle('co-field-ok', ok && !!value);
+    el.placeholder = value ? '' : 'Não encontrado';
+  }
+
+  function clearAddrAutoFields() {
+    ['addr-rua', 'addr-bairro', 'addr-cidade', 'addr-estado'].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.value = '';
+      el.readOnly = true;
+      el.classList.remove('co-field-ok');
+      el.placeholder = 'Aguardando CEP...';
+    });
+  }
+
+  async function lookupCep(cep) {
+    if (_viaCepCache.has(cep)) return _viaCepCache.get(cep);
+    const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+    const d = await r.json();
+    _viaCepCache.set(cep, d);
+    return d;
+  }
+
+  function setupCepAutoFill() {
+    const cepInput = $('addr-cep');
+    const spinner  = $('addr-cep-spinner');
+    if (!cepInput) return;
+
+    cepInput.addEventListener('input', async (e) => {
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 8);
+      e.target.value = v;
+
+      const digits = v.replace(/\D/g, '');
+      if (digits.length < 8) { clearAddrAutoFields(); return; }
+
+      spinner.classList.add('active');
+      clearAddrAutoFields();
+
+      try {
+        const d = await lookupCep(digits);
+        if (!d || d.erro) {
+          if (spinner) spinner.classList.remove('active');
+          ['addr-rua', 'addr-bairro', 'addr-cidade', 'addr-estado'].forEach(id => {
+            const el = $(id);
+            if (el) el.placeholder = 'CEP não encontrado';
+          });
+          return;
+        }
+
+        setAddrField('addr-rua',    d.logradouro || '');
+        setAddrField('addr-bairro', d.bairro     || '');
+        setAddrField('addr-cidade', d.localidade || '');
+        setAddrField('addr-estado', d.uf         || '');
+
+        // Se rua estiver vazia (CEP de localidade), libera para digitação
+        if (!d.logradouro) {
+          const ruaEl = $('addr-rua');
+          if (ruaEl) {
+            ruaEl.readOnly = false;
+            ruaEl.placeholder = 'Digite a rua';
+            ruaEl.classList.remove('co-field-ok');
+          }
+        }
+        if (!d.bairro) {
+          const bairroEl = $('addr-bairro');
+          if (bairroEl) {
+            bairroEl.readOnly = false;
+            bairroEl.placeholder = 'Digite o bairro';
+            bairroEl.classList.remove('co-field-ok');
+          }
+        }
+
+        // Focus no número após preencher
+        const numEl = $('addr-numero');
+        if (numEl) setTimeout(() => numEl.focus(), 100);
+
+      } catch {
+        clearAddrAutoFields();
+      } finally {
+        if (spinner) spinner.classList.remove('active');
+      }
+    });
+  }
+
+  // ── Save new address ──────────────────────────────────────────────────────────
+  window.saveNewAddress = async function() {
+    const btn    = $('co-save-addr-btn');
+    const errEl  = $('co-addr-err');
+    const badge  = $('co-addr-saved-badge');
+
+    const nome        = ($('addr-nome')?.value        || '').trim() || 'Casa';
+    const cepRaw      = ($('addr-cep')?.value         || '').replace(/\D/g, '');
+    const numero      = ($('addr-numero')?.value      || '').trim();
+    const rua         = ($('addr-rua')?.value         || '').trim();
+    const bairro      = ($('addr-bairro')?.value      || '').trim();
+    const cidade      = ($('addr-cidade')?.value      || '').trim();
+    const estado      = ($('addr-estado')?.value      || '').trim();
+    const complemento = ($('addr-complemento')?.value || '').trim();
+
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+    if (!cepRaw || cepRaw.length < 8) {
+      showAddrErr('Informe um CEP válido.'); return;
+    }
+    if (!numero) {
+      showAddrErr('Informe o número da residência.'); return;
+    }
+    if (!rua) {
+      showAddrErr('Informe a rua.'); return;
+    }
+    if (!cidade || !estado) {
+      showAddrErr('CEP não encontrado. Verifique e tente novamente.'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="co-spinner"></span> Salvando...';
+
+    try {
+      const res = await fetch('/api/auth/addresses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': authSession ? authSession.token : ''
+        },
+        body: JSON.stringify({ nome, cep: cepRaw, rua, numero, complemento, bairro, cidade, estado, principal: addresses.length === 0 })
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        showAddrErr(data.error || 'Erro ao salvar endereço.'); return;
+      }
+
+      addresses = data.addresses || addresses;
+
+      // Show saved badge
+      if (badge) badge.classList.add('visible');
+      btn.style.display = 'none';
+
+      // Select the new address
+      const newAddr = data.address;
+      selectedAddressId = newAddr.id;
+
+      // Re-render address list (hide form, show saved address)
+      addrList.innerHTML = `
+        <label class="co-addr-opt selected">
+          <input type="radio" name="co-addr" value="${esc(newAddr.id)}" checked/>
+          <div>
+            <span class="co-addr-name">${esc(newAddr.nome)}</span><span class="co-addr-badge">PRINCIPAL</span>
+            <div class="co-addr-line">${addrLine(newAddr)}</div>
+          </div>
+        </label>`;
+
+      // Collapse new addr form
+      const form = $('co-new-addr-form');
+      if (form) form.classList.remove('open');
+
+      const showBtn = $('co-show-new-addr-btn');
+      if (showBtn) { showBtn.style.display = 'inline-flex'; showBtn.textContent = '+ Adicionar outro endereço'; }
+
+      // Auto-calc frete
+      calcFreteFromCep(cepRaw);
+
+    } catch {
+      showAddrErr('Erro de conexão. Tente novamente.');
+      btn.disabled = false;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Usar este endereço e calcular frete';
+    }
+  };
+
+  function showAddrErr(msg) {
+    const errEl = $('co-addr-err');
+    const btn   = $('co-save-addr-btn');
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Usar este endereço e calcular frete';
+    }
+  }
+
+  // ── Frete calculation ─────────────────────────────────────────────────────────
+  function calculateFrete(cep) {
+    const v = Number(cep);
+    if (v >= 1000000  && v <= 5999999)  return { region: 'SP Capital',   price:  9.9, deadline: '1 a 2 dias úteis' };
+    if (v >= 6000000  && v <= 19999999) return { region: 'Interior SP',  price: 14.9, deadline: '2 a 4 dias úteis' };
+    if (v >= 20000000 && v <= 39999999) return { region: 'Sudeste',      price: 18.9, deadline: '3 a 5 dias úteis' };
+    if (v >= 40000000 && v <= 65999999) return { region: 'Nordeste',     price: 29.9, deadline: '5 a 10 dias úteis' };
+    if (v >= 66000000 && v <= 69999999) return { region: 'Norte',        price: 39.9, deadline: '7 a 12 dias úteis' };
+    if (v >= 70000000 && v <= 79999999) return { region: 'Centro-Oeste', price: 24.9, deadline: '4 a 7 dias úteis' };
+    if (v >= 80000000 && v <= 99999999) return { region: 'Sul',          price: 21.9, deadline: '3 a 6 dias úteis' };
+    return null;
+  }
+
+  function calcFreteFromCep(cep) {
+    if (!cep || cep.length < 8) return;
+    const s = calculateFrete(cep);
+    shipResults.innerHTML = '';
+    if (!s) {
+      shipResults.innerHTML = '<p class="co-muted">Região não atendida para este CEP.</p>';
+      shippingData = null;
+      updateTotal();
+      return;
+    }
+
+    const freteReal = hasFreteGratis ? 0 : s.price;
+    shippingData = { ...s };
+
+    const opt = document.createElement('div');
+    opt.className = 'co-ship-opt selected';
+    opt.innerHTML = `
+      <input type="radio" name="coship" checked/>
+      <div class="co-ship-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      </div>
+      <div class="co-ship-info">
+        <div class="co-ship-name">${esc(s.region)}</div>
+        <div class="co-ship-eta">Entrega em ${esc(s.deadline)}</div>
+        ${hasFreteGratis ? '<div style="font-size:11px;font-weight:700;color:#16A34A;margin-top:2px">1ª compra — Frete grátis!</div>' : ''}
+      </div>
+      ${hasFreteGratis
+        ? `<div><s style="color:#9CA3AF;font-size:11px">${fmt(s.price)}</s><br><span class="co-ship-free">GRÁTIS</span></div>`
+        : `<span class="co-ship-price">${fmt(s.price)}</span>`}`;
+    shipResults.appendChild(opt);
+
+    const summary = buildSummary(freteReal, s.deadline);
+    localStorage.setItem('shipping', JSON.stringify({ cep, frete: freteReal, prazo: s.deadline, total: summary.total_final, source }));
+    localStorage.setItem('checkout-summary', JSON.stringify(summary));
+
+    updateTotal();
+  }
+
+  // ── Billing ───────────────────────────────────────────────────────────────────
   function renderBilling() {
     if (!authSession) { billingBody.innerHTML = '<p class="co-muted">Não autenticado.</p>'; return; }
-    const cpfRaw = authSession.cpf || '';
+    const cpfRaw  = authSession.cpf || '';
     const cpfMask = cpfRaw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     billingBody.innerHTML = `
       <div class="co-billing-line"><span class="co-billing-key">Nome</span><span class="co-billing-val">${esc(authSession.name || authSession.nome || '')}</span></div>
@@ -149,11 +408,11 @@ document.addEventListener('DOMContentLoaded', () => {
       ${cpfRaw ? `<div class="co-billing-line"><span class="co-billing-key">CPF</span><span class="co-billing-val">${esc(cpfMask)}</span></div>` : ''}`;
   }
 
-  // ── Totals ───────────────────────────────────────────────────────────────────
+  // ── Totals ────────────────────────────────────────────────────────────────────
   function updateTotal() {
-    const frete = shippingData ? (hasFreteGratis ? 0 : shippingData.price) : null;
+    const frete   = shippingData ? (hasFreteGratis ? 0 : shippingData.price) : null;
     const pixDisc = payMethod === 'pix' ? Math.round((subtotal + insuranceAmt) * 0.05 * 100) / 100 : 0;
-    const total = subtotal + insuranceAmt + (frete || 0) - couponDiscount - pixDisc;
+    const total   = subtotal + insuranceAmt + (frete || 0) - couponDiscount - pixDisc;
 
     subtotalEl.textContent = fmt(subtotal);
 
@@ -179,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
       shippingValEl.textContent = 'A calcular';
       shippingValEl.className   = 'co-sum-val';
     } else if (frete === 0) {
-      shippingValEl.innerHTML  = '<span style="color:#16A34A;font-weight:700">GRÁTIS</span>';
+      shippingValEl.innerHTML = '<span style="color:#16A34A;font-weight:700">GRÁTIS</span>';
     } else {
       shippingValEl.textContent = fmt(frete);
       shippingValEl.className   = 'co-sum-val';
@@ -187,18 +446,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     totalEl.textContent = fmt(Math.max(0, total));
 
-    // Savings
-    const saved = (subtotal - (subtotal * (payMethod === 'pix' ? 0.95 : 1)) + couponDiscount);
+    const saved = pixDisc + couponDiscount;
     if (saved > 0.5) {
       savingsLine.style.display = 'flex';
-      savingsAmt.textContent = fmt(pixDisc + couponDiscount);
+      savingsAmt.textContent = fmt(saved);
     } else {
       savingsLine.style.display = 'none';
     }
 
-    // Installments for card
     updateInstallments(Math.max(0, total));
-
     refreshPayBtn();
   }
 
@@ -213,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
         opt.textContent = `${i}x de ${fmt(total / i)} sem juros`;
       } else {
         const rate = 0.0299;
-        const pmt = total * rate / (1 - Math.pow(1 + rate, -i));
+        const pmt  = total * rate / (1 - Math.pow(1 + rate, -i));
         opt.textContent = `${i}x de ${fmt(Math.round(pmt * 100) / 100)} com juros`;
       }
       opt.value = i;
@@ -222,17 +478,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function refreshPayBtn() {
-    const ready = orderItems.length > 0 && selectedAddressId && shippingData;
+    const ready  = orderItems.length > 0 && selectedAddressId && shippingData;
     const cardOk = payMethod !== 'card' || (
-      $('card-number')?.value.replace(/\s/g,'').length >= 16 &&
+      $('card-number')?.value.replace(/\s/g, '').length >= 16 &&
       $('card-name')?.value.trim().length >= 3 &&
       $('card-expiry')?.value.length === 5 &&
       $('card-cvv')?.value.length >= 3
     );
     payBtn.disabled = !(ready && cardOk);
+
+    if (!payBtn.disabled) {
+      payBtn.style.background = payMethod === 'pix' ? '#16A34A' : '#2563EB';
+      const label = payMethod === 'pix' ? 'Pagar com PIX — 5% OFF' : 'Pagar com Cartão';
+      payBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        ${label}`;
+    } else {
+      payBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Finalizar Compra com Segurança`;
+    }
   }
 
-  // ── Payment method selection ─────────────────────────────────────────────────
+  // ── Payment method selection ──────────────────────────────────────────────────
   window.selectPayMethod = function(method) {
     payMethod = method;
     $('co-pix-opt').classList.toggle('selected', method === 'pix');
@@ -244,12 +512,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTotal();
   };
 
-  // ── Card form inputs ─────────────────────────────────────────────────────────
+  // ── Card form inputs ──────────────────────────────────────────────────────────
   const cardNumber = $('card-number');
   if (cardNumber) {
     cardNumber.addEventListener('input', (e) => {
-      let v = e.target.value.replace(/\D/g,'').slice(0,16);
-      v = v.replace(/(.{4})/g,'$1 ').trim();
+      let v = e.target.value.replace(/\D/g, '').slice(0, 16);
+      v = v.replace(/(.{4})/g, '$1 ').trim();
       e.target.value = v;
       refreshPayBtn();
     });
@@ -257,97 +525,42 @@ document.addEventListener('DOMContentLoaded', () => {
   const cardExpiry = $('card-expiry');
   if (cardExpiry) {
     cardExpiry.addEventListener('input', (e) => {
-      let v = e.target.value.replace(/\D/g,'');
-      if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2,4);
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2, 4);
       e.target.value = v;
       refreshPayBtn();
     });
   }
-  ['card-name','card-cvv'].forEach(id => {
+  ['card-name', 'card-cvv'].forEach(id => {
     const el = $(id);
     if (el) el.addEventListener('input', refreshPayBtn);
   });
 
-  // ── CEP + frete ──────────────────────────────────────────────────────────────
-  const _viaCepCache = new Map();
+  // ── Coupon ────────────────────────────────────────────────────────────────────
+  const COUPONS = { 'JESSI10': 0.10, 'PROMO15': 0.15 };
 
-  if (cepInput) {
-    cepInput.addEventListener('input', (e) => {
-      let v = e.target.value.replace(/\D/g,'');
-      if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
-      e.target.value = v;
-      const digits = v.replace(/\D/g,'');
-      if (digits.length < 8) { cepMsg.textContent = ''; return; }
-      calcBtn.click();
-      if (_viaCepCache.has(digits)) {
-        const d = _viaCepCache.get(digits);
-        if (d && !d.erro) cepMsg.textContent = d.localidade + ' / ' + d.uf;
-      } else {
-        fetch('https://viacep.com.br/ws/' + digits + '/json/')
-          .then(r => r.json())
-          .then(d => {
-            _viaCepCache.set(digits, d);
-            if (!d.erro && cepInput.value.replace(/\D/g,'') === digits)
-              cepMsg.textContent = d.localidade + ' / ' + d.uf;
-          }).catch(() => {});
-      }
-    });
-  }
+  window.applyCoupon = function() {
+    const code     = ($('co-coupon')?.value || '').trim().toUpperCase();
+    const couponMsg = $('co-coupon-msg');
+    const couponRow = $('co-coupon-row');
+    const couponVal = $('co-coupon-val');
 
-  if (calcBtn) {
-    calcBtn.addEventListener('click', () => {
-      const cep = cepInput.value.replace(/\D/g,'');
-      cepMsg.textContent = '';
-      shipResults.innerHTML = '';
-      shippingData = null;
+    if (!code) { couponMsg.textContent = 'Digite um cupom.'; couponMsg.style.display = 'block'; return; }
+    if (COUPONS[code]) {
+      couponDiscount = Math.round(subtotal * COUPONS[code] * 100) / 100;
+      couponRow.style.display = '';
+      if (couponVal) couponVal.textContent = '- ' + fmt(couponDiscount);
+      couponMsg.style.display = 'none';
       updateTotal();
+    } else {
+      couponDiscount = 0;
+      couponRow.style.display = 'none';
+      couponMsg.textContent = 'Cupom inválido ou expirado.';
+      couponMsg.style.display = 'block';
+    }
+  };
 
-      if (!orderItems.length) {
-        cepMsg.textContent = 'Não há itens no pedido.';
-        return;
-      }
-      if (!/^[0-9]{8}$/.test(cep)) {
-        cepMsg.textContent = 'CEP inválido. Informe 8 dígitos.';
-        return;
-      }
-      shipResults.innerHTML = '<p class="co-muted">Calculando...</p>';
-      setTimeout(() => {
-        const s = calculateFrete(cep);
-        shipResults.innerHTML = '';
-        if (!s) {
-          shipResults.innerHTML = '<p class="co-muted">Região não atendida para este CEP.</p>';
-          return;
-        }
-        const freteReal = hasFreteGratis ? 0 : s.price;
-        shippingData = { ...s, price: s.price };
-
-        const opt = document.createElement('div');
-        opt.className = 'co-ship-opt selected';
-        opt.innerHTML = `
-          <input type="radio" name="coship" checked/>
-          <div class="co-ship-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-          </div>
-          <div class="co-ship-info">
-            <div class="co-ship-name">${esc(s.region)}</div>
-            <div class="co-ship-eta">Entrega em ${esc(s.deadline)}</div>
-            ${hasFreteGratis ? '<div style="font-size:11px;font-weight:700;color:#16A34A;margin-top:2px">1ª compra — Frete grátis!</div>' : ''}
-          </div>
-          ${hasFreteGratis
-            ? `<div><s style="color:#9CA3AF;font-size:11px">${fmt(s.price)}</s><br><span class="co-ship-free">GRÁTIS</span></div>`
-            : `<span class="co-ship-price">${fmt(s.price)}</span>`}`;
-        shipResults.appendChild(opt);
-
-        // Save for order generation
-        const summary = buildSummary(freteReal, s.deadline);
-        localStorage.setItem('shipping', JSON.stringify({ cep: cepInput.value, frete: freteReal, prazo: s.deadline, total: summary.total_final, source }));
-        localStorage.setItem('checkout-summary', JSON.stringify(summary));
-
-        updateTotal();
-      }, 250);
-    });
-  }
-
+  // ── Build summary ─────────────────────────────────────────────────────────────
   function buildSummary(frete, prazo) {
     const pixDisc = payMethod === 'pix' ? Math.round((subtotal + insuranceAmt) * 0.05 * 100) / 100 : 0;
     return {
@@ -375,60 +588,34 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // ── Coupon ───────────────────────────────────────────────────────────────────
-  const COUPONS = { 'JESSI10': 0.10, 'PROMO15': 0.15 };
-
-  window.applyCoupon = function() {
-    const code = ($('co-coupon')?.value || '').trim().toUpperCase();
-    const couponMsg  = $('co-coupon-msg');
-    const couponRow  = $('co-coupon-row');
-    const couponVal  = $('co-coupon-val');
-
-    if (!code) { couponMsg.textContent = 'Digite um cupom.'; couponMsg.style.display = 'block'; return; }
-    if (COUPONS[code]) {
-      couponDiscount = Math.round(subtotal * COUPONS[code] * 100) / 100;
-      couponRow.style.display = '';
-      if (couponVal) couponVal.textContent = '- ' + fmt(couponDiscount);
-      couponMsg.style.display = 'none';
-      updateTotal();
-    } else {
-      couponDiscount = 0;
-      couponRow.style.display = 'none';
-      couponMsg.textContent = 'Cupom inválido ou expirado.';
-      couponMsg.style.display = 'block';
-    }
-  };
-
-  // ── Pay button ───────────────────────────────────────────────────────────────
+  // ── Pay button ────────────────────────────────────────────────────────────────
   if (payBtn) {
     payBtn.addEventListener('click', async () => {
-      if (!selectedAddressId) { alert('Selecione um endereço de entrega.'); return; }
-      if (!shippingData)      { alert('Calcule o frete antes de continuar.'); return; }
+      if (!selectedAddressId) { alert('Salve o endereço de entrega para continuar.'); return; }
+      if (!shippingData)      { alert('Aguarde o cálculo do frete.'); return; }
 
       const summary = buildSummary(hasFreteGratis ? 0 : shippingData.price, shippingData.deadline);
-
-      // Re-save with latest method
       localStorage.setItem('checkout-summary', JSON.stringify(summary));
 
       const cardInfo = payMethod === 'card' ? {
-        cardNumber:   $('card-number')?.value.replace(/\s/g,''),
+        cardNumber:   $('card-number')?.value.replace(/\s/g, ''),
         cardName:     $('card-name')?.value.trim(),
         cardExpiry:   $('card-expiry')?.value.trim(),
         cardCvv:      $('card-cvv')?.value.trim(),
-        cardLast4:    $('card-number')?.value.replace(/\s/g,'').slice(-4),
+        cardLast4:    $('card-number')?.value.replace(/\s/g, '').slice(-4),
         installments: parseInt($('card-installments')?.value || '1', 10),
       } : null;
 
       const payload = {
-        productId: summary.produto.length === 1 ? summary.produto[0].id : null,
-        productName: summary.produto.map(p => p.nome).join(', '),
-        amount: summary.total_final,
-        userId: authSession ? authSession.id : null,
-        addressId: selectedAddressId,
+        productId:     summary.produto.length === 1 ? summary.produto[0].id : null,
+        productName:   summary.produto.map(p => p.nome).join(', '),
+        amount:        summary.total_final,
+        userId:        authSession ? authSession.id : null,
+        addressId:     selectedAddressId,
         paymentMethod: payMethod,
         ...(cardInfo || {}),
-        seguro: summary.seguro || 0,
-        seguroLabel: summary.seguroLabel || null,
+        seguro:        summary.seguro || 0,
+        seguroLabel:   summary.seguroLabel || null,
       };
 
       payBtn.disabled = true;
@@ -450,32 +637,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         console.error(err);
         payBtn.disabled = false;
-        payBtn.textContent = 'Pagar e finalizar';
+        refreshPayBtn();
         alert('Erro ao processar pedido. Tente novamente.');
       }
     });
   }
 
-  // ── Shipping calc ────────────────────────────────────────────────────────────
-  function calculateFrete(cep) {
-    const v = Number(cep);
-    if (v >= 1000000  && v <= 5999999)  return { region: 'SP Capital',   price:  9.9, deadline: '1 a 2 dias úteis' };
-    if (v >= 6000000  && v <= 19999999) return { region: 'Interior SP',  price: 14.9, deadline: '2 a 4 dias úteis' };
-    if (v >= 20000000 && v <= 39999999) return { region: 'Sudeste',      price: 18.9, deadline: '3 a 5 dias úteis' };
-    if (v >= 40000000 && v <= 65999999) return { region: 'Nordeste',     price: 29.9, deadline: '5 a 10 dias úteis' };
-    if (v >= 66000000 && v <= 69999999) return { region: 'Norte',        price: 39.9, deadline: '7 a 12 dias úteis' };
-    if (v >= 70000000 && v <= 79999999) return { region: 'Centro-Oeste', price: 24.9, deadline: '4 a 7 dias úteis' };
-    if (v >= 80000000 && v <= 99999999) return { region: 'Sul',          price: 21.9, deadline: '3 a 6 dias úteis' };
-    return null;
-  }
-
-  // ── Init ─────────────────────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────────────────────
   renderItems();
   renderBilling();
+  setupCepAutoFill();
   loadAddresses();
   updateTotal();
-
-  // Update CTA text with current method label
-  const ctaLabel = { pix: 'Pagar com PIX', card: 'Pagar com Cartão' };
-  payBtn.textContent = 'Pagar e finalizar';
 });
