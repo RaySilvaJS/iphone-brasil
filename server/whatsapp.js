@@ -42,6 +42,7 @@ let _isInitializing  = false;
 let _reconnectDelay  = 5000;
 const authInfoPath   = path.join(__dirname, 'auth_info');
 let socketInstance   = null;
+let _lastSaveCreds   = Promise.resolve(); // rastreia o último saveCreds em andamento
 
 // ── Converte telefone brasileiro para JID do WhatsApp (E.164 com DDI 55) ─────
 // O banco armazena apenas DDD+número (10-11 dígitos). O JID exige DDI 55.
@@ -469,18 +470,21 @@ const initWhatsApp = async () => {
     }
   });
 
-  sock.ev.on('creds.update', async () => {
+  sock.ev.on('creds.update', () => {
     if (sock !== socketInstance) return;
-    try {
-      // Faz backup do creds.json antes de sobrescrever — proteção contra corrupção por kill no meio da escrita
-      if (fs.existsSync(credsPath)) {
-        try { fs.copyFileSync(credsPath, credsBakPath); } catch {}
+    // Rastreia a promise para que o graceful shutdown possa aguardá-la
+    _lastSaveCreds = (async () => {
+      try {
+        // Backup antes de sobrescrever — protege contra corrupção por kill no meio da escrita
+        if (fs.existsSync(credsPath)) {
+          try { fs.copyFileSync(credsPath, credsBakPath); } catch {}
+        }
+        await saveCreds();
+      } catch (e) {
+        console.error('[WA] CRÍTICO: falha ao salvar credenciais:', e.message);
+        appendWaEvent('error', 'Falha ao salvar credenciais: ' + e.message);
       }
-      await saveCreds();
-    } catch (e) {
-      console.error('[WA] CRÍTICO: falha ao salvar credenciais — próxima reconexão exigirá novo QR Code:', e.message);
-      appendWaEvent('error', 'Falha ao salvar credenciais: ' + e.message);
-    }
+    })();
   });
 
   return sock;
@@ -662,6 +666,19 @@ const clearSession = async () => {
   await initWhatsApp();
 };
 
+// Aguarda o último saveCreds e fecha o socket limpo — chamado no SIGTERM/SIGINT
+const gracefulShutdown = async () => {
+  console.log('[WA] Shutdown gracioso — aguardando último saveCreds...');
+  try { await _lastSaveCreds; } catch {}
+  if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; }
+  if (socketInstance) {
+    const s = socketInstance;
+    socketInstance = null;
+    try { s.end(); } catch {}
+  }
+  console.log('[WA] Socket fechado. Processo pode ser encerrado com segurança.');
+};
+
 module.exports = {
   initWhatsApp,
   sendPaymentRequest,
@@ -671,5 +688,6 @@ module.exports = {
   getWaEvents: loadWaEvents,
   restartWhatsApp,
   disconnectWhatsApp,
-  clearSession
+  clearSession,
+  gracefulShutdown
 };

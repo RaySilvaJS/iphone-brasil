@@ -1705,3 +1705,16 @@ app.listen(PORT, async () => {
   alerts.start();
   startAbandonedCheckoutRecovery();
 });
+
+// ── Shutdown gracioso — garante que creds.json é salvo antes do processo encerrar ──
+// PM2 envia SIGINT no "pm2 restart"; containers enviam SIGTERM.
+// Sem este handler, o processo pode ser morto no meio de um saveCreds(),
+// corrompendo creds.json e forçando novo QR Code no próximo deploy.
+const { gracefulShutdown } = require('./whatsapp');
+const _doShutdown = async (sig) => {
+  console.log(`[SERVER] ${sig} recebido — iniciando shutdown gracioso...`);
+  await gracefulShutdown();
+  process.exit(0);
+};
+process.on('SIGTERM', () => _doShutdown('SIGTERM'));
+process.on('SIGINT',  () => _doShutdown('SIGINT'));
