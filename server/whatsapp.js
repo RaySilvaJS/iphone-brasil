@@ -115,12 +115,38 @@ const initWhatsApp = async () => {
 
   if (!fs.existsSync(authInfoPath)) fs.mkdirSync(authInfoPath, { recursive: true });
 
+  // Tenta restaurar creds.json a partir do backup se o arquivo principal estiver corrompido
+  // (pode acontecer se o processo for morto no meio de um saveCreds durante o deploy)
+  const credsPath    = path.join(authInfoPath, 'creds.json');
+  const credsBakPath = path.join(authInfoPath, 'creds.json.bak');
+  if (fs.existsSync(credsPath)) {
+    try { JSON.parse(fs.readFileSync(credsPath, 'utf-8')); }
+    catch {
+      console.warn('[WA] creds.json corrompido — tentando restaurar do backup...');
+      appendWaEvent('error', 'creds.json corrompido detectado — tentando restaurar do backup');
+      if (fs.existsSync(credsBakPath)) {
+        try {
+          fs.copyFileSync(credsBakPath, credsPath);
+          console.log('[WA] Backup restaurado com sucesso.');
+          appendWaEvent('init', 'creds.json restaurado do backup com sucesso');
+        } catch (restoreErr) {
+          console.error('[WA] Falha ao restaurar backup:', restoreErr.message);
+          fs.unlinkSync(credsPath); // remove o corrompido para gerar novo QR
+        }
+      } else {
+        console.warn('[WA] Sem backup disponível — sessão será reiniciada com novo QR.');
+        fs.unlinkSync(credsPath);
+      }
+    }
+  }
+
   const pino = require('pino');
   let authState, saveCreds;
   try {
     ({ state: authState, saveCreds } = await useMultiFileAuthState(authInfoPath));
   } catch (e) {
     console.error('[WA] Falha ao carregar auth state:', e.message);
+    appendWaEvent('error', 'Falha ao carregar auth state: ' + e.message);
     state.lastError = e.message;
     _isInitializing = false;
     const delay = _reconnectDelay;
@@ -446,9 +472,14 @@ const initWhatsApp = async () => {
   sock.ev.on('creds.update', async () => {
     if (sock !== socketInstance) return;
     try {
+      // Faz backup do creds.json antes de sobrescrever — proteção contra corrupção por kill no meio da escrita
+      if (fs.existsSync(credsPath)) {
+        try { fs.copyFileSync(credsPath, credsBakPath); } catch {}
+      }
       await saveCreds();
     } catch (e) {
       console.error('[WA] CRÍTICO: falha ao salvar credenciais — próxima reconexão exigirá novo QR Code:', e.message);
+      appendWaEvent('error', 'Falha ao salvar credenciais: ' + e.message);
     }
   });
 

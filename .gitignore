@@ -15,6 +15,11 @@ build/
 # Variáveis de ambiente
 .env
 
+# Sessão do WhatsApp — NÃO commitar, NÃO apagar no deploy
+# Se estes arquivos sumirem, o bot precisará escanear QR Code novamente.
+server/auth_info/*
+!server/auth_info/.gitkeep
+
 # Sistema
 .DS_Store
 Thumbs.db
