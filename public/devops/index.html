@@ -1629,6 +1629,22 @@ tbody tr:last-child td { border-bottom: none; }
           </div>
         </div>
 
+        <!-- Produtos com tráfego pago -->
+        <div class="card" style="padding:0;margin-bottom:16px">
+          <div style="padding:14px 16px 8px;border-bottom:1px solid var(--bg3);display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0">📱 Produtos com Tráfego Pago — Hoje</h3>
+            <span style="font-size:11px;color:var(--muted)">Quais produtos recebem visitantes de anúncios pagos</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="table" style="font-size:12px">
+              <thead><tr>
+                <th>Produto</th><th>Visitas Pagas</th><th>Canais</th><th>Total de Visitas</th><th>% Pagas</th>
+              </tr></thead>
+              <tbody id="paid-products-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Telegram: status + config + histórico -->
         <div class="card" style="padding:0;margin-top:0">
           <div style="padding:14px 16px;border-bottom:1px solid var(--bg3);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -4720,6 +4736,31 @@ async function loadSitePaid() {
           <td><span class="badge badge-${c.pix > 0 ? 'green' : 'blue'}">${c.pix || 0}</span></td>
           <td><span class="badge badge-${c.pixPaid > 0 ? 'green' : 'blue'}">${c.pixPaid || 0}</span></td>
           <td style="font-weight:700;color:${conv >= 5 ? 'var(--green)' : conv > 0 ? 'var(--yellow)' : 'var(--muted)'}">${conv}%</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // Paid products table
+  const paidProds = data.paidProducts || [];
+  const prodsEl = document.getElementById('paid-products-tbody');
+  if (prodsEl) {
+    if (!paidProds.length) {
+      prodsEl.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Nenhum produto com tráfego pago registrado hoje. Os dados aparecerão assim que visitantes chegarem via anúncios.</td></tr>';
+    } else {
+      const srcIcon = { 'Facebook Ads': '📘', 'Instagram Ads': '📸', 'Google Ads': '🔍', 'TikTok Ads': '🎵', 'Tráfego Pago': '💰' };
+      prodsEl.innerHTML = paidProds.map(p => {
+        const pct = p.views > 0 ? +(p.paidViews / p.views * 100).toFixed(0) : 0;
+        const sources = Object.entries(p.paidSources || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([src, n]) => `<span class="badge badge-blue" style="font-size:10px">${srcIcon[src] || '💰'} ${esc(src)}: ${n}</span>`)
+          .join(' ');
+        return `<tr>
+          <td style="font-weight:600;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.name)}">${esc(p.name)}</td>
+          <td><span class="badge badge-orange">${p.paidViews}</span></td>
+          <td style="white-space:nowrap">${sources || '—'}</td>
+          <td style="color:var(--muted)">${p.views}</td>
+          <td style="font-weight:700;color:${pct >= 50 ? 'var(--orange,#f59e0b)' : 'var(--muted)'}">${pct}%</td>
         </tr>`;
       }).join('');
     }

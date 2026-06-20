@@ -481,6 +481,11 @@ function heartbeat({
     const p = products.get(productId);
     p.views++;
     if (productName && p.name === productId) p.name = productName;
+    if (isPaid) {
+      p.paidViews = (p.paidViews || 0) + 1;
+      if (!p.paidSources) p.paidSources = {};
+      p.paidSources[paidSource] = (p.paidSources[paidSource] || 0) + 1;
+    }
     _dirtyProducts = true;
     if (products.size > 200) {
       const sorted = [...products.entries()].sort((a, b) => b[1].views - a[1].views);
@@ -622,6 +627,10 @@ function snap() {
     sessions:  Array.from(sessions.values()).sort((a, b) => (b.lastSeen > a.lastSeen ? 1 : -1)),
     events:    evBuf.slice(0, 150),
     products:  Array.from(products.values()).sort((a, b) => b.views - a.views).slice(0, 15),
+    paidProducts: Array.from(products.values())
+      .filter(p => (p.paidViews || 0) > 0)
+      .sort((a, b) => (b.paidViews || 0) - (a.paidViews || 0))
+      .slice(0, 20),
     wa:        { ...wa },
     date:      _day,
     lifetime:  { ...lifetime },

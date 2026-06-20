@@ -1118,6 +1118,7 @@ router.get('/site/paid-traffic', adminAuth, (req, res) => {
       },
       campaigns: campaignsWithRate,
       activePaid,
+      paidProducts: snap.paidProducts || [],
       telegramEnabled: telegram.isConfigured(),
       telegramHistory: tgHistory,
     });
