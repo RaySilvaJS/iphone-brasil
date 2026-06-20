@@ -35,6 +35,11 @@
 
   const fmt = window.formatCurrency;
 
+  const starsHtml = (n, size = '1rem') => {
+    const filled = Math.max(0, Math.min(5, Math.round(n)));
+    return `<span class="stars-filled" style="font-size:${size}">${'★'.repeat(filled)}${'☆'.repeat(5 - filled)}</span>`;
+  };
+
   const formatDescription = (text) => {
     if (!text) return '';
     const lines = text.split('\n');
@@ -379,6 +384,74 @@
     });
   };
 
+  const buildReviewItem = (rv) => `
+    <div class="review-item" data-rating="${Math.round(rv.rating || 5)}">
+      <div class="review-item-header">
+        ${starsHtml(rv.rating)}
+        <span class="review-date">${rv.date || ''}</span>
+      </div>
+      <p class="review-text">${rv.text || ''}</p>
+      ${rv.images?.length ? `<div class="review-photos">${rv.images.map(img => `<img src="${img}" alt="Foto da avaliação" loading="lazy" onclick="openLightbox('${img}')">`).join('')}</div>` : ''}
+    </div>`;
+
+  const setupLazyReviews = (reviewsList) => {
+    const section = document.getElementById('reviews-lazy-section');
+    const filtersEl = document.getElementById('reviews-filter-row');
+    if (!section) return;
+
+    if (!reviewsList?.length) {
+      if (filtersEl) filtersEl.style.display = 'none';
+      return;
+    }
+
+    const render = (list) => {
+      section.innerHTML = list.length
+        ? list.map(buildReviewItem).join('')
+        : `<p class="reviews-placeholder">Nenhuma avaliação encontrada para este filtro.</p>`;
+    };
+
+    let rendered = false;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting || rendered) return;
+        rendered = true;
+        observer.disconnect();
+        render(reviewsList);
+        setupFilters();
+      });
+    }, { threshold: 0.05 });
+    observer.observe(section);
+
+    const setupFilters = () => {
+      if (!filtersEl) return;
+      filtersEl.style.display = 'flex';
+
+      const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      reviewsList.forEach(r => { const s = Math.round(r.rating || 5); if (counts[s] !== undefined) counts[s]++; });
+
+      const starsWithData = [5, 4, 3, 2, 1].filter(s => counts[s] > 0);
+      const chips = [
+        { label: 'Todas', value: 0, count: reviewsList.length },
+        ...starsWithData.map(s => ({ label: `${s} estrelas`, value: s, count: counts[s] }))
+      ];
+
+      filtersEl.innerHTML = chips.map((c, i) => `
+        <button class="rf-chip${i === 0 ? ' active' : ''}" data-filter="${c.value}">
+          ${c.label} <span class="rf-count">(${c.count})</span>
+        </button>`).join('');
+
+      filtersEl.querySelectorAll('.rf-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          filtersEl.querySelectorAll('.rf-chip').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const val = parseInt(btn.dataset.filter, 10);
+          const filtered = val === 0 ? reviewsList : reviewsList.filter(r => Math.round(r.rating || 5) === val);
+          render(filtered);
+        });
+      });
+    };
+  };
+
   const loadRelatedFromData = (others) => {
     const container = document.getElementById('related-container');
     if (!container) return;
@@ -503,6 +576,7 @@
               <span class="badge-condition">${product.condition || 'Novo'}</span>
             </div>
             <h1 class="product-name">${product.name}</h1>
+            ${(product.reviews||0) > 0 ? `<a href="#" class="review-anchor-link" onclick="event.preventDefault();document.getElementById('reviews-title')?.scrollIntoView({behavior:'smooth'})">${starsHtml(product.rating||5, '.9rem')} ${(product.reviews||0).toLocaleString('pt-BR')} avaliações · Ver todas</a>` : ''}
             <div class="seller-row">
               Vendido por <strong>${product.seller || 'jessi.iphones'}</strong>
               <span class="seller-verified"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Vendedor verificado</span>
@@ -701,6 +775,33 @@
           </button>` : ''}
       </section>
 
+      <section class="section" aria-labelledby="reviews-title">
+        <h2 class="section-title" id="reviews-title">Avaliações dos clientes</h2>
+        <div class="reviews-summary">
+          <div class="reviews-big-score">
+            <div class="score-num">${(product.rating||5).toFixed(1)}</div>
+            <div class="score-stars">${starsHtml(product.rating||5, '1.1rem')}</div>
+            <div class="score-count">${(product.reviews||0).toLocaleString('pt-BR')} avaliações</div>
+          </div>
+          <div class="reviews-bars">
+            ${dist.map(d => {
+              const pct = reviewsList.length ? Math.round(d.count / reviewsList.length * 100) : 0;
+              return `<div class="bar-row">
+                <span class="bar-label">${d.star}</span>
+                <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+                <span class="bar-count">${d.count}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div id="reviews-filter-row" class="reviews-filter-row" style="display:none;" role="group" aria-label="Filtrar por estrelas"></div>
+        <div class="reviews-list" id="reviews-lazy-section">
+          ${reviewsList.length === 0
+            ? '<p class="reviews-placeholder">Nenhuma avaliação textual disponível ainda.</p>'
+            : '<p class="reviews-placeholder" style="padding:12px 0;">Carregando avaliações...</p>'}
+        </div>
+      </section>
+
       <section class="section" aria-labelledby="qa-title">
         <h2 class="section-title" id="qa-title">Perguntas e respostas</h2>
         <div class="qa-input-row">
@@ -724,6 +825,7 @@
     loadMLVariations(product, storeDiscount);
     setupSpecsToggle(specEntries.length);
     setupDescToggle();
+    setupLazyReviews(reviewsList);
   };
 
   /* ── SKELETON → CONTEÚDO REAL (crossfade) ── */
