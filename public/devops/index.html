@@ -2237,7 +2237,7 @@ async function loadDashboard() {
   const catEl = document.getElementById('dash-catalogs-summary');
   if (catEl) {
     if (catalogSum && catalogSum.catalogs) {
-      const ICONS = { iphones:'📱', android:'🤖', consoles:'🎮', smartwatches:'⌚', acessorios:'🎧', informatica:'💻' };
+      const ICONS = { iphones:'📱', android:'🤖', consoles:'🎮', smartwatches:'⌚', acessorios:'🎧', informatica:'💻', suplementos:'💊' };
       const rows = Object.entries(catalogSum.catalogs).map(([key, info]) =>
         `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg3);font-size:13px">
           <span>${ICONS[key] || '📦'} ${esc(info.label)}</span>
@@ -3418,8 +3418,8 @@ function closeOrderDrawer() {
 // ═══════════════════════════════════════════════
 // CATALOGS MANAGER
 // ═══════════════════════════════════════════════
-const CATALOG_LABELS = { iphones:'iPhones', android:'Androids', consoles:'Consoles', smartwatches:'Smartwatches', acessorios:'Acessórios', informatica:'Informática' };
-const CATALOG_ICONS  = { iphones:'📱', android:'🤖', consoles:'🎮', smartwatches:'⌚', acessorios:'🎧', informatica:'💻' };
+const CATALOG_LABELS = { iphones:'iPhones', android:'Androids', consoles:'Consoles', smartwatches:'Smartwatches', acessorios:'Acessórios', informatica:'Informática', suplementos:'Suplementos' };
+const CATALOG_ICONS  = { iphones:'📱', android:'🤖', consoles:'🎮', smartwatches:'⌚', acessorios:'🎧', informatica:'💻', suplementos:'💊' };
 
 function fmtSize(bytes) {
   if (!bytes) return '0 B';
@@ -3606,6 +3606,7 @@ const CATALOG_FILENAME_MAP = {
   'smartwatches.json': 'smartwatches',
   'acessorios.json':   'acessorios',
   'informatica.json':  'informatica',
+  'suplementos.json':  'suplementos',
 };
 
 async function uploadAllCatalogs(input) {
@@ -3797,7 +3798,7 @@ async function loadTrashItems() {
     return;
   }
 
-  const CATALOG_LABELS_MAP = { iphones: 'iPhones', android: 'Android', consoles: 'Consoles', smartwatches: 'Smartwatches', acessorios: 'Acessórios', informatica: 'Informática' };
+  const CATALOG_LABELS_MAP = { iphones: 'iPhones', android: 'Android', consoles: 'Consoles', smartwatches: 'Smartwatches', acessorios: 'Acessórios', informatica: 'Informática', suplementos: 'Suplementos' };
 
   list.innerHTML = `
     <table style="width:100%;border-collapse:collapse">

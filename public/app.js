@@ -35,7 +35,8 @@ const CATALOGS = {
   consoles:     '/data/consoles.json',
   smartwatches: '/data/smartwatches.json',
   acessorios:   '/data/acessorios.json',
-  informatica:  '/data/informatica.json'
+  informatica:  '/data/informatica.json',
+  suplementos:  '/data/suplementos.json'
 };
 
 const CATALOG_LABELS = {
@@ -44,7 +45,8 @@ const CATALOG_LABELS = {
   consoles:     'Consoles',
   smartwatches: 'Smartwatches',
   acessorios:   'Acessórios',
-  informatica:  'Informática'
+  informatica:  'Informática',
+  suplementos:  'Suplementos'
 };
 
 const productCache = {};
@@ -683,7 +685,7 @@ function showNotification(message) {
 // Pré-carrega todos os catálogos sequencialmente em background
 // Android primeiro (maior catálogo e mais clicado), 150ms entre loads
 const preloadAllCatalogs = () => {
-  const order = ['android', 'smartwatches', 'consoles', 'acessorios', 'informatica'];
+  const order = ['android', 'smartwatches', 'consoles', 'acessorios', 'informatica', 'suplementos'];
   const pending = order.filter(k => !catalogCache[k] && CATALOGS[k]);
   let i = 0;
   const loadNext = () => {

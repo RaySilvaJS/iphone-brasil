@@ -312,6 +312,7 @@ const CATALOG_FILES = {
   smartwatches: 'smartwatches.json',
   acessorios:   'acessorios.json',
   informatica:  'informatica.json',
+  suplementos:  'suplementos.json',
 };
 // Catálogos ficam em server/data/catalogs/ para sobreviver a deploys (git pull não toca server/data/)
 // Na primeira execução, os seeds de public/data/ são copiados para cá automaticamente.
@@ -620,7 +621,8 @@ if (!fs.existsSync(CATALOG_BACKUPS_DIR)) fs.mkdirSync(CATALOG_BACKUPS_DIR, { rec
 
 const CATALOG_LABELS = {
   iphones: 'iPhones', android: 'Androids', consoles: 'Consoles',
-  smartwatches: 'Smartwatches', acessorios: 'Acessórios', informatica: 'Informática'
+  smartwatches: 'Smartwatches', acessorios: 'Acessórios', informatica: 'Informática',
+  suplementos: 'Suplementos'
 };
 
 function loadCatalogHistory() {
