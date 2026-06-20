@@ -1,18 +1,40 @@
 /* auth.js - Gerenciamento de sessão do usuário */
 (function () {
-  const AUTH_KEY = 'user-session';
+  var AUTH_KEY = 'user-session';
+
+  // Lê de localStorage (rememberMe) ou sessionStorage (sessão temporária)
+  function _readSession() {
+    try {
+      var ls = JSON.parse(localStorage.getItem(AUTH_KEY));
+      if (ls && ls.token) return { data: ls, storage: 'local' };
+    } catch (e) {}
+    try {
+      var ss = JSON.parse(sessionStorage.getItem(AUTH_KEY));
+      if (ss && ss.token) return { data: ss, storage: 'session' };
+    } catch (e) {}
+    return null;
+  }
 
   window.Auth = {
     getSession: function () {
-      try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (e) { return null; }
+      var r = _readSession();
+      return r ? r.data : null;
     },
 
-    setSession: function (data) {
-      localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+    setSession: function (data, rememberMe) {
+      var json = JSON.stringify(data);
+      if (rememberMe) {
+        localStorage.setItem(AUTH_KEY, json);
+        try { sessionStorage.removeItem(AUTH_KEY); } catch (e) {}
+      } else {
+        sessionStorage.setItem(AUTH_KEY, json);
+        try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
+      }
     },
 
     clearSession: function () {
       localStorage.removeItem(AUTH_KEY);
+      try { sessionStorage.removeItem(AUTH_KEY); } catch (e) {}
     },
 
     isLoggedIn: function () {
@@ -25,6 +47,10 @@
     },
 
     logout: function () {
+      var r = _readSession();
+      if (r && r.data && r.data.token) {
+        fetch('/api/auth/logout', { method: 'POST', headers: { 'X-Auth-Token': r.data.token } }).catch(function(){});
+      }
       this.clearSession();
       window.location.href = 'login.html';
     },

@@ -69,11 +69,30 @@ const validateCPF = (cpf) => {
   return r === parseInt(d[10]);
 };
 
+// Busca índice do usuário pelo token — suporta sessions[] (multi-dispositivo) e legacy token
+const findUserIdxByToken = (users, token) => {
+  if (!token) return -1;
+  const now = Date.now();
+  return users.findIndex(u => {
+    if (Array.isArray(u.sessions)) {
+      const sess = u.sessions.find(s => s.token === token);
+      if (sess) {
+        // Sessão expirada: ignora (não bloqueia via campo legacy)
+        if (sess.expiresAt && new Date(sess.expiresAt).getTime() < now) return false;
+        return true;
+      }
+    }
+    // Compatibilidade com usuários antigos (token único no campo legacy)
+    return u.token === token;
+  });
+};
+
 const getAuthUser = (req) => {
   const token = req.headers['x-auth-token'] || req.query.token;
   if (!token) return null;
   const users = loadUsers();
-  return users.find(u => u.token === token) || null;
+  const idx = findUserIdxByToken(users, token);
+  return idx !== -1 ? users[idx] : null;
 };
 
 const requireAdmin = (req, res, next) => {
@@ -107,7 +126,8 @@ const requireAdmin = (req, res, next) => {
     return res.status(500).json({ error: 'Erro interno ao verificar autenticação.' });
   }
 
-  const user = users.find(u => u.token === userToken);
+  const userIdx = findUserIdxByToken(users, userToken);
+  const user = userIdx !== -1 ? users[userIdx] : null;
   if (!user) {
     console.warn(`[ADMIN-AUTH] Token não encontrado | ${method} ${url} | ip=${ip} | token_prefix=${userToken.slice(0,8)}...`);
     return res.status(403).json({ error: 'Sessão inválida ou expirada.', hint: 'Faça login novamente.' });
@@ -1102,7 +1122,7 @@ app.post('/api/auth/register', authRateLimit(5, 15 * 60 * 1000), (req, res) => {
 });
 
 app.post('/api/auth/login', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
-  const { email, senha } = req.body || {};
+  const { email, senha, rememberMe } = req.body || {};
   if (!email || !senha) {
     return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
   }
@@ -1117,7 +1137,6 @@ app.post('/api/auth/login', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
     ? bcrypt.compareSync(senha, storedHash)
     : storedHash === senha;
   if (!passwordOk) {
-    // Track failed login attempt
     try {
       const sec = loadSecurity();
       sec.loginAttempts = [{ ip: req.ip, email, at: new Date().toISOString(), success: false }, ...(sec.loginAttempts || [])].slice(0, 500);
@@ -1126,13 +1145,29 @@ app.post('/api/auth/login', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
     return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
   }
   if (!isBcryptHash) {
-    // Migra senha legada em texto puro para hash bcrypt no primeiro login
     users[idx].senha = bcrypt.hashSync(senha, 10);
   }
-  users[idx].token = uuidv4();
+
+  // Cria nova sessão sem invalidar as demais (suporte multi-dispositivo)
+  const persist    = !!rememberMe;
+  const newToken   = uuidv4();
+  const expiresAt  = persist ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 dias sem lembrar, null = 30 dias+
+  if (!users[idx].sessions) users[idx].sessions = [];
+  // Remove sessões expiradas e limita a 15 sessões simultâneas
+  users[idx].sessions = users[idx].sessions
+    .filter(s => !s.expiresAt || new Date(s.expiresAt) > new Date())
+    .slice(-14);
+  users[idx].sessions.push({
+    token: newToken,
+    createdAt: new Date().toISOString(),
+    expiresAt,
+    rememberMe: persist,
+    userAgent: req.headers['user-agent'] || 'unknown'
+  });
+  users[idx].token = newToken; // campo legacy para compatibilidade
   users[idx].lastLogin = new Date().toISOString();
   saveUsers(users);
-  // Track successful login
+
   try {
     const sec = loadSecurity();
     sec.loginAttempts = [{ ip: req.ip, email, at: new Date().toISOString(), success: true }, ...(sec.loginAttempts || [])].slice(0, 500);
@@ -1143,7 +1178,8 @@ app.post('/api/auth/login', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   audit.append('login', u.email, req.ip, { email: u.email, role: u.role || 'user' });
   res.json({
     success: true,
-    token: u.token,
+    token: newToken,
+    rememberMe: persist,
     user: { id: u.id, nome: u.nome, email: u.email, whatsapp: u.whatsapp, cpf: u.cpf, role: u.role || 'user' }
   });
 });
@@ -1158,7 +1194,7 @@ app.put('/api/auth/profile', (req, res) => {
   const token = req.headers['x-auth-token'];
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
   const users = loadUsers();
-  const idx = users.findIndex(u => u.token === token);
+  const idx = findUserIdxByToken(users, token);
   if (idx === -1) return res.status(401).json({ error: 'Sessão inválida.' });
   const { nome, whatsapp } = req.body || {};
   if (nome) users[idx].nome = nome.trim();
@@ -1172,7 +1208,7 @@ app.put('/api/auth/password', (req, res) => {
   const token = req.headers['x-auth-token'];
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
   const users = loadUsers();
-  const idx = users.findIndex(u => u.token === token);
+  const idx = findUserIdxByToken(users, token);
   if (idx === -1) return res.status(401).json({ error: 'Sessão inválida.' });
   const { senhaAtual, novaSenha } = req.body || {};
   const storedHash = users[idx].senha || '';
@@ -1199,8 +1235,13 @@ app.post('/api/auth/logout', (req, res) => {
   const token = req.headers['x-auth-token'];
   if (token) {
     const users = loadUsers();
-    const idx = users.findIndex(u => u.token === token);
-    if (idx !== -1) { users[idx].token = null; saveUsers(users); }
+    const idx = findUserIdxByToken(users, token);
+    if (idx !== -1) {
+      // Remove apenas esta sessão específica (logout do dispositivo atual)
+      users[idx].sessions = (users[idx].sessions || []).filter(s => s.token !== token);
+      if (users[idx].token === token) users[idx].token = null;
+      saveUsers(users);
+    }
   }
   res.json({ success: true });
 });
@@ -1219,7 +1260,7 @@ app.post('/api/auth/addresses', (req, res) => {
   const token = req.headers['x-auth-token'];
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
   const users = loadUsers();
-  const idx = users.findIndex(u => u.token === token);
+  const idx = findUserIdxByToken(users, token);
   if (idx === -1) return res.status(401).json({ error: 'Sessão inválida.' });
   const { nome, cep, rua, numero, complemento, bairro, cidade, estado, referencia, principal } = req.body || {};
   if (!nome || !cep || !rua || !numero || !bairro || !cidade || !estado) {
@@ -1251,7 +1292,7 @@ app.put('/api/auth/addresses/:id', (req, res) => {
   const token = req.headers['x-auth-token'];
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
   const users = loadUsers();
-  const idx = users.findIndex(u => u.token === token);
+  const idx = findUserIdxByToken(users, token);
   if (idx === -1) return res.status(401).json({ error: 'Sessão inválida.' });
   if (!users[idx].enderecos) return res.status(404).json({ error: 'Endereço não encontrado.' });
   const aIdx = users[idx].enderecos.findIndex(a => a.id === req.params.id);
@@ -1282,7 +1323,7 @@ app.delete('/api/auth/addresses/:id', (req, res) => {
   const token = req.headers['x-auth-token'];
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
   const users = loadUsers();
-  const idx = users.findIndex(u => u.token === token);
+  const idx = findUserIdxByToken(users, token);
   if (idx === -1) return res.status(401).json({ error: 'Sessão inválida.' });
   if (!users[idx].enderecos) return res.status(404).json({ error: 'Endereço não encontrado.' });
   const aIdx = users[idx].enderecos.findIndex(a => a.id === req.params.id);
@@ -1300,7 +1341,7 @@ app.patch('/api/auth/addresses/:id/principal', (req, res) => {
   const token = req.headers['x-auth-token'];
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
   const users = loadUsers();
-  const idx = users.findIndex(u => u.token === token);
+  const idx = findUserIdxByToken(users, token);
   if (idx === -1) return res.status(401).json({ error: 'Sessão inválida.' });
   if (!users[idx].enderecos) return res.status(404).json({ error: 'Endereço não encontrado.' });
   const aIdx = users[idx].enderecos.findIndex(a => a.id === req.params.id);
@@ -1326,16 +1367,24 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   }
 
   const users = loadUsers();
+  const guestToken = uuidv4();
+  const guestExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const guestSession = { token: guestToken, createdAt: new Date().toISOString(), expiresAt: guestExpiry, rememberMe: false, userAgent: req.headers['user-agent'] || 'guest' };
+
   // Verifica se já existe conta com esse WhatsApp ou CPF — faz login automático
-  let user = users.find(u => u.whatsapp === digits || u.cpf === cpf.replace(/\D/g, ''));
-  if (user) {
-    if (!user.token) user.token = uuidv4();
+  const existingIdx = users.findIndex(u => u.whatsapp === digits || u.cpf === cpf.replace(/\D/g, ''));
+  if (existingIdx !== -1) {
+    const user = users[existingIdx];
+    if (!user.sessions) user.sessions = [];
+    user.sessions = user.sessions.filter(s => !s.expiresAt || new Date(s.expiresAt) > new Date()).slice(-14);
+    user.sessions.push(guestSession);
+    user.token = guestToken;
     user.lastLogin = new Date().toISOString();
     saveUsers(users);
     return res.json({
       success: true,
       existing: true,
-      token: user.token,
+      token: guestToken,
       user: { id: user.id, nome: user.nome, email: user.email, whatsapp: user.whatsapp, cpf: user.cpf, role: user.role || 'user' },
     });
   }
@@ -1350,7 +1399,8 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
     whatsapp:  digits,
     email:     tempEmail,
     senha:     bcrypt.hashSync(tempPassword, 10),
-    token:     uuidv4(),
+    token:     guestToken,
+    sessions:  [guestSession],
     isGuest:   true,
     createdAt: new Date().toISOString(),
   };
@@ -1360,7 +1410,7 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   res.json({
     success: true,
     existing: false,
-    token: newUser.token,
+    token: guestToken,
     user: { id: newUser.id, nome: newUser.nome, email: newUser.email, whatsapp: newUser.whatsapp, cpf: newUser.cpf, role: 'user' },
   });
 });
@@ -1414,14 +1464,19 @@ app.post('/api/auth/otp/verify', authRateLimit(10, 5 * 60 * 1000), (req, res) =>
     return res.json({ success: true, needsProfile: true, whatsapp: digits });
   }
 
-  user.token = uuidv4();
+  const otpToken = uuidv4();
+  if (!user.sessions) user.sessions = [];
+  user.sessions = user.sessions.filter(s => !s.expiresAt || new Date(s.expiresAt) > new Date()).slice(-14);
+  user.sessions.push({ token: otpToken, createdAt: new Date().toISOString(), expiresAt: null, rememberMe: true, userAgent: req.headers['user-agent'] || 'otp' });
+  user.token = otpToken;
   user.lastLogin = new Date().toISOString();
   saveUsers(users);
   tracker.record('login', { email: user.email, method: 'otp' });
   res.json({
     success: true,
     needsProfile: false,
-    token: user.token,
+    token: otpToken,
+    rememberMe: true,
     user: { id: user.id, nome: user.nome, email: user.email, whatsapp: user.whatsapp, cpf: user.cpf, role: user.role || 'user' },
   });
 });

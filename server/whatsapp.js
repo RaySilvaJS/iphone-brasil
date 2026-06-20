@@ -4,12 +4,22 @@ const path   = require('path');
 const fs     = require('fs');
 
 const paymentsPath   = path.join(__dirname, 'data', 'payments.json');
+const WA_EVENTS_PATH = path.join(__dirname, 'data', 'wa-events.json');
 const WHATSAPP_GROUP_ID = process.env.WHATSAPP_GROUP_ID;
 
 const getTracker = () => { try { return require('./tracker'); } catch { return null; } };
 const getAlerts  = () => { try { return require('./alerts');  } catch { return null; } };
 
-const loadPayments = () => { try { return JSON.parse(fs.readFileSync(paymentsPath, 'utf-8')); } catch { return []; } };
+const loadPayments  = () => { try { return JSON.parse(fs.readFileSync(paymentsPath, 'utf-8')); } catch { return []; } };
+const loadWaEvents  = () => { try { return JSON.parse(fs.readFileSync(WA_EVENTS_PATH, 'utf-8')); } catch { return []; } };
+
+const appendWaEvent = (type, detail = '') => {
+  try {
+    const events = loadWaEvents();
+    events.unshift({ type, detail, ts: new Date().toISOString() });
+    fs.writeFileSync(WA_EVENTS_PATH, JSON.stringify(events.slice(0, 1000), null, 2), 'utf-8');
+  } catch (e) { console.error('[WA] Erro ao gravar evento:', e.message); }
+};
 const savePayments = (p) => fs.writeFileSync(paymentsPath, JSON.stringify(p, null, 2), 'utf-8');
 const formatBRL    = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -101,6 +111,7 @@ const initWhatsApp = async () => {
   _isInitializing = true;
   state.status = 'connecting';
   state.qr     = null;
+  appendWaEvent('init', 'Inicialização do bot iniciada');
 
   if (!fs.existsSync(authInfoPath)) fs.mkdirSync(authInfoPath, { recursive: true });
 
@@ -166,6 +177,7 @@ const initWhatsApp = async () => {
       console.log('[WA] QR Code gerado. Aguardando escaneamento...');
       qrcode.generate(qr, { small: true });
       state.status = 'qr'; state.qr = qr; state.qrAt = new Date().toISOString();
+      appendWaEvent('qr', 'QR Code gerado — aguardando escaneamento');
       // Envia QR Code como imagem no Telegram para reconexão remota
       try {
         const tg = require('./telegram');
@@ -185,6 +197,7 @@ const initWhatsApp = async () => {
       state.lastError = lastDisconnect?.error?.message || null;
       try { getAlerts()?.trackWaStatus('disconnected'); } catch {}
       console.log(`[WA] Conexão fechada. Motivo: ${reason} (código: ${statusCode})`);
+      appendWaEvent('disconnected', `Conexão fechada — motivo: ${reason} (código: ${statusCode})`);
 
       const isLoggedOut = statusCode === DisconnectReason.loggedOut;
       if (!isLoggedOut) {
@@ -192,9 +205,11 @@ const initWhatsApp = async () => {
         const delay = _reconnectDelay;
         _reconnectDelay = Math.min(_reconnectDelay * 2, 60000);
         console.log(`[WA] Reconectando em ${delay / 1000}s... (tentativa ${state.reconnects})`);
+        appendWaEvent('reconnecting', `Reconexão automática iniciada — tentativa ${state.reconnects}, aguardando ${delay / 1000}s`);
         _reconnectTimer = setTimeout(() => { _reconnectTimer = null; initWhatsApp(); }, delay);
       } else {
         console.log('[WA] Logout detectado. Reconexão automática desativada.');
+        appendWaEvent('logout', 'Logout detectado — reconexão automática desativada, novo QR necessário');
       }
     } else if (connection === 'open') {
       const wasQr = !!state.qrAt && (!state.lastQrScannedAt || state.qrAt > state.lastQrScannedAt);
@@ -209,6 +224,7 @@ const initWhatsApp = async () => {
         state.name  = user.name || null;
       }
       console.log(`[WA] Conectado! Conta: ${state.name || state.phone || 'desconhecido'}`);
+      appendWaEvent('connected', wasQr ? `Sessão restaurada via QR Code — conta: ${state.name || state.phone || '?'}` : `Sessão restaurada automaticamente — conta: ${state.name || state.phone || '?'}`);
     }
   });
 
@@ -577,12 +593,14 @@ const getWhatsAppState = () => ({ ...state, reconnectDelay: _reconnectDelay, has
 
 const restartWhatsApp = async () => {
   console.log('[WA] Reiniciando WhatsApp (mantendo sessão)...');
+  appendWaEvent('restart', 'Reinicialização manual solicitada via painel DevOps (mantém sessão)');
   _reconnectDelay = 5000;
   await initWhatsApp();
 };
 
 const disconnectWhatsApp = async () => {
   console.log('[WA] Desconectando WhatsApp (logout)...');
+  appendWaEvent('logout', 'Logout manual solicitado via painel DevOps');
   if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; }
   if (socketInstance) {
     const sock = socketInstance;
@@ -598,6 +616,7 @@ const disconnectWhatsApp = async () => {
 
 const clearSession = async () => {
   console.log('[WA] Limpando sessão (apagando auth_info)...');
+  appendWaEvent('session_cleared', 'Sessão apagada — todos os arquivos auth_info removidos, novo QR será gerado');
   if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; }
   if (socketInstance) { const s = socketInstance; socketInstance = null; try { s.end(); } catch {} }
   try {
@@ -618,6 +637,7 @@ module.exports = {
   sendToClient,
   getSocket,
   getWhatsAppState,
+  getWaEvents: loadWaEvents,
   restartWhatsApp,
   disconnectWhatsApp,
   clearSession

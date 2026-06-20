@@ -665,6 +665,15 @@ tbody tr:last-child td { border-bottom: none; }
         </div>
       </div>
 
+      <!-- Histórico de Eventos Persistente -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="margin:0">Histórico de Eventos</h3>
+          <button class="btn btn-ghost" onclick="loadWaEvents()">↺ Atualizar</button>
+        </div>
+        <div id="wa-events-list" class="log-list" style="max-height:320px;overflow-y:auto"></div>
+      </div>
+
       <!-- Logs -->
       <div class="card">
         <h3>Logs do WhatsApp</h3>
@@ -2272,6 +2281,7 @@ async function loadWhatsApp() {
     api.get('/api/admin/logs?type=whatsapp&limit=50'),
     api.get('/api/admin/pm2/status')
   ]);
+  loadWaEvents();
   if (!wa) return;
 
   // ── Status badge ──────────────────────────────
@@ -2368,6 +2378,37 @@ async function loadWhatsApp() {
         <span class="log-msg">${esc(l.msg)}</span>
       </div>`).join('') : '<div class="empty-state">Sem logs do WhatsApp</div>';
   }
+}
+
+async function loadWaEvents() {
+  const el = document.getElementById('wa-events-list');
+  if (!el) return;
+  const d = await api.get('/api/admin/whatsapp/events?limit=100');
+  if (!d?.ok || !d.events?.length) {
+    el.innerHTML = '<div class="empty-state">Nenhum evento registrado ainda. Os eventos são gravados a partir de agora.</div>';
+    return;
+  }
+  const iconMap = {
+    connected:      { icon: '✅', cls: 'log-level-info' },
+    disconnected:   { icon: '🔴', cls: 'log-level-error' },
+    reconnecting:   { icon: '↺',  cls: 'log-level-warn' },
+    qr:             { icon: '📷', cls: 'log-level-warn' },
+    logout:         { icon: '⏏',  cls: 'log-level-error' },
+    init:           { icon: '🚀', cls: 'log-level-info' },
+    restart:        { icon: '🔄', cls: 'log-level-warn' },
+    session_cleared:{ icon: '🗑️', cls: 'log-level-warn' },
+    error:          { icon: '⚠️', cls: 'log-level-error' },
+  };
+  el.innerHTML = d.events.map(ev => {
+    const m = iconMap[ev.type] || { icon: '•', cls: 'log-level-info' };
+    const dt = new Date(ev.ts);
+    const time = dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    return `<div class="log-item">
+      <span class="log-ts">${time}</span>
+      <span class="log-level ${m.cls}">${m.icon} ${ev.type}</span>
+      <span class="log-msg">${esc(ev.detail||'')}</span>
+    </div>`;
+  }).join('');
 }
 
 async function waAction(action, confirmMsg) {

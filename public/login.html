@@ -232,6 +232,11 @@ input.error-input { border-color: #DC2626 !important; }
         </div>
       </div>
 
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:0">
+        <input type="checkbox" id="remember-me" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue);flex-shrink:0"/>
+        <label for="remember-me" style="cursor:pointer;font-size:14px;color:var(--text-2);margin:0;user-select:none">Lembrar-me neste dispositivo</label>
+      </div>
+
       <button type="submit" class="btn-primary" id="submit-btn">Entrar na minha conta</button>
     </form>
 
@@ -253,8 +258,9 @@ input.error-input { border-color: #DC2626 !important; }
 (function () {
   const AUTH_KEY = 'user-session';
   try {
-    const s = JSON.parse(localStorage.getItem(AUTH_KEY));
-    if (s && s.token) {
+    const ls = JSON.parse(localStorage.getItem(AUTH_KEY));
+    const ss = JSON.parse(sessionStorage.getItem(AUTH_KEY));
+    if ((ls && ls.token) || (ss && ss.token)) {
       const params = new URLSearchParams(window.location.search);
       window.location.href = params.get('redirect') || 'index.html';
     }
@@ -284,19 +290,29 @@ input.error-input { border-color: #DC2626 !important; }
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     hideError();
-    const email = document.getElementById('email').value.trim();
-    const senha = senhaInput.value;
+    const email      = document.getElementById('email').value.trim();
+    const senha      = senhaInput.value;
+    const rememberMe = document.getElementById('remember-me').checked;
     if (!email || !senha) { showError('Preencha todos os campos.'); return; }
     setLoading(true);
     try {
       const r = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, senha })
+        body: JSON.stringify({ email, senha, rememberMe })
       });
       const data = await r.json();
       if (!r.ok || !data.success) { showError(data.error || 'Erro ao fazer login.'); setLoading(false); return; }
-      localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, ...data.user }));
+      const sessionData = JSON.stringify({ token: data.token, rememberMe: data.rememberMe, ...data.user });
+      if (data.rememberMe) {
+        // "Lembrar-me" ativado — persiste mesmo após fechar o navegador (30 dias via backend)
+        localStorage.setItem(AUTH_KEY, sessionData);
+        try { sessionStorage.removeItem(AUTH_KEY); } catch {}
+      } else {
+        // Sem "lembrar-me" — expira ao fechar o navegador
+        sessionStorage.setItem(AUTH_KEY, sessionData);
+        try { localStorage.removeItem(AUTH_KEY); } catch {}
+      }
       const params = new URLSearchParams(window.location.search);
       window.location.href = params.get('redirect') || 'index.html';
     } catch (err) {

@@ -376,6 +376,15 @@ router.post('/whatsapp/clear-session', adminAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/whatsapp/events', adminAuth, (req, res) => {
+  try {
+    const wa = require('./whatsapp');
+    const events = wa.getWaEvents ? wa.getWaEvents() : [];
+    const limit  = parseInt(req.query.limit) || 100;
+    res.json({ ok: true, events: events.slice(0, limit) });
+  } catch (e) { res.json({ ok: false, events: [], error: e.message }); }
+});
+
 // ---- PM2 Status ----
 router.get('/pm2/status', adminAuth, (req, res) => {
   exec('pm2 jlist 2>&1', (err, out) => {
