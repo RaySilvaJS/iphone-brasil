@@ -185,6 +185,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve catalog JSONs de server/data/catalogs/ — tem prioridade sobre public/data/
+// Garante que uploads via DevOps sejam visíveis imediatamente no frontend
+const _catalogFiles = new Set(Object.values(CATALOG_FILES));
+app.get('/data/:filename', (req, res, next) => {
+  const { filename } = req.params;
+  if (!_catalogFiles.has(filename)) return next();
+  const filePath = path.join(catalogDataPath, filename);
+  if (!fs.existsSync(filePath)) return next();
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.sendFile(filePath);
+});
+
 app.use(express.static(publicPath));
 app.use('/proofs', express.static(path.join(__dirname, 'data', 'proofs')));
 app.use('/api/payment', paymentRouter);
@@ -320,12 +332,15 @@ const catalogDataPath = path.join(__dirname, 'data', 'catalogs');
 const catalogSeedPath = path.join(__dirname, '..', 'public', 'data');
 const _catalogCache = {};
 
-// Bootstrap: copiar seeds se a pasta ainda não existir
+// Bootstrap: garante que a pasta exista e copia seeds individuais que faltam
+// (cobre tanto primeira execução quanto adição de novas categorias ao código)
 if (!fs.existsSync(catalogDataPath)) {
   fs.mkdirSync(catalogDataPath, { recursive: true });
-  for (const filename of Object.values(CATALOG_FILES)) {
+}
+for (const filename of Object.values(CATALOG_FILES)) {
+  const dst = path.join(catalogDataPath, filename);
+  if (!fs.existsSync(dst)) {
     const src = path.join(catalogSeedPath, filename);
-    const dst = path.join(catalogDataPath, filename);
     if (fs.existsSync(src)) try { fs.copyFileSync(src, dst); } catch {}
   }
 }
