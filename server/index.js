@@ -187,10 +187,10 @@ app.use((req, res, next) => {
 
 // Serve catalog JSONs de server/data/catalogs/ — tem prioridade sobre public/data/
 // Garante que uploads via DevOps sejam visíveis imediatamente no frontend
-const _catalogFiles = new Set(Object.values(CATALOG_FILES));
+// CATALOG_FILES e catalogDataPath são lidos lazily (no momento da request, não do boot)
 app.get('/data/:filename', (req, res, next) => {
   const { filename } = req.params;
-  if (!_catalogFiles.has(filename)) return next();
+  if (!Object.values(CATALOG_FILES).includes(filename)) return next();
   const filePath = path.join(catalogDataPath, filename);
   if (!fs.existsSync(filePath)) return next();
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
