@@ -404,13 +404,23 @@
       <!-- Status badge (manipulado pelo payment.js) -->
       <div id="payment-status" class="payment-status" style="display:none;"></div>
 
-      <!-- Enviar comprovante -->
+      <!-- Prazo de entrega -->
+      <div style="display:flex;align-items:center;gap:8px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:10px 14px;margin-bottom:4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <span style="font-size:13px;color:#15803D;font-weight:600;">Entrega estimada: <span id="delivery-estimate">2 a 7 dias úteis após confirmação</span></span>
+      </div>
+
+      <!-- Enviar comprovante (aparece somente após 10 min) -->
+      <p id="proof-hint" style="display:none;font-size:12px;color:#6B7280;margin:10px 0 4px;text-align:center;">
+        Pagamento ainda não confirmado? Envie o comprovante:
+      </p>
       <button id="proof-button" type="button">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
         Enviar Comprovante de Pagamento
       </button>
       <input id="proof-file" type="file" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;"/>
-      <p id="proof-feedback"></p>
+      <!-- Elemento dedicado para status de comprovante -->
+      <p id="proof-feedback" style="font-size:13px;color:var(--green);font-weight:600;text-align:center;padding:6px 0;display:none;"></p>
 
       <!-- Elementos ocultos para compat com payment.js -->
       <span id="payment-id"     style="display:none;"></span>
@@ -423,8 +433,10 @@
     Copiar código
   </button>
 
-  <!-- Feedback de cópia -->
-  <div class="pay-copy-feedback" id="pay-copy-feedback" aria-live="polite"></div>
+  <!-- Feedback dedicado de cópia PIX (independente do status de comprovante) -->
+  <div class="pay-copy-feedback" id="pix-copy-feedback" aria-live="polite"></div>
+  <!-- Mantido por compatibilidade com payment.js legado -->
+  <div id="pay-copy-feedback" style="display:none;" aria-live="polite"></div>
 
   <!-- ── LINK MINHAS COMPRAS ───────────────────────────────────────────── -->
   <a href="meus-pedidos.html" class="pay-orders-link" id="pay-orders-link">
@@ -503,6 +515,11 @@
     const heroValEl = document.getElementById('payment-total-hero');
     if (heroValEl) heroValEl.textContent = formatBRL(total);
 
+    // L1: Exibe prazo de entrega baseado no frete escolhido
+    const prazo = (shipping && shipping.prazo) || (summary && summary.prazo);
+    const deliveryEl = document.getElementById('delivery-estimate');
+    if (deliveryEl && prazo) deliveryEl.textContent = prazo + ' após confirmação';
+
     if (document.getElementById('financial-subtotal'))
       document.getElementById('financial-subtotal').textContent = formatBRL(summary ? summary.subtotal : 0);
     if (document.getElementById('financial-frete'))
@@ -533,10 +550,8 @@
       const qrSec = document.querySelector('.qr-section');
       if (qrSec) qrSec.style.display = 'none';
 
-      // Esconde botão copiar e link compras
+      // Esconde apenas botão copiar (link compras permanece visível)
       if (mainCopyBtn) mainCopyBtn.style.display = 'none';
-      const ordersLink = document.getElementById('pay-orders-link');
-      if (ordersLink) ordersLink.style.display = 'none';
 
       // Atualiza hero card
       const heroTitle = document.querySelector('.pay-hero-title');
@@ -557,21 +572,19 @@
       }
     }
 
-    // ── Override copyPixCode para atualizar feedback principal ─────────
+    // ── Override copyPixCode — usa elemento dedicado, não sobrescreve status de comprovante ──
     window.copyPixCode = function () {
       const input = document.getElementById('pix-code');
       if (!input || !input.value || input.value.startsWith('Aguardando')) return;
       const text = input.value;
 
       const showFeedback = () => {
-        const fb = document.getElementById('pay-copy-feedback');
+        const fb = document.getElementById('pix-copy-feedback');
         if (fb) {
           fb.textContent = '✓ Código copiado com sucesso!';
-          setTimeout(() => { if (fb.textContent.includes('copiado')) fb.textContent = ''; }, 2500);
+          fb.style.display = 'block';
+          setTimeout(() => { if (fb.textContent.includes('copiado')) { fb.textContent = ''; fb.style.display = 'none'; } }, 2500);
         }
-        // compatibilidade com payment.js
-        const pf = document.getElementById('proof-feedback');
-        if (pf) { pf.textContent = '✓ Código PIX copiado!'; pf.style.display = 'block'; setTimeout(() => { pf.style.display = 'none'; }, 2500); }
       };
 
       if (navigator.clipboard && window.isSecureContext) {

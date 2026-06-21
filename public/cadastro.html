@@ -361,7 +361,7 @@ input.error-input { border-color: #DC2626 !important; }
     const senha=document.getElementById('senha').value;
     const confirmar=document.getElementById('confirmar').value;
     let hasError=false;
-    if(!nome||nome.split(' ').length<2){setFieldError('nome','Informe nome e sobrenome.');hasError=true;}
+    if(!nome||nome.length<3){setFieldError('nome','Informe seu nome completo.');hasError=true;}
     if(!validateCPF(cpf)){setFieldError('cpf','CPF inválido.');hasError=true;}
     const wDigits=whatsapp.replace(/\D/g,'');
     if(wDigits.length<10||wDigits.length>11){setFieldError('whatsapp','Informe DDD + número.');hasError=true;}
@@ -386,7 +386,8 @@ input.error-input { border-color: #DC2626 !important; }
       successEl.innerHTML='Conta criada com sucesso! Redirecionando...';
       successEl.style.display='block';
       document.getElementById('cadastro-form').style.display='none';
-      setTimeout(()=>{window.location.href='index.html';},1500);
+      const _redir = new URLSearchParams(window.location.search).get('redirect');
+      setTimeout(()=>{window.location.href=_redir?decodeURIComponent(_redir):'index.html';},1500);
     } catch(err) {
       showError('Erro de conexão. Tente novamente.');
       setLoading(false);

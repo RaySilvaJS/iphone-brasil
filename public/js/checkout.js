@@ -1,7 +1,15 @@
 // checkout.js
 document.addEventListener('DOMContentLoaded', () => {
-  // Guest checkout — não exige login prévio
-  let authSession = (() => { try { return JSON.parse(localStorage.getItem('user-session')); } catch { return null; } })();
+  // Guest checkout — não exige login prévio; lê de localStorage e sessionStorage
+  let authSession = (() => {
+    try {
+      const ls = JSON.parse(localStorage.getItem('user-session'));
+      if (ls && ls.token) return ls;
+      const ss = JSON.parse(sessionStorage.getItem('user-session'));
+      if (ss && ss.token) return ss;
+    } catch {}
+    return null;
+  })();
 
   // ── Items ─────────────────────────────────────────────────────────────────────
   const query       = new URLSearchParams(window.location.search);
@@ -353,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Frete calculation ─────────────────────────────────────────────────────────
-  function calculateFrete(cep) {
+  function calculateFreteLocal(cep) {
     const v = Number(cep);
     if (v >= 1000000  && v <= 5999999)  return { region: 'SP Capital',   price:  9.9, deadline: '1 a 2 dias úteis' };
     if (v >= 6000000  && v <= 19999999) return { region: 'Interior SP',  price: 14.9, deadline: '2 a 4 dias úteis' };
@@ -365,20 +373,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
-  function calcFreteFromCep(cep) {
-    if (!cep || cep.length < 8) return;
-    const s = calculateFrete(cep);
-    shipResults.innerHTML = '';
-    if (!s) {
-      shipResults.innerHTML = '<p class="co-muted">Região não atendida para este CEP.</p>';
-      shippingData = null;
-      updateTotal();
-      return;
-    }
-
+  function renderFreteOpt(s) {
     const freteReal = hasFreteGratis ? 0 : s.price;
     shippingData = { ...s };
-
+    shipResults.innerHTML = '';
     const opt = document.createElement('div');
     opt.className = 'co-ship-opt selected';
     opt.innerHTML = `
@@ -395,30 +393,86 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<div><s style="color:#9CA3AF;font-size:11px">${fmt(s.price)}</s><br><span class="co-ship-free">GRÁTIS</span></div>`
         : `<span class="co-ship-price">${fmt(s.price)}</span>`}`;
     shipResults.appendChild(opt);
-
     const summary = buildSummary(freteReal, s.deadline);
-    localStorage.setItem('shipping', JSON.stringify({ cep, frete: freteReal, prazo: s.deadline, total: summary.total_final, source }));
+    localStorage.setItem('shipping', JSON.stringify({ cep: s.cep || '', frete: freteReal, prazo: s.deadline, total: summary.total_final, source }));
     localStorage.setItem('checkout-summary', JSON.stringify(summary));
-
     updateTotal();
+  }
+
+  async function calcFreteFromCep(cep) {
+    if (!cep || cep.length < 8) return;
+    shipResults.innerHTML = '<p class="co-muted"><span class="co-spinner dark" style="display:inline-block;width:14px;height:14px;border-width:2px;vertical-align:middle;margin-right:6px;"></span>Calculando frete...</p>';
+
+    // Tenta API do Melhor Envio primeiro
+    try {
+      const r = await fetch('/api/shipping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cep, subtotal })
+      });
+      if (r.ok) {
+        const data = await r.json();
+        // API retorna array de opções; usa a mais barata disponível
+        const opts = Array.isArray(data) ? data : (data.options || data.services || []);
+        const valid = opts.filter(o => o && !o.error && (o.price || o.custom_price));
+        if (valid.length > 0) {
+          const best = valid.reduce((a, b) => (Number(a.price||a.custom_price) <= Number(b.price||b.custom_price) ? a : b));
+          const price = Number(best.price || best.custom_price || 0);
+          const days  = best.delivery_time || best.custom_delivery_time || best.days || '?';
+          renderFreteOpt({ region: best.name || 'Entrega', price, deadline: `${days} dias úteis`, cep });
+          return;
+        }
+      }
+    } catch (_) { /* fallback abaixo */ }
+
+    // Fallback: tabela local por faixa de CEP
+    const s = calculateFreteLocal(cep);
+    if (!s) {
+      shipResults.innerHTML = '<p class="co-muted">Frete não disponível para este CEP. Entre em contato pelo WhatsApp.</p>';
+      shippingData = null;
+      updateTotal();
+      return;
+    }
+    renderFreteOpt({ ...s, cep });
   }
 
   // ── Billing ───────────────────────────────────────────────────────────────────
   function renderBilling() {
     if (!authSession) {
+      // Formulário inline — coleta dados antes do endereço, sem modal interruptivo
+      const loginUrl = 'login.html?redirect=' + encodeURIComponent(window.location.href);
       billingBody.innerHTML = `
-        <div style="padding:4px 0 8px">
-          <p style="margin:0 0 10px;font-size:13px;color:#6B7280;">Seus dados serão solicitados ao finalizar a compra. Nenhuma senha necessária.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#16A34A;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Compra sem cadastro
-            </div>
-            <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#16A34A;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Login automático pelo WhatsApp
-            </div>
-          </div>
-          <p style="margin:10px 0 0;font-size:11px;color:#9CA3AF;">Já tem conta? <a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="color:#2563EB;font-weight:600">Fazer login</a></p>
+        <p style="margin:0 0 12px;font-size:13px;color:#6B7280;">Preencha seus dados para continuar. Nenhuma senha necessária.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <input id="billing-nome" type="text" placeholder="Nome completo *" autocomplete="name"
+            style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
+          <input id="billing-whatsapp" type="tel" placeholder="WhatsApp (DDD + número) *" inputmode="numeric" autocomplete="tel"
+            style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
+          <input id="billing-cpf" type="text" placeholder="CPF *" inputmode="numeric" maxlength="14"
+            style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
+          <p id="billing-err" style="margin:0;font-size:12px;color:#DC2626;display:none;"></p>
+          <button id="billing-submit" onclick="submitBillingData()"
+            style="background:#2563EB;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+            Confirmar dados e continuar →
+          </button>
+          <p style="margin:0;font-size:11px;color:#9CA3AF;text-align:center;">Já tem conta? <a href="${loginUrl}" style="color:#2563EB;font-weight:600">Fazer login</a></p>
         </div>`;
+
+      const cpfEl = document.getElementById('billing-cpf');
+      const waEl  = document.getElementById('billing-whatsapp');
+      if (cpfEl) cpfEl.addEventListener('input', e => {
+        let v = e.target.value.replace(/\D/g,'').slice(0,11);
+        if (v.length>9) v=v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
+        else if (v.length>6) v=v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
+        else if (v.length>3) v=v.slice(0,3)+'.'+v.slice(3);
+        e.target.value=v;
+      });
+      if (waEl) waEl.addEventListener('input', e => {
+        let v = e.target.value.replace(/\D/g,'').slice(0,11);
+        if (v.length>7) v='('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
+        else if (v.length>2) v='('+v.slice(0,2)+') '+v.slice(2);
+        e.target.value=v;
+      });
       return;
     }
     const cpfRaw  = authSession.cpf || '';
@@ -431,6 +485,42 @@ document.addEventListener('DOMContentLoaded', () => {
       ${cpfRaw ? `<div class="co-billing-line"><span class="co-billing-key">CPF</span><span class="co-billing-val">${esc(cpfMask)}</span></div>` : ''}
       ${isGuest ? `<p style="margin:8px 0 0;font-size:11px;color:#9CA3AF;">Compra como visitante · <a href="login.html" style="color:#2563EB;font-weight:600">Criar conta completa</a></p>` : ''}`;
   }
+
+  // Submete dados pessoais do guest de forma inline (sem modal)
+  window.submitBillingData = async function() {
+    const nome     = (document.getElementById('billing-nome')?.value     || '').trim();
+    const whatsapp = (document.getElementById('billing-whatsapp')?.value || '');
+    const cpf      = (document.getElementById('billing-cpf')?.value      || '');
+    const errEl    = document.getElementById('billing-err');
+    const btn      = document.getElementById('billing-submit');
+
+    if (errEl) { errEl.style.display = 'none'; }
+    if (!nome || nome.length < 3)               { if(errEl){errEl.textContent='Informe o nome completo.';errEl.style.display='block';} return; }
+    if (whatsapp.replace(/\D/g,'').length < 10) { if(errEl){errEl.textContent='WhatsApp inválido.';errEl.style.display='block';} return; }
+    if (cpf.replace(/\D/g,'').length !== 11)    { if(errEl){errEl.textContent='CPF inválido.';errEl.style.display='block';} return; }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
+    try {
+      const r = await fetch('/api/auth/guest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, whatsapp: whatsapp.replace(/\D/g,''), cpf: cpf.replace(/\D/g,'') }),
+      });
+      const d = await r.json();
+      if (!d.success) {
+        if (errEl) { errEl.textContent = d.error || 'Erro ao salvar dados.'; errEl.style.display = 'block'; }
+        if (btn)   { btn.disabled = false; btn.textContent = 'Confirmar dados e continuar →'; }
+        return;
+      }
+      authSession = { ...d.user, token: d.token, name: d.user.nome };
+      localStorage.setItem('user-session', JSON.stringify(authSession));
+      renderBilling();
+      loadAddresses();
+    } catch {
+      if (errEl) { errEl.textContent = 'Erro de conexão. Tente novamente.'; errEl.style.display = 'block'; }
+      if (btn)   { btn.disabled = false; btn.textContent = 'Confirmar dados e continuar →'; }
+    }
+  };
 
   // ── PIX Countdown ─────────────────────────────────────────────────────────────
   function startPixCountdown() {
@@ -532,21 +622,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function refreshPayBtn() {
-    const ready  = orderItems.length > 0 && selectedAddressId && shippingData;
-    const cardOk = payMethod !== 'card' || (
-      $('card-number')?.value.replace(/\s/g, '').length >= 16 &&
-      $('card-name')?.value.trim().length >= 3 &&
-      $('card-expiry')?.value.length === 5 &&
-      $('card-cvv')?.value.length >= 3
-    );
-    payBtn.disabled = !(ready && cardOk);
+    const ready = orderItems.length > 0 && selectedAddressId && shippingData;
+    payBtn.disabled = !ready;
+
+    const hintEl = $('co-btn-hint');
+    if (!ready && hintEl) {
+      const missing = [];
+      if (!authSession) missing.push('seus dados (seção acima)');
+      if (!selectedAddressId) missing.push('endereço de entrega');
+      if (!shippingData) missing.push('cálculo do frete');
+      hintEl.textContent = missing.length ? '⚠ Preencha: ' + missing.join(' • ') : '';
+      hintEl.style.display = missing.length ? 'block' : 'none';
+    } else if (hintEl) {
+      hintEl.style.display = 'none';
+    }
 
     if (!payBtn.disabled) {
-      payBtn.style.background = payMethod === 'pix' ? '#16A34A' : '#2563EB';
-      const label = payMethod === 'pix' ? 'Pagar com PIX — 5% OFF' : 'Pagar com Cartão';
+      payBtn.style.background = '#16A34A';
       payBtn.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        ${label}`;
+        Pagar com PIX — 5% OFF`;
     } else {
       payBtn.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -606,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="co-spinner dark" style="display:inline-block;width:12px;height:12px;border-width:2px;vertical-align:middle;margin-right:4px;"></span>Validando...'; }
     if (couponMsg) couponMsg.style.display = 'none';
 
     try {
@@ -646,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {
       if (couponMsg) { couponMsg.textContent = 'Erro ao validar cupom. Tente novamente.'; couponMsg.style.color = '#DC2626'; couponMsg.style.display = 'block'; }
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = 'Aplicar'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Aplicar'; btn.style.opacity = ''; }
     }
   };
 

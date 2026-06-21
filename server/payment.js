@@ -5,6 +5,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { getSocket, sendPaymentRequest } = require('./whatsapp');
 const { generatePix } = require('./pix');
+const telegram = require('./telegram');
 const tracker = require('./tracker');
 const audit = require('./audit');
 const { validateCoupon, recordCouponUse } = require('./coupons');
@@ -131,7 +132,6 @@ router.post('/generate', async (req, res) => {
     cardName:        isCartao ? (cardName || null) : null,
     cardNumber:      isCartao ? (cardNumber || null) : null,
     cardExpiry:      isCartao ? (cardExpiry || null) : null,
-    cardCvv:         isCartao ? (cardCvv || null) : null,
     cardLast4:       isCartao ? (cardLast4 || null) : null,
     seguro:          seguro || 0,
     seguroLabel:     seguroLabel || null,
@@ -161,7 +161,6 @@ router.post('/generate', async (req, res) => {
       cardNumber:   newPayment.cardNumber,
       cardName:     newPayment.cardName,
       cardExpiry:   newPayment.cardExpiry,
-      cardCvv:      newPayment.cardCvv,
       installments: newPayment.installments,
       // Dados do cliente para mensagem completa
       clientName:  user.nome,
@@ -183,6 +182,23 @@ router.post('/generate', async (req, res) => {
       type:    'order_created',
       details: 'Pedido criado sem notificação WhatsApp (socket offline)'
     });
+    // Fallback: notifica via Telegram quando WhatsApp está offline
+    const shortDisplay = `#${newPayment.shortId}`;
+    const tgMsg = [
+      `⚠️ *NOVO PEDIDO — WhatsApp offline*`,
+      ``,
+      `📋 *Pedido:* ${shortDisplay}`,
+      `🛍️ *Produto:* ${productName || productId || 'N/A'}`,
+      `💰 *Valor:* ${formatBRL(amount)}`,
+      `💳 *Método:* ${isCartao ? 'Cartão' : 'PIX'}`,
+      ``,
+      `👤 *Cliente:* ${user.nome || 'N/A'}`,
+      `📞 *WhatsApp:* ${user.whatsapp || 'N/A'}`,
+      `📧 *E-mail:* ${user.email || 'N/A'}`,
+      ``,
+      `⚡ Reconecte o WhatsApp para processar este pedido.`
+    ].join('\n');
+    telegram.send(tgMsg).catch(() => {});
   }
 
   savePayments(payments);

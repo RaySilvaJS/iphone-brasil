@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentAmount   = 0;
     let currentStatus   = 'pending';
     let timerStarted    = false;
+    let pollCount       = 0;
+    const MAX_POLLS_WITHOUT_QR = 24; // ~60s a 2.5s
 
     // Preenche dados salvos
     const storedName  = localStorage.getItem('proof-customer-name')  || '';
@@ -43,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data     = await response.json();
             if (!data.success) return;
 
+            pollCount++;
             currentStatus      = data.status || 'pending';
             currentProductName = data.productName || currentProductName;
             currentAmount      = data.amount || currentAmount;
@@ -56,6 +59,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Mostra QR Code quando disponível
             if (data.qrCode && loadingDiv.style.display !== 'none') {
                 showPixDetails(data.qrCode, data.amount, data.shortId || paymentId);
+            }
+
+            // C5: Se ultrapassou 60s sem QR, exibe mensagem de contato
+            if (!data.qrCode && pollCount >= MAX_POLLS_WITHOUT_QR && loadingDiv.style.display !== 'none') {
+                clearInterval(_pollingInterval);
+                if (loadingDiv) {
+                    loadingDiv.innerHTML = `
+                      <div style="text-align:center;padding:10px 0;">
+                        <p style="font-size:14px;color:#DC2626;font-weight:600;margin:0 0 10px;">Houve um problema ao gerar o código PIX.</p>
+                        <p style="font-size:13px;color:#6B7280;margin:0 0 14px;">Entre em contato pelo WhatsApp para receber as instruções de pagamento manualmente.</p>
+                        <a href="https://wa.me/${encodeURIComponent((window.__waNumber||''))}?text=${encodeURIComponent('Olá, realizei um pedido mas não recebi o QR PIX. Pedido: ' + (data.shortId || paymentId))}"
+                           target="_blank" rel="noopener"
+                           style="display:inline-block;background:#16A34A;color:#fff;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">
+                          Falar no WhatsApp
+                        </a>
+                      </div>`;
+                }
+                return;
             }
 
             // Atualiza valor se disponível antes do QR
@@ -141,8 +162,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (pixCodeInput) pixCodeInput.value = qrCode;
         }
 
+        // Botão de comprovante aparece após 10 min — PIX é confirmado automaticamente, não precisa de comprovante manual
         if (!hasSentProof && currentStatus !== 'paid' && currentStatus !== 'awaiting_validation' && currentStatus !== 'refused') {
-            if (proofButton) proofButton.style.display = 'inline-flex';
+            setTimeout(() => {
+                if (!hasSentProof && currentStatus !== 'paid' && currentStatus !== 'refused') {
+                    if (proofButton) proofButton.style.display = 'inline-flex';
+                    const proofHint = document.getElementById('proof-hint');
+                    if (proofHint) proofHint.style.display = 'block';
+                }
+            }, 10 * 60 * 1000);
         }
 
         if (!timerStarted) {
@@ -196,7 +224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Inicia polling imediatamente
-    _pollingInterval = setInterval(checkPaymentStatus, 5000);
+    _pollingInterval = setInterval(checkPaymentStatus, 2500);
     checkPaymentStatus();
 
     // ── Helpers UI ───────────────────────────────────────────────────────────
@@ -330,21 +358,22 @@ function setPaymentStatus(status, text) {
 function copyPixCode() {
     const pixCode = document.getElementById('pix-code');
     if (!pixCode || !pixCode.value) return;
-    const text     = pixCode.value;
-    const feedback = document.getElementById('proof-feedback');
+    const text = pixCode.value;
 
     const onSuccess = () => {
-        if (feedback) {
-            feedback.textContent   = '✓ Código PIX copiado!';
-            feedback.style.display = 'block';
-            setTimeout(() => { if (feedback.textContent === '✓ Código PIX copiado!') feedback.style.display = 'none'; }, 2500);
+        // Usa elemento dedicado para feedback de cópia (não sobrescreve status de comprovante)
+        const copyFb = document.getElementById('pix-copy-feedback') || document.getElementById('pay-copy-feedback');
+        if (copyFb) {
+            copyFb.textContent   = '✓ Código PIX copiado!';
+            copyFb.style.display = 'block';
+            setTimeout(() => { if (copyFb.textContent.includes('copiado')) copyFb.style.display = 'none'; }, 2500);
         }
     };
 
     if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(onSuccess).catch(() => { pixCode.select(); try { document.execCommand('copy'); } catch {} onSuccess(); });
+        navigator.clipboard.writeText(text).then(onSuccess).catch(() => { try { pixCode.select(); document.execCommand('copy'); } catch {} onSuccess(); });
     } else {
-        pixCode.select(); try { document.execCommand('copy'); } catch {} onSuccess();
+        try { pixCode.select(); document.execCommand('copy'); } catch {} onSuccess();
     }
 }
 

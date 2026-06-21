@@ -399,10 +399,6 @@
   <script>
     function proceedToCheckout() {
       if (window.cart && window.cart.items && window.cart.items.length > 0) {
-        if (window.Auth && !window.Auth.isLoggedIn()) {
-          window.location.href = 'login.html?redirect=' + encodeURIComponent('checkout.html?source=cart');
-          return;
-        }
         window.cart.saveCart();
         window.location.href = '/checkout.html?source=cart';
       } else {

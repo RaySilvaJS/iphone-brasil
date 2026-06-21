@@ -243,7 +243,7 @@ input.error-input { border-color: #DC2626 !important; }
     <div class="divider">ou</div>
 
     <div class="link-row">
-      Não tem conta? <a href="cadastro.html">Criar conta grátis</a>
+      Não tem conta? <a id="signup-link" href="cadastro.html">Criar conta grátis</a>
     </div>
 
     <div class="trust-row">
@@ -263,6 +263,15 @@ input.error-input { border-color: #DC2626 !important; }
     if ((ls && ls.token) || (ss && ss.token)) {
       const params = new URLSearchParams(window.location.search);
       window.location.href = params.get('redirect') || 'index.html';
+    }
+  } catch (e) {}
+
+  // Repassa ?redirect= ao link de cadastro
+  try {
+    const redirParam = new URLSearchParams(window.location.search).get('redirect');
+    if (redirParam) {
+      const signupLink = document.getElementById('signup-link');
+      if (signupLink) signupLink.href = 'cadastro.html?redirect=' + encodeURIComponent(redirParam);
     }
   } catch (e) {}
 
