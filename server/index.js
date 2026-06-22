@@ -1101,10 +1101,10 @@ setInterval(() => {
 
 app.post('/api/auth/register', authRateLimit(5, 15 * 60 * 1000), (req, res) => {
   const { nome, cpf, whatsapp, email, senha } = req.body || {};
-  if (!nome || !cpf || !whatsapp || !email || !senha) {
-    return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+  if (!nome || !whatsapp || !email || !senha) {
+    return res.status(400).json({ error: 'Nome, WhatsApp, e-mail e senha são obrigatórios.' });
   }
-  if (!validateCPF(cpf)) {
+  if (cpf && cpf.replace(/\D/g, '').length > 0 && !validateCPF(cpf)) {
     return res.status(400).json({ error: 'CPF inválido.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1121,10 +1121,11 @@ app.post('/api/auth/register', authRateLimit(5, 15 * 60 * 1000), (req, res) => {
   if (users.find(u => u.email.toLowerCase() === email.toLowerCase().trim())) {
     return res.status(400).json({ error: 'E-mail já cadastrado.' });
   }
+  const cpfDigits = cpf ? cpf.replace(/\D/g, '') : '';
   const newUser = {
     id: uuidv4(),
     nome: nome.trim(),
-    cpf: cpf.replace(/\D/g, ''),
+    cpf: cpfDigits || null,
     whatsapp: whatsappDigits,
     email: email.toLowerCase().trim(),
     senha: bcrypt.hashSync(senha, 10),

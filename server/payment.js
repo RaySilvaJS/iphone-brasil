@@ -24,10 +24,19 @@ const loadConfig   = () => { try { return JSON.parse(fs.readFileSync(configPath,
 
 const formatBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+const findUserByToken = (users, token) => {
+  if (!token) return null;
+  return users.find(u => {
+    if (u.token === token) return true;
+    if (Array.isArray(u.sessions) && u.sessions.some(s => s.token === token)) return true;
+    return false;
+  }) || null;
+};
+
 const getAuthUser = (req) => {
   const token = req.headers['x-auth-token'] || req.query.token;
   if (!token) return null;
-  return loadUsers().find(u => u.token === token) || null;
+  return findUserByToken(loadUsers(), token);
 };
 
 // Simple admin check used only within this router
@@ -36,7 +45,7 @@ const isAdmin = (req) => {
   if (adminToken && process.env.ADMIN_TOKEN && adminToken === process.env.ADMIN_TOKEN) return true;
   const ut = req.headers['x-auth-token'] || req.query.token;
   if (ut) {
-    const u = loadUsers().find(u => u.token === ut);
+    const u = findUserByToken(loadUsers(), ut);
     if (u && ['admin', 'superadmin'].includes(u.role)) return true;
   }
   return false;

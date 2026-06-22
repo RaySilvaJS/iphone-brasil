@@ -77,7 +77,6 @@
 
     purchase: function (data) {
       if (typeof fbq !== 'function') return;
-      // dispara apenas uma vez por pedido
       var key = 'fbq-purchase-' + data.orderId;
       if (localStorage.getItem(key)) {
         console.log('[Meta Pixel] Purchase já disparado — pedido:', data.orderId);
@@ -93,6 +92,23 @@
       };
       fbq('track', 'Purchase', payload);
       console.log('[Meta Pixel] Purchase:', payload);
+    },
+
+    completeRegistration: function () {
+      if (typeof fbq !== 'function') return;
+      fbq('track', 'CompleteRegistration', { currency: 'BRL', status: true });
+      console.log('[Meta Pixel] CompleteRegistration');
+    },
+
+    lead: function (data) {
+      if (typeof fbq !== 'function') return;
+      var payload = {
+        content_name: data && data.productName ? data.productName : 'Produto',
+        value:        Number(data && data.value) || 0,
+        currency:     'BRL'
+      };
+      fbq('track', 'Lead', payload);
+      console.log('[Meta Pixel] Lead:', payload);
     }
 
   };

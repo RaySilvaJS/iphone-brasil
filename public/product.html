@@ -12,7 +12,9 @@
   <meta property="og:site_name" content="jessi.iphones"/>
   <meta name="twitter:card" content="summary_large_image"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
   <style>
     :root {
       --blue:       #2563EB;
@@ -859,6 +861,34 @@
 
   <!-- Activity toast container -->
   <div id="activity-toast" aria-live="polite" aria-label="Atividade recente"></div>
+
+  <!-- FOOTER LEGAL -->
+  <footer style="background:#1E293B;color:#94A3B8;padding:20px 20px 32px;margin-top:32px;font-size:12px;line-height:1.7;">
+    <div style="max-width:1200px;margin:0 auto;">
+      <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <strong style="color:#fff;font-size:14px;">jessi.iphones</strong>
+          <p style="margin:4px 0 0;">CNPJ: 28.899.526/0001-74 — Jessi Iphones LTDA</p>
+          <p>Rio de Janeiro, RJ — Brasil</p>
+        </div>
+        <div>
+          <p><strong style="color:#CBD5E1;">Atendimento</strong></p>
+          <p>WhatsApp: (21) 98863-1029</p>
+          <p>Seg–Sex: 9h às 18h</p>
+        </div>
+        <div>
+          <p><strong style="color:#CBD5E1;">Links</strong></p>
+          <p><a href="/faq.html" style="color:#94A3B8;text-decoration:none;">Perguntas Frequentes</a></p>
+          <p><a href="/trocas.html" style="color:#94A3B8;text-decoration:none;">Trocas e Devoluções</a></p>
+          <p><a href="/termos.html" style="color:#94A3B8;text-decoration:none;">Termos de Uso</a></p>
+        </div>
+      </div>
+      <div style="border-top:1px solid #334155;padding-top:14px;text-align:center;">
+        <p>© 2026 Jessi Iphones LTDA — Todos os direitos reservados.</p>
+        <p style="margin-top:4px;">Imagens meramente ilustrativas. Preços sujeitos a alteração sem aviso prévio.</p>
+      </div>
+    </div>
+  </footer>
 
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">

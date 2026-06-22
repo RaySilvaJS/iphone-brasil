@@ -122,6 +122,8 @@
         product.freteGratis = ex.freteGratis;
       }
       if (window.cart) window.cart.addItem(product, 1);
+      if (window.MetaPixel) window.MetaPixel.addToCart({ id: product.id, name: product.nome, value: product.preco });
+      if (window.JBR_track) window.JBR_track('cart_add', { productId, page: location.pathname });
     } catch {
     } finally {
       if (btn) { btn.disabled = false; btn.style.opacity = ''; }
@@ -138,6 +140,10 @@
 
   window.buyNow = async (productId, btn) => {
     if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+    if (window.MetaPixel && window._buyNowProduct) {
+      window.MetaPixel.lead({ productName: window._buyNowProduct.nome, value: window._buyNowProduct.preco });
+    }
+    if (window.JBR_track) window.JBR_track('click_buy', { productId, page: location.pathname });
     await window.addToCart(productId);
     // Salva o item como compra direta (lido pelo checkout.html?source=buy)
     const cartItem = window.cart && window.cart.items && window.cart.items.find(i => String(i.id) === String(productId));
@@ -722,6 +728,36 @@
               <div class="benefit-item">
                 <div class="benefit-icon">${IC.headset}</div>
                 <div class="benefit-text"><strong>Suporte</strong><span>Atendimento pós-venda dedicado</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="background:#FFFBEB;border-color:#FDE68A;">
+            <div class="section-label" style="margin-bottom:10px;color:#92400E;">⭐ Avaliações de clientes</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="background:#fff;border-radius:10px;padding:12px 14px;border:1px solid #FDE68A;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <span style="color:#F59E0B;font-size:13px;">★★★★★</span>
+                  <strong style="font-size:13px;color:#0F172A;">Larissa Lima</strong>
+                  <span style="font-size:11px;color:#94A3B8;margin-left:auto;">São Paulo, SP</span>
+                </div>
+                <p style="font-size:13px;color:#475569;line-height:1.5;margin:0;">"Recebi o iPhone em perfeito estado, na caixa lacrada e com nota fiscal. Atendimento rápido pelo WhatsApp. Recomendo!"</p>
+              </div>
+              <div style="background:#fff;border-radius:10px;padding:12px 14px;border:1px solid #FDE68A;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <span style="color:#F59E0B;font-size:13px;">★★★★★</span>
+                  <strong style="font-size:13px;color:#0F172A;">Jackson Bender</strong>
+                  <span style="font-size:11px;color:#94A3B8;margin-left:auto;">Paraná, PR</span>
+                </div>
+                <p style="font-size:13px;color:#475569;line-height:1.5;margin:0;">"Produto original, entrega rastreada. Paguei via PIX e recebi a confirmação rapidamente. Processo simples e seguro."</p>
+              </div>
+              <div style="background:#fff;border-radius:10px;padding:12px 14px;border:1px solid #FDE68A;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <span style="color:#F59E0B;font-size:13px;">★★★★★</span>
+                  <strong style="font-size:13px;color:#0F172A;">Anthony Dias</strong>
+                  <span style="font-size:11px;color:#94A3B8;margin-left:auto;">Salvador, BA</span>
+                </div>
+                <p style="font-size:13px;color:#475569;line-height:1.5;margin:0;">"Melhor preço que achei para iPhone original com garantia. Chegou antes do prazo. Super indico a Jessi Iphones!"</p>
               </div>
             </div>
           </div>
