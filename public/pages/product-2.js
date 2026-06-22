@@ -990,6 +990,13 @@
       document.querySelectorAll('[onclick*="addToCart("]').forEach(b =>
         b.setAttribute('onclick', `addToCart('${p.id}', this)`));
 
+      window._buyNowProduct = {
+        id: p.id,
+        nome: cleanProductText(p.name || p.nome || 'Produto'),
+        preco: basePrice,
+        imagem: imgs.length ? imgs[0] : (window._buyNowProduct?.imagem || '')
+      };
+
       const newMlUrl = p.url || (String(p.id).startsWith('MLB') ? 'https://www.mercadolivre.com.br/p/' + p.id : '');
       const elMlML    = document.getElementById('ml-price-ml');
       const elMlStore = document.getElementById('ml-price-store');
@@ -1058,7 +1065,7 @@
 
       card.innerHTML = html;
 
-      card.querySelectorAll('.variation-chip:not([disabled])').forEach(btn => {
+      card.querySelectorAll('.variation-chip:not([disabled]), .var-color-card:not([disabled])').forEach(btn => {
         btn.addEventListener('click', () => {
           const type = btn.dataset.type;
           const val  = btn.dataset.val;
