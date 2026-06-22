@@ -124,6 +124,11 @@
       if (window.cart) window.cart.addItem(product, 1);
       if (window.MetaPixel) window.MetaPixel.addToCart({ id: product.id, name: product.nome, value: product.preco });
       if (window.JBR_track) window.JBR_track('cart_add', { productId, page: location.pathname });
+      fetch('/api/events/cart-add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName: product.nome, productId: product.id, price: product.preco, quantity: 1 })
+      }).catch(() => {});
     } catch {
     } finally {
       if (btn) { btn.disabled = false; btn.style.opacity = ''; }
@@ -144,6 +149,14 @@
       window.MetaPixel.lead({ productName: window._buyNowProduct.nome, value: window._buyNowProduct.preco });
     }
     if (window.JBR_track) window.JBR_track('click_buy', { productId, page: location.pathname });
+    const _buyProduct = window._buyNowProduct;
+    if (_buyProduct) {
+      fetch('/api/events/checkout-visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName: _buyProduct.nome, amount: _buyProduct.preco })
+      }).catch(() => {});
+    }
     await window.addToCart(productId);
     // Salva o item como compra direta (lido pelo checkout.html?source=buy)
     const cartItem = window.cart && window.cart.items && window.cart.items.find(i => String(i.id) === String(productId));

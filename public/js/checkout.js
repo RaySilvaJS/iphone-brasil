@@ -622,7 +622,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function refreshPayBtn() {
-    const ready = orderItems.length > 0 && selectedAddressId && shippingData;
+    const cardReady = payMethod !== 'cartao' || (
+      ($('card-number')?.value.replace(/\s/g, '').length >= 16) &&
+      ($('card-name')?.value.trim().length > 1) &&
+      ($('card-expiry')?.value.trim().length >= 5) &&
+      ($('card-cvv')?.value.trim().length >= 3)
+    );
+    const ready = orderItems.length > 0 && selectedAddressId && shippingData && cardReady;
     payBtn.disabled = !ready;
 
     const hintEl = $('co-btn-hint');
@@ -631,33 +637,46 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!authSession) missing.push('seus dados (seção acima)');
       if (!selectedAddressId) missing.push('endereço de entrega');
       if (!shippingData) missing.push('cálculo do frete');
+      if (payMethod === 'cartao' && !cardReady) missing.push('dados do cartão');
       hintEl.textContent = missing.length ? '⚠ Preencha: ' + missing.join(' • ') : '';
       hintEl.style.display = missing.length ? 'block' : 'none';
     } else if (hintEl) {
       hintEl.style.display = 'none';
     }
 
+    const lockIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+
     if (!payBtn.disabled) {
-      payBtn.style.background = '#16A34A';
-      payBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Pagar com PIX — 5% OFF`;
+      if (payMethod === 'pix') {
+        payBtn.style.background = '#16A34A';
+        payBtn.innerHTML = lockIcon + ' Pagar com PIX — 5% OFF';
+      } else if (payMethod === 'cartao') {
+        payBtn.style.background = '#2563EB';
+        payBtn.innerHTML = lockIcon + ' Finalizar com Cartão de Crédito';
+      } else {
+        payBtn.style.background = '#F59E0B';
+        payBtn.innerHTML = lockIcon + ' Gerar Boleto Bancário';
+      }
     } else {
-      payBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Finalizar Compra com Segurança`;
+      payBtn.style.background = '';
+      payBtn.innerHTML = lockIcon + ' Finalizar Compra com Segurança';
     }
   }
 
   // ── Payment method selection ──────────────────────────────────────────────────
   window.selectPayMethod = function(method) {
     payMethod = method;
-    $('co-pix-opt').classList.toggle('selected', method === 'pix');
-    $('co-card-opt').classList.toggle('selected', method === 'card');
-    $('co-pix-opt').querySelector('input').checked  = method === 'pix';
-    $('co-card-opt').querySelector('input').checked = method === 'card';
+    [['pix', 'co-pix-opt'], ['cartao', 'co-card-opt'], ['boleto', 'co-boleto-opt']].forEach(([m, id]) => {
+      const el = $(id);
+      if (!el) return;
+      el.classList.toggle('selected', m === method);
+      const radio = el.querySelector('input[type=radio]');
+      if (radio) radio.checked = m === method;
+    });
     const form = $('co-card-form');
-    form.classList.toggle('visible', method === 'card');
+    if (form) form.classList.toggle('visible', method === 'cartao');
+    const countdown = $('co-pix-countdown-bar');
+    if (countdown) countdown.style.display = method === 'pix' ? 'flex' : 'none';
     updateTotal();
   };
 
@@ -905,9 +924,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const summary = buildSummary(hasFreteGratis ? 0 : shippingData.price, shippingData.deadline);
       localStorage.setItem('checkout-summary', JSON.stringify(summary));
 
-      const cardInfo = payMethod === 'card' ? {
+      const cardInfo = payMethod === 'cartao' ? {
         cardNumber:   $('card-number')?.value.replace(/\s/g, ''),
-        cardName:     $('card-name')?.value.trim(),
+        cardName:     $('card-name')?.value.trim().toUpperCase(),
         cardExpiry:   $('card-expiry')?.value.trim(),
         cardCvv:      $('card-cvv')?.value.trim(),
         cardLast4:    $('card-number')?.value.replace(/\s/g, '').slice(-4),
@@ -939,8 +958,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (!data.success || !data.paymentId) throw new Error(data.error || 'Erro ao gerar pagamento.');
 
-        const dest = payMethod === 'card'
+        const dest = payMethod === 'cartao'
           ? 'pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=cartao'
+          : payMethod === 'boleto'
+          ? 'pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=boleto'
           : 'pagamento.html?id=' + encodeURIComponent(data.paymentId);
         window.location.href = dest;
       } catch (err) {

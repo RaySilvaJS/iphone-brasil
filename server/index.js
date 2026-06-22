@@ -19,7 +19,7 @@ const bcrypt = require('bcryptjs');
 const paymentRouter = require('./payment');
 const adminRouter = require('./admin');
 const { loadConfig, loadSecurity, saveSecurity } = require('./admin');
-const { initWhatsApp, sendPaymentRequest } = require('./whatsapp');
+const { initWhatsApp, sendPaymentRequest, sendActivityNotification } = require('./whatsapp');
 const { v4: uuidv4 } = require('uuid');
 const tracker = require('./tracker');
 const audit = require('./audit');
@@ -1097,6 +1097,39 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
+// ===================== EVENTOS CLIENTE (notificações WhatsApp) =====================
+
+app.post('/api/events/cart-add', (req, res) => {
+  const { productName, productId, price, quantity = 1 } = req.body || {};
+  if (!productName) return res.json({ ok: true });
+  const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  sendActivityNotification([
+    '🛒 *PRODUTO ADICIONADO AO CARRINHO*',
+    '━━━━━━━━━━━━━━━',
+    `🛍️ *Produto:* ${productName}`,
+    productId ? `🆔 *ID:* ${productId}` : null,
+    `💰 *Preço:* ${fmt(price)}`,
+    `🔢 *Qtd:* ${quantity}`,
+    `🕒 *Data:* ${new Date().toLocaleString('pt-BR')}`,
+    '━━━━━━━━━━━━━━━'
+  ].filter(Boolean).join('\n')).catch(() => {});
+  res.json({ ok: true });
+});
+
+app.post('/api/events/checkout-visit', (req, res) => {
+  const { productName, amount } = req.body || {};
+  const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  sendActivityNotification([
+    '👁️ *CLIENTE APERTOU EM COMPRAR*',
+    '━━━━━━━━━━━━━━━',
+    productName ? `🛍️ *Produto:* ${productName}` : null,
+    amount ? `💰 *Valor:* ${fmt(amount)}` : null,
+    `🕒 *Data:* ${new Date().toLocaleString('pt-BR')}`,
+    '━━━━━━━━━━━━━━━'
+  ].filter(Boolean).join('\n')).catch(() => {});
+  res.json({ ok: true });
+});
+
 // ===================== AUTH ROUTES =====================
 
 app.post('/api/auth/register', authRateLimit(5, 15 * 60 * 1000), (req, res) => {
@@ -1136,6 +1169,17 @@ app.post('/api/auth/register', authRateLimit(5, 15 * 60 * 1000), (req, res) => {
   saveUsers(users);
   tracker.record('signup', { email: newUser.email });
   audit.append('signup', newUser.email, req.ip, { email: newUser.email, nome: newUser.nome });
+
+  sendActivityNotification([
+    '🆕 *NOVO CADASTRO*',
+    '━━━━━━━━━━━━━━━',
+    `👤 *Nome:* ${newUser.nome}`,
+    `📧 *E-mail:* ${newUser.email}`,
+    `📱 *WhatsApp:* ${newUser.whatsapp}`,
+    `🕒 *Data:* ${new Date().toLocaleString('pt-BR')}`,
+    '━━━━━━━━━━━━━━━'
+  ].join('\n')).catch(() => {});
+
   res.json({ success: true, message: 'Cadastro realizado com sucesso.' });
 });
 
@@ -1194,6 +1238,17 @@ app.post('/api/auth/login', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   const u = users[idx];
   tracker.record('login', { email: u.email });
   audit.append('login', u.email, req.ip, { email: u.email, role: u.role || 'user' });
+
+  sendActivityNotification([
+    '🔑 *CLIENTE LOGOU*',
+    '━━━━━━━━━━━━━━━',
+    `👤 *Nome:* ${u.nome}`,
+    `📧 *E-mail:* ${u.email}`,
+    `📱 *WhatsApp:* ${u.whatsapp || 'Não informado'}`,
+    `🕒 *Data:* ${new Date().toLocaleString('pt-BR')}`,
+    '━━━━━━━━━━━━━━━'
+  ].join('\n')).catch(() => {});
+
   res.json({
     success: true,
     token: newToken,

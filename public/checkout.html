@@ -229,8 +229,9 @@
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; font-size: 18px; font-weight: 900;
     }
-    .co-pay-logo.pix  { background: #00BFA5; color: #fff; }
-    .co-pay-logo.card { background: #111827; color: #fff; }
+    .co-pay-logo.pix    { background: #00BFA5; color: #fff; }
+    .co-pay-logo.card   { background: #111827; color: #fff; }
+    .co-pay-logo.boleto { background: #F59E0B; color: #fff; font-size: 20px; }
     .co-pay-label { font-size: 14px; font-weight: 700; color: #111827; }
     .co-pay-sub   { font-size: 12px; color: #6B7280; margin-top: 1px; }
     .co-pay-badge {
@@ -569,12 +570,52 @@
         <div class="co-pay-badge">5% OFF</div>
       </div>
 
-      <!-- Cartão (oculto: fluxo manual — em breve via gateway integrado) -->
-      <div id="co-card-opt" style="display:none;"><input type="radio" name="paymethod" value="card"/></div>
-      <div id="co-card-form" style="display:none;">
-        <input id="card-number" type="hidden"/><input id="card-name" type="hidden"/>
-        <input id="card-expiry" type="hidden"/><input id="card-cvv" type="hidden"/>
-        <select id="card-installments" style="display:none;"><option value="1">1x</option></select>
+      <!-- Cartão de Crédito -->
+      <div class="co-pay-opt" id="co-card-opt" onclick="selectPayMethod('cartao')">
+        <input type="radio" name="paymethod" value="cartao"/>
+        <div class="co-pay-logo card" style="font-size:20px;">💳</div>
+        <div>
+          <div class="co-pay-label">Cartão de Crédito</div>
+          <div class="co-pay-sub">Visa, Mastercard, Elo, Amex</div>
+        </div>
+      </div>
+
+      <!-- Formulário do cartão -->
+      <div id="co-card-form">
+        <div class="co-form-field">
+          <label>Número do cartão</label>
+          <input id="card-number" type="text" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number"/>
+        </div>
+        <div class="co-form-field">
+          <label>Nome no cartão</label>
+          <input id="card-name" type="text" placeholder="Como está escrito no cartão" autocomplete="cc-name" style="text-transform:uppercase;"/>
+        </div>
+        <div class="co-form-row">
+          <div class="co-form-field">
+            <label>Validade</label>
+            <input id="card-expiry" type="text" inputmode="numeric" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp"/>
+          </div>
+          <div class="co-form-field">
+            <label>CVV</label>
+            <input id="card-cvv" type="text" inputmode="numeric" placeholder="123" maxlength="4" autocomplete="cc-csc"/>
+          </div>
+        </div>
+        <div class="co-form-field">
+          <label>Parcelas</label>
+          <select id="card-installments" style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;color:#111827;font-size:14px;outline:none;width:100%;background:#fff;transition:border-color .15s;">
+            <option value="1">1x — aguardando valor</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Boleto Bancário -->
+      <div class="co-pay-opt" id="co-boleto-opt" onclick="selectPayMethod('boleto')">
+        <input type="radio" name="paymethod" value="boleto"/>
+        <div class="co-pay-logo boleto">📄</div>
+        <div>
+          <div class="co-pay-label">Boleto Bancário</div>
+          <div class="co-pay-sub">Vence em 1 dia útil</div>
+        </div>
       </div>
 
       <!-- Desconto PIX visível -->

@@ -241,6 +241,14 @@ function proceedToCheckout() {
       numItems: cart.getCount()
     });
   }
+  fetch('/api/events/checkout-visit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      productName: cart.items.map(function(i){ return i.nome; }).join(', '),
+      amount: cart.getTotal()
+    })
+  }).catch(function(){});
   window.location.href = '/checkout.html?source=cart';
 }
 

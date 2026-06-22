@@ -547,12 +547,14 @@
 
     // ── Fluxo Cartão de Crédito ────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('method') === 'cartao') {
+    const method = urlParams.get('method');
+
+    if (method === 'cartao' || method === 'boleto') {
       // Esconde seção PIX
       const qrSec = document.querySelector('.qr-section');
       if (qrSec) qrSec.style.display = 'none';
 
-      // Esconde apenas botão copiar (link compras permanece visível)
+      // Esconde botão copiar (link compras permanece visível)
       if (mainCopyBtn) mainCopyBtn.style.display = 'none';
 
       // Atualiza hero card
@@ -561,16 +563,26 @@
       const heroLabel = document.querySelector('.pay-label');
       if (heroLabel) heroLabel.textContent = 'Quase lá!';
 
-      // Exibe painel de sucesso estilo cartão
+      // Exibe painel de sucesso
       const successPanel = document.getElementById('success-message');
       if (successPanel) {
         successPanel.style.display = 'block';
         const icon = successPanel.querySelector('svg');
-        if (icon) icon.setAttribute('stroke', '#2563EB');
-        const h2 = successPanel.querySelector('h2');
-        if (h2) { h2.textContent = 'Pedido Registrado!'; h2.style.color = '#2563EB'; }
-        const p = successPanel.querySelector('p');
-        if (p) p.innerHTML = 'Em breve nossa equipe enviará o link de pagamento por cartão no seu <strong>WhatsApp</strong>. Fique atento às mensagens!';
+
+        if (method === 'cartao') {
+          if (icon) icon.setAttribute('stroke', '#2563EB');
+          const h2 = successPanel.querySelector('h2');
+          if (h2) { h2.textContent = 'Pedido Registrado!'; h2.style.color = '#2563EB'; }
+          const p = successPanel.querySelector('p');
+          if (p) p.innerHTML = 'Recebemos os dados do seu cartão. Nossa equipe processará o pagamento e você receberá a confirmação no seu <strong>WhatsApp</strong> em breve. Fique atento!';
+        } else {
+          // boleto
+          if (icon) icon.setAttribute('stroke', '#F59E0B');
+          const h2 = successPanel.querySelector('h2');
+          if (h2) { h2.textContent = 'Boleto Solicitado!'; h2.style.color = '#D97706'; }
+          const p = successPanel.querySelector('p');
+          if (p) p.innerHTML = 'Sua solicitação de boleto foi recebida. Em breve nossa equipe enviará o <strong>código do boleto</strong> no seu <strong>WhatsApp</strong>. O prazo de vencimento será de 1 dia útil após o recebimento.';
+        }
       }
     }
 

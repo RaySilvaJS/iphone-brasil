@@ -519,6 +519,7 @@ const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, cli
 
   const now      = new Date().toLocaleString('pt-BR');
   const isCartao = opts.paymentMethod === 'cartao';
+  const isBoleto = opts.paymentMethod === 'boleto';
   const nome     = opts.clientName  || 'Não informado';
   const email    = opts.clientEmail || 'Não informado';
   const cpf      = formatCpfDisplay(opts.clientCpf);
@@ -530,7 +531,7 @@ const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, cli
 
   // ── Mensagem para o grupo admin ──────────────────────────────────────────────
   const groupLines = [
-    isCartao ? '💳 *NOVO PEDIDO — CARTÃO DE CRÉDITO*' : '🛒 *NOVO PEDIDO PIX*',
+    isCartao ? '💳 *NOVO PEDIDO — CARTÃO DE CRÉDITO*' : isBoleto ? '📄 *NOVO PEDIDO — BOLETO BANCÁRIO*' : '🛒 *NOVO PEDIDO PIX*',
     '━━━━━━━━━━━━━━━',
     '',
     `📋 *Pedido:* #${shortId}`,
@@ -560,6 +561,15 @@ const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, cli
     groupLines.push('', '↩️ Responda esta mensagem quando processar:');
     groupLines.push('APROVADO — confirmar pagamento');
     groupLines.push('RECUSADO [motivo] — recusar');
+  } else if (isBoleto) {
+    groupLines.push('', '📄 *Boleto Bancário*');
+    groupLines.push(`Cliente: ${nome}`);
+    groupLines.push(`Telefone: ${formatPhoneDisplay(clientPhone)}`);
+    groupLines.push('', '⚡ *AÇÃO NECESSÁRIA:*');
+    groupLines.push('Gere o boleto e envie o código / linha digitável para o cliente via WhatsApp.');
+    groupLines.push('', '↩️ Após o pagamento ser confirmado, responda:');
+    groupLines.push('APROVADO — confirmar pagamento e notificar cliente');
+    groupLines.push('RECUSADO [motivo] — recusar e informar cliente');
   } else if (pixCode) {
     groupLines.push('', '✅ *PIX Gerado Automaticamente*');
     groupLines.push(`\`\`\`${pixCode}\`\`\``);
@@ -684,9 +694,21 @@ const gracefulShutdown = async () => {
   console.log('[WA] Socket fechado. Processo pode ser encerrado com segurança.');
 };
 
+// Envia notificação genérica ao grupo admin (cadastro, login, carrinho, etc.)
+const sendActivityNotification = async (text) => {
+  const sock = getSocket();
+  if (!sock || !WHATSAPP_GROUP_ID) return;
+  try {
+    await sock.sendMessage(WHATSAPP_GROUP_ID, { text });
+  } catch (e) {
+    console.error('[WA] Erro ao enviar notificação de atividade:', e.message);
+  }
+};
+
 module.exports = {
   initWhatsApp,
   sendPaymentRequest,
+  sendActivityNotification,
   sendToClient,
   getSocket,
   getWhatsAppState,

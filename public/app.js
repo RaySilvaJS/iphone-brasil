@@ -619,6 +619,11 @@ async function addToCart(productId, btn) {
       product.brinde = extras.brinde;
       product.freteGratis = extras.freteGratis;
       window.cart.addItem(product, 1);
+      fetch('/api/events/cart-add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName: product.nome, productId: product.id, price: product.preco, quantity: 1 })
+      }).catch(() => {});
     }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Adicionar ao Carrinho'; }
@@ -639,6 +644,11 @@ async function buyNow(productId, btn) {
       product.brinde       = extras.brinde;
       product.freteGratis  = extras.freteGratis;
       window.cart.addItem(product, 1);
+      fetch('/api/events/checkout-visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName: product.nome, amount: product.preco })
+      }).catch(() => {});
       _showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {
         window.location.href = '/cart.html';
       });
