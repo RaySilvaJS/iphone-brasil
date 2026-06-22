@@ -63,6 +63,48 @@ const toWAJid = (phone) => {
   return `${digits}@s.whatsapp.net`;
 };
 
+// ── Resolve o JID correto via API do WhatsApp, tratando migração 8→9 dígitos ─
+// O WhatsApp no Brasil tem números que existem nas duas formas (com e sem o 9).
+// sock.onWhatsApp() consulta os servidores e retorna o JID cadastrado de fato.
+const resolveWAJid = async (sock, phone) => {
+  const jid = toWAJid(phone);
+  if (!jid) return null;
+
+  const number = jid.replace('@s.whatsapp.net', '');
+
+  try {
+    const results = await sock.onWhatsApp(number);
+    if (results?.length > 0 && results[0]?.exists) return results[0].jid;
+
+    // Fallback: tenta a forma alternativa (com ou sem o 9 extra)
+    if (number.startsWith('55')) {
+      let altNumber = null;
+      if (number.length === 13) {
+        // 55 + DDD(2) + 9 + local(8) → remove o 9
+        const ddd = number.slice(2, 4);
+        const local = number.slice(4);
+        if (local[0] === '9') altNumber = '55' + ddd + local.slice(1);
+      } else if (number.length === 12) {
+        // 55 + DDD(2) + local(8) → adiciona o 9
+        altNumber = number.slice(0, 4) + '9' + number.slice(4);
+      }
+      if (altNumber) {
+        const results2 = await sock.onWhatsApp(altNumber);
+        if (results2?.length > 0 && results2[0]?.exists) {
+          console.log(`[WA] JID resolvido via migração 8↔9: ${number} → ${results2[0].jid}`);
+          return results2[0].jid;
+        }
+      }
+    }
+
+    console.warn(`[WA] Número não encontrado no WhatsApp: ${number}`);
+  } catch (e) {
+    console.warn(`[WA] onWhatsApp falhou (${number}), usando JID original:`, e.message);
+  }
+
+  return jid; // fallback ao JID construído localmente
+};
+
 // ── Formata número para exibição ──────────────────────────────────────────────
 const formatPhoneDisplay = (phone) => {
   if (!phone) return 'Não informado';
@@ -84,7 +126,7 @@ const formatCpfDisplay = (cpf) => {
 // ── Envia mensagem diretamente para o cliente (usado pelo painel admin) ───────
 const sendToClient = async (clientPhone, text) => {
   if (!socketInstance || !clientPhone) return false;
-  const jid = toWAJid(clientPhone);
+  const jid = await resolveWAJid(socketInstance, clientPhone);
   if (!jid) { console.error('[WA] sendToClient: número inválido:', clientPhone); return false; }
   try {
     await socketInstance.sendMessage(jid, { text });
@@ -340,7 +382,7 @@ const initWhatsApp = async () => {
     const cur   = allPayments[idx];
 
     const clientPhone  = cur.clientPhone;
-    const clientJid    = toWAJid(clientPhone);
+    const clientJid    = await resolveWAJid(sock, clientPhone);
     const shortDisplay = cur.shortId ? `#${cur.shortId}` : cur.id.slice(0, 8);
 
     // ── Comando: APROVADO ─────────────────────────────────────────────────────
@@ -600,7 +642,7 @@ const sendPaymentRequest = async (sock, paymentId, shortId, product, amount, cli
   // ── Mensagem de confirmação para o cliente (apenas PIX) ───────────────────
   // Cartão não envia PIX ao cliente — a mensagem de confirmação é manual.
   if (!isCartao && pixCode && clientPhone) {
-    const clientJid = toWAJid(clientPhone);
+    const clientJid = await resolveWAJid(sock, clientPhone);
     if (clientJid) {
       const clientLines = [
         '✅ *Seu PIX foi gerado com sucesso!*',
@@ -710,6 +752,7 @@ module.exports = {
   sendPaymentRequest,
   sendActivityNotification,
   sendToClient,
+  resolveWAJid,
   getSocket,
   getWhatsAppState,
   getWaEvents: loadWaEvents,

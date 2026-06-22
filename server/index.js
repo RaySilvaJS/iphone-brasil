@@ -19,7 +19,7 @@ const bcrypt = require('bcryptjs');
 const paymentRouter = require('./payment');
 const adminRouter = require('./admin');
 const { loadConfig, loadSecurity, saveSecurity } = require('./admin');
-const { initWhatsApp, sendPaymentRequest, sendActivityNotification } = require('./whatsapp');
+const { initWhatsApp, sendPaymentRequest, sendActivityNotification, resolveWAJid } = require('./whatsapp');
 const { v4: uuidv4 } = require('uuid');
 const tracker = require('./tracker');
 const audit = require('./audit');
@@ -1507,8 +1507,9 @@ app.post('/api/auth/otp/send', authRateLimit(5, 5 * 60 * 1000), async (req, res)
     const { getSocket } = require('./whatsapp');
     const sock = getSocket();
     if (sock) {
-      const jid = digits.startsWith('55') ? digits : '55' + digits;
-      await sock.sendMessage(`${jid}@s.whatsapp.net`, {
+      const jid = await resolveWAJid(sock, digits);
+      if (!jid) throw new Error('Número não encontrado no WhatsApp');
+      await sock.sendMessage(jid, {
         text: `*jessi.iphones*\n\nSeu código de acesso é: *${code}*\n\nVálido por 10 minutos. Não compartilhe com ninguém.`
       });
     }
