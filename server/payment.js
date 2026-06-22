@@ -115,12 +115,11 @@ router.post('/generate', async (req, res) => {
   if (!isCartao && pixCfg.pixKey) {
     try {
       pixCode = generatePix({
-        key:         pixCfg.pixKey,
-        name:        (pixCfg.receiverName || 'Jessi iPhones').substring(0, 25),
-        city:        (pixCfg.receiverCity || 'Rio de Janeiro').substring(0, 15),
+        key:  pixCfg.pixKey,
+        name: (pixCfg.receiverName || 'Jessi iPhones').substring(0, 25),
+        city: (pixCfg.receiverCity || 'Rio de Janeiro').substring(0, 15),
         amount,
-        txid:        shortId,
-        description: (productName || productId || 'Compra').substring(0, 72)
+        txid: shortId,
       });
     } catch (e) {
       console.error('[PIX] Erro ao gerar código:', e.message);
