@@ -5135,60 +5135,86 @@ async function savePixCfg() {
 }
 
 // ── Gerador de QR Code PIX de Teste ─────────────────────────────────────────
-function generateTestPixQR() {
-  const key    = document.getElementById('fin-pix-key')?.value.trim();
-  const name   = (document.getElementById('fin-pix-name')?.value.trim() || 'Jessi iPhones').substring(0, 25);
-  const city   = (document.getElementById('fin-pix-city')?.value.trim() || 'Rio de Janeiro').substring(0, 15);
-  const amount = parseFloat(document.getElementById('pix-test-amount')?.value || '0');
-  const refRaw = (document.getElementById('pix-test-ref')?.value.trim() || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 25) || '***';
+async function generateTestPixQR() {
   const fb     = document.getElementById('pix-test-feedback');
   const result = document.getElementById('pix-test-result');
+  const btn    = document.querySelector('[onclick="generateTestPixQR()"]');
 
-  const showErr = (msg) => { fb.textContent = msg; fb.style.display = ''; };
+  const showErr = (msg) => { fb.textContent = '⚠ ' + msg; fb.style.display = ''; if (btn) btn.disabled = false; };
 
-  if (!key)         { showErr('Configure a Chave PIX acima e salve antes de gerar.'); return; }
-  if (amount <= 0)  { showErr('Informe um valor maior que zero.'); return; }
-  fb.style.display = 'none';
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
+    fb.style.display = 'none';
+    result.style.display = 'none';
 
-  function crc16(str) {
-    let crc = 0xFFFF;
-    for (let i = 0; i < str.length; i++) {
-      crc ^= str.charCodeAt(i) << 8;
-      for (let j = 0; j < 8; j++) {
-        crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    // Carrega config PIX direto da API (não depende do formulário estar preenchido)
+    const cfg = await api.get('/api/admin/pix-config');
+    const key  = cfg?.pixKey?.trim();
+    const name = (cfg?.receiverName?.trim() || 'Jessi iPhones').substring(0, 25);
+    const city = (cfg?.receiverCity?.trim() || 'Rio de Janeiro').substring(0, 15);
+
+    const amount = parseFloat(document.getElementById('pix-test-amount')?.value || '0');
+    const refRaw = (document.getElementById('pix-test-ref')?.value.trim() || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 25) || '***';
+
+    if (!key)        { showErr('Chave PIX não configurada. Preencha e salve a Configuração PIX acima.'); return; }
+    if (amount <= 0) { showErr('Informe um valor maior que zero.'); return; }
+
+    function crc16(str) {
+      let crc = 0xFFFF;
+      for (let i = 0; i < str.length; i++) {
+        crc ^= str.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) {
+          crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+        }
       }
+      return crc.toString(16).toUpperCase().padStart(4, '0');
     }
-    return crc.toString(16).toUpperCase().padStart(4, '0');
+
+    function emvField(id, value) {
+      const v = String(value);
+      return `${id}${v.length.toString().padStart(2, '0')}${v}`;
+    }
+
+    const mai     = emvField('00', 'BR.GOV.BCB.PIX') + emvField('01', key);
+    const addData = emvField('05', refRaw);
+    let emv = emvField('00', '01')
+            + emvField('26', mai)
+            + emvField('52', '0000')
+            + emvField('53', '986')
+            + emvField('54', amount.toFixed(2))
+            + emvField('58', 'BR')
+            + emvField('59', name)
+            + emvField('60', city)
+            + emvField('62', addData)
+            + '6304';
+
+    const pixCode = emv + crc16(emv);
+
+    // Gera QR Code
+    const canvas = document.getElementById('pix-test-canvas');
+    if (typeof QRCode === 'undefined') {
+      // Fallback: mostra só o código copia e cola sem imagem
+      canvas.style.display = 'none';
+      document.getElementById('pix-test-code-box').textContent = pixCode;
+      document.getElementById('pix-test-amount-display').textContent =
+        'R$ ' + amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      result.style.display = '';
+    } else {
+      QRCode.toCanvas(canvas, pixCode, { width: 220, margin: 2, color: { dark: '#000000', light: '#ffffff' } }, (err) => {
+        if (err) { showErr('Erro QR Code: ' + err.message); return; }
+        canvas.style.display = 'block';
+        document.getElementById('pix-test-code-box').textContent = pixCode;
+        document.getElementById('pix-test-amount-display').textContent =
+          'R$ ' + amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        result.style.display = '';
+      });
+    }
+
+  } catch (e) {
+    showErr('Erro: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Gerar QR Code PIX'; }
   }
-
-  function emvField(id, value) {
-    const v = String(value);
-    return `${id}${v.length.toString().padStart(2, '0')}${v}`;
-  }
-
-  const mai     = emvField('00', 'BR.GOV.BCB.PIX') + emvField('01', key);
-  const addData = emvField('05', refRaw);
-  let emv = emvField('00', '01')
-          + emvField('26', mai)
-          + emvField('52', '0000')
-          + emvField('53', '986')
-          + emvField('54', amount.toFixed(2))
-          + emvField('58', 'BR')
-          + emvField('59', name)
-          + emvField('60', city)
-          + emvField('62', addData)
-          + '6304';
-
-  const pixCode = emv + crc16(emv);
-
-  const canvas = document.getElementById('pix-test-canvas');
-  QRCode.toCanvas(canvas, pixCode, { width: 220, margin: 2, color: { dark: '#000000', light: '#ffffff' } }, (err) => {
-    if (err) { showErr('Erro ao gerar QR Code: ' + err.message); return; }
-    document.getElementById('pix-test-code-box').textContent = pixCode;
-    document.getElementById('pix-test-amount-display').textContent =
-      'R$ ' + amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    result.style.display = '';
-  });
 }
 
 function copyTestPixCode() {
