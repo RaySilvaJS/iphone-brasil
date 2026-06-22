@@ -40,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const itemNode = document.createElement('div');
       itemNode.className = 'cart-item';
       itemNode.innerHTML = `
-        <img src="${item.imagem}" alt="${item.nome}" />
+        <img src="${item.imagem}" alt="${cleanProductText(item.nome)}" />
         <div class="item-details">
-          <h2>${item.nome}</h2>
+          <h2>${cleanProductText(item.nome)}</h2>
           ${item.descontoHoje ? `<p style="background:#FFF3CD;color:#92400E;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:3px;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> ${item.descontoHoje}% OFF hoje</p>` : ''}
           ${item.brinde ? `<p style="color:#16A34A;font-size:12px;font-weight:600;margin-bottom:4px;display:inline-flex;align-items:center;gap:3px"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg> Brinde: ${item.brinde}</p>` : ''}
           ${item.freteGratis ? `<p style="color:#00A650;font-size:11px;margin-bottom:4px;display:inline-flex;align-items:center;gap:3px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Frete grátis (1ª compra)</p>` : ''}

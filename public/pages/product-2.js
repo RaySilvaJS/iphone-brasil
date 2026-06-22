@@ -70,8 +70,8 @@
   window.closeLightbox = () => document.getElementById('lightbox').classList.remove('open');
 
   const updateSEO = (p, imgSrc) => {
-    const title = `${p.name} — jessi.iphones`;
-    const desc = `${p.condition} · ${p.storage || ''} · ${p.color || ''} · ${fmt(p.price)} em até 12x sem juros. ${(p.description || '').slice(0, 120)}...`;
+    const title = `${cleanProductText(p.name)} — jessi.iphones`;
+    const desc = `${p.condition} · ${p.storage || ''} · ${p.color || ''} · ${fmt(p.price)} em até 12x sem juros. ${cleanProductText((p.description || '').slice(0, 120))}...`;
     document.getElementById('page-title').textContent = title;
     document.getElementById('meta-desc').content = desc;
     document.getElementById('og-title').content = title;
@@ -82,8 +82,8 @@
     const schema = {
       '@context': 'https://schema.org/',
       '@type': 'Product',
-      name: p.name,
-      description: (p.description || '').slice(0, 500),
+      name: cleanProductText(p.name),
+      description: cleanProductText((p.description || '').slice(0, 500)),
       brand: { '@type': 'Brand', name: p.specs?.Marca || 'Apple' },
       sku: p.id,
       offers: {
@@ -201,7 +201,7 @@
   function _showInsuranceModal() {
     const p = window._buyNowProduct || {};
     const price = p.preco || 0;
-    const pNome = p.nome || 'este produto';
+    const pNome = cleanProductText(p.nome || 'este produto');
     const pImg  = p.imagem || '';
 
     const g  = Math.round(price * 0.115);
@@ -480,7 +480,7 @@
           <a class="related-card" href="product.html?id=${p.id}">
             ${img ? `<img src="${img}" alt="${p.name}" loading="lazy"/>` : `<div style="aspect-ratio:1;background:#f1f5f9;display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`}
             <div class="related-card-body">
-              <div class="related-card-name">${p.name}</div>
+              <div class="related-card-name">${cleanProductText(p.name)}</div>
               ${p.rating ? `<div style="color:#F59E0B;font-size:.8rem;margin-bottom:4px;">${'★'.repeat(Math.round(p.rating))} <span style="color:#475569;font-size:.75rem;">${p.rating.toFixed(1)}</span></div>` : ''}
               ${p.priceOriginal ? `<div class="related-card-original">${fmt(p.priceOriginal)}</div>` : ''}
               <div class="related-card-price">${fmt(p.price)}</div>
@@ -551,7 +551,7 @@
         <span class="breadcrumb-sep">/</span>
         <a href="index.html">Apple</a>
         <span class="breadcrumb-sep">/</span>
-        <span class="breadcrumb-current">${product.name}</span>
+        <span class="breadcrumb-current">${cleanProductText(product.name)}</span>
       </nav>
 
       <div class="product-top-grid">
@@ -566,12 +566,12 @@
                 ${IC.heart}
               </button>
               <button class="gallery-fab gallery-fab-share" title="Compartilhar"
-                onclick="if(navigator.share){navigator.share({title:'${product.name}',url:window.location.href})}else{navigator.clipboard&&navigator.clipboard.writeText(window.location.href);alert('Link copiado!')}">
+                onclick="if(navigator.share){navigator.share({title:'${cleanProductText(product.name)}',url:window.location.href})}else{navigator.clipboard&&navigator.clipboard.writeText(window.location.href);alert('Link copiado!')}">
                 ${IC.share}
               </button>
               ${images.length ? `
                 <button class="gallery-nav-btn prev" id="gallery-prev" aria-label="Imagem anterior">${IC.chevL}</button>
-                <img id="hero-img" src="${heroSrc}" alt="${product.name}" style="cursor:zoom-in;"/>
+                <img id="hero-img" src="${heroSrc}" alt="${cleanProductText(product.name)}" style="cursor:zoom-in;"/>
                 <button class="gallery-nav-btn next" id="gallery-next" aria-label="Próxima imagem">${IC.chevR}</button>
               ` : `<div class="gallery-empty"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Imagem não disponível</span></div>`}
             </div>
@@ -590,7 +590,7 @@
             <div class="product-condition-row">
               <span class="badge-condition">${product.condition || 'Novo'}</span>
             </div>
-            <h1 class="product-name">${product.name}</h1>
+            <h1 class="product-name">${cleanProductText(product.name)}</h1>
             ${(product.reviews||0) > 0 ? `<a href="#" class="review-anchor-link" onclick="event.preventDefault();document.getElementById('reviews-title')?.scrollIntoView({behavior:'smooth'})">${starsHtml(product.rating||5, '.9rem')} ${(product.reviews||0).toLocaleString('pt-BR')} avaliações · Ver todas</a>` : ''}
             <div class="seller-row">
               Vendido por <strong>${product.seller || 'jessi.iphones'}</strong>
@@ -795,8 +795,8 @@
       <section class="section" aria-labelledby="desc-title">
         <h2 class="section-title" id="desc-title">Descrição do produto</h2>
         <div class="description-content">
-          <div id="desc-short">${formatDescription((product.description || '').slice(0, 600))}${(product.description||'').length > 600 ? '<p>...</p>' : ''}</div>
-          <div id="desc-full" style="display:none;">${formatDescription(product.description || '')}</div>
+          <div id="desc-short">${formatDescription(cleanProductText((product.description || '').slice(0, 600)))}${(product.description||'').length > 600 ? '<p>...</p>' : ''}</div>
+          <div id="desc-full" style="display:none;">${formatDescription(cleanProductText(product.description || ''))}</div>
         </div>
         ${(product.description||'').length > 600 ? `<button class="desc-toggle-btn" id="desc-toggle-btn">${IC.chevDown} Ver descrição completa</button>` : ''}
       </section>
@@ -947,7 +947,7 @@
       history.pushState({ id: p.id }, '', u.toString());
 
       const elName = document.querySelector('.product-name');
-      if (elName) elName.textContent = p.name;
+      if (elName) elName.textContent = cleanProductText(p.name);
 
       const imgs = (Array.isArray(p.images) ? p.images : []).filter(isValidImg);
       if (window._galleryUpdate) window._galleryUpdate(imgs.length ? imgs : (product.images || []).filter(isValidImg));
@@ -1211,7 +1211,7 @@
         : (product.price || product.preco || 0);
       window._buyNowProduct = {
         id: product.id,
-        nome: product.name || product.nome || 'Produto',
+        nome: cleanProductText(product.name || product.nome || 'Produto'),
         preco: _finalPrice,
         imagem: Array.isArray(product.images) ? product.images[0] : (product.image || product.imagem || '')
       };

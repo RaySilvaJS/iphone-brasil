@@ -1,4 +1,17 @@
 /* auth.js - Gerenciamento de sessão do usuário */
+
+/**
+ * Remove "recondicionado" (e variações) dos textos de produto exibidos ao usuário.
+ * Não altera o JSON original — só filtra na camada visual.
+ */
+window.cleanProductText = function (text) {
+  if (!text) return text || '';
+  return String(text)
+    .replace(/\s*\brecondicionado\b\s*/gi, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+};
+
 (function () {
   var AUTH_KEY = 'user-session';
 

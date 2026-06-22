@@ -372,7 +372,7 @@ const _buildProductCardHTML = (product) => {
       </button>
 
       ${mainImage
-        ? `<img src="${mainImage}" alt="${product.name}" loading="lazy" decoding="async">`
+        ? `<img src="${mainImage}" alt="${cleanProductText(product.name)}" loading="lazy" decoding="async">`
         : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#F1F5F9;">${ICONS.smartphone}</div>`
       }
   </div>
@@ -380,7 +380,7 @@ const _buildProductCardHTML = (product) => {
   <div class="olx-adcard__content">
 
       <a href="${productUrl}" class="olx-adcard__link">
-        <h2 class="olx-adcard__title">${product.name}</h2>
+        <h2 class="olx-adcard__title">${cleanProductText(product.name)}</h2>
       </a>
 
       ${isIphone ? `<div class="desconto-hoje-badge">${ICONS.zap} Comprando HOJE: ${descontoHoje}% OFF</div>` : ''}

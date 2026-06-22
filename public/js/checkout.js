@@ -74,9 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
     itemsEmpty.style.display = 'none';
     itemsList.innerHTML = orderItems.map(item => `
       <div style="display:flex;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid #F3F4F6">
-        <img src="${esc(item.imagem)}" alt="${esc(item.nome)}" style="width:62px;height:62px;object-fit:contain;border:1px solid #E5E7EB;border-radius:8px;background:#FAFAFA;padding:4px;flex-shrink:0"/>
+        <img src="${esc(item.imagem)}" alt="${esc(cleanProductText(item.nome))}" style="width:62px;height:62px;object-fit:contain;border:1px solid #E5E7EB;border-radius:8px;background:#FAFAFA;padding:4px;flex-shrink:0"/>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">${esc(item.nome)}</div>
+          <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">${esc(cleanProductText(item.nome))}</div>
           ${item.descontoHoje ? `<div style="font-size:11px;color:#16A34A;font-weight:700">${item.descontoHoje}% OFF hoje</div>` : ''}
           ${item.freteGratis && isPrimeiraCompra ? `<div style="font-size:11px;color:#16A34A;font-weight:700">Frete grátis (1ª compra)</div>` : ''}
           <div style="font-size:12px;color:#6B7280;margin-top:3px">Qtd: ${item.quantidade}</div>
