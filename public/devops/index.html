@@ -1110,6 +1110,42 @@ tbody tr:last-child td { border-bottom: none; }
         </div>
       </div>
 
+      <!-- Gerador de QR Code PIX de Teste -->
+      <div class="card" style="margin-bottom:20px">
+        <h3>🧪 Gerar QR Code PIX de Teste</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+
+          <!-- Inputs -->
+          <div style="display:grid;gap:12px">
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Valor (R$)</label>
+              <input id="pix-test-amount" type="number" min="0.01" step="0.01" value="1.00" class="input" style="width:100%;font-size:20px;font-weight:700;padding:10px 14px" placeholder="0,00"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Referência (opcional, até 25 chars)</label>
+              <input id="pix-test-ref" type="text" class="input" style="width:100%" placeholder="TESTE-001" maxlength="25"/>
+            </div>
+            <button class="btn btn-green" onclick="generateTestPixQR()" style="padding:12px;font-size:14px;font-weight:700">⚡ Gerar QR Code PIX</button>
+            <div id="pix-test-feedback" style="font-size:12px;color:var(--red);display:none;padding:8px;background:rgba(248,81,73,.1);border-radius:6px;border:1px solid rgba(248,81,73,.3)"></div>
+            <p style="font-size:11px;color:var(--muted);line-height:1.5">Usa a chave e dados configurados acima.<br>Gera um PIX real — escaneável por qualquer banco.</p>
+          </div>
+
+          <!-- Resultado -->
+          <div id="pix-test-result" style="display:none;text-align:center">
+            <canvas id="pix-test-canvas" style="border-radius:10px;background:#fff;padding:10px;display:block;margin:0 auto 10px"></canvas>
+            <div id="pix-test-amount-display" style="font-size:22px;font-weight:800;color:var(--green);margin-bottom:12px">R$ 0,00</div>
+            <div id="pix-test-code-box"
+                 onclick="copyTestPixCode()"
+                 title="Clique para copiar"
+                 style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;word-break:break-all;font-size:10px;font-family:monospace;text-align:left;max-height:72px;overflow:auto;line-height:1.5;transition:border-color .15s">
+            </div>
+            <button class="btn btn-ghost" onclick="copyTestPixCode()" style="width:100%;margin-bottom:4px">📋 Copiar código PIX</button>
+            <div id="pix-test-copy-fb" style="font-size:12px;color:var(--green);display:none;font-weight:600">✓ Código copiado!</div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- Aprovação de pagamentos -->
       <div class="card" style="padding:0">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px">
@@ -5095,6 +5131,79 @@ async function savePixCfg() {
     }
   } catch(e) {
     if (fb) { fb.style.color='var(--red)'; fb.textContent='Erro: ' + e.message; fb.style.display=''; }
+  }
+}
+
+// ── Gerador de QR Code PIX de Teste ─────────────────────────────────────────
+function generateTestPixQR() {
+  const key    = document.getElementById('fin-pix-key')?.value.trim();
+  const name   = (document.getElementById('fin-pix-name')?.value.trim() || 'Jessi iPhones').substring(0, 25);
+  const city   = (document.getElementById('fin-pix-city')?.value.trim() || 'Rio de Janeiro').substring(0, 15);
+  const amount = parseFloat(document.getElementById('pix-test-amount')?.value || '0');
+  const refRaw = (document.getElementById('pix-test-ref')?.value.trim() || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 25) || '***';
+  const fb     = document.getElementById('pix-test-feedback');
+  const result = document.getElementById('pix-test-result');
+
+  const showErr = (msg) => { fb.textContent = msg; fb.style.display = ''; };
+
+  if (!key)         { showErr('Configure a Chave PIX acima e salve antes de gerar.'); return; }
+  if (amount <= 0)  { showErr('Informe um valor maior que zero.'); return; }
+  fb.style.display = 'none';
+
+  function crc16(str) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < str.length; i++) {
+      crc ^= str.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) {
+        crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+
+  function emvField(id, value) {
+    const v = String(value);
+    return `${id}${v.length.toString().padStart(2, '0')}${v}`;
+  }
+
+  const mai     = emvField('00', 'BR.GOV.BCB.PIX') + emvField('01', key);
+  const addData = emvField('05', refRaw);
+  let emv = emvField('00', '01')
+          + emvField('26', mai)
+          + emvField('52', '0000')
+          + emvField('53', '986')
+          + emvField('54', amount.toFixed(2))
+          + emvField('58', 'BR')
+          + emvField('59', name)
+          + emvField('60', city)
+          + emvField('62', addData)
+          + '6304';
+
+  const pixCode = emv + crc16(emv);
+
+  const canvas = document.getElementById('pix-test-canvas');
+  QRCode.toCanvas(canvas, pixCode, { width: 220, margin: 2, color: { dark: '#000000', light: '#ffffff' } }, (err) => {
+    if (err) { showErr('Erro ao gerar QR Code: ' + err.message); return; }
+    document.getElementById('pix-test-code-box').textContent = pixCode;
+    document.getElementById('pix-test-amount-display').textContent =
+      'R$ ' + amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    result.style.display = '';
+  });
+}
+
+function copyTestPixCode() {
+  const code = document.getElementById('pix-test-code-box')?.textContent?.trim();
+  if (!code) return;
+  const fb = document.getElementById('pix-test-copy-fb');
+  const done = () => { if (fb) { fb.style.display = ''; setTimeout(() => { fb.style.display = 'none'; }, 2200); } };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(code).then(done).catch(done);
+  } else {
+    try {
+      const el = document.createElement('textarea');
+      el.value = code; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+    } catch {}
+    done();
   }
 }
 
