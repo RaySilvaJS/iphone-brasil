@@ -24,6 +24,8 @@ server/auth_info/*
 # (usuários, pedidos, cupons, comprovantes — dados sensíveis e dinâmicos)
 server/data/*.json
 server/data/proofs/
+server/data/analytics/
+server/data/backups/
 
 # Sistema
 .DS_Store
