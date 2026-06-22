@@ -10,7 +10,36 @@ const bus = new EventEmitter();
 bus.setMaxListeners(200);
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
-const ANALYTICS_DIR = path.join(__dirname, 'data', 'analytics');
+const ANALYTICS_DIR  = path.join(__dirname, 'data', 'analytics');
+const CATALOG_DIR    = path.join(__dirname, 'data', 'catalogs');
+const PRODUCTS_PATH  = path.join(__dirname, 'data', 'products.json');
+const CATALOG_LABELS = {
+  'iphones.json':      'iPhones',
+  'androids.json':     'Android',
+  'consoles.json':     'Consoles',
+  'smartwatches.json': 'Smartwatches',
+  'acessorios.json':   'Acessórios',
+  'informatica.json':  'Informática',
+  'suplementos.json':  'Suplementos',
+};
+const _catalogCache = {};
+function lookupProductById(productId) {
+  const sid = String(productId);
+  for (const [file, category] of Object.entries(CATALOG_LABELS)) {
+    if (!_catalogCache[file]) {
+      try { _catalogCache[file] = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR, file), 'utf-8')); } catch { _catalogCache[file] = []; }
+    }
+    const p = (_catalogCache[file] || []).find(p => String(p.id) === sid);
+    if (p) return { name: p.name || null, price: p.price || null, category };
+  }
+  // Fallback: custom products
+  try {
+    const customs = JSON.parse(fs.readFileSync(PRODUCTS_PATH, 'utf-8'));
+    const p = customs.find(p => String(p.id) === sid);
+    if (p) return { name: p.name || p.nome || null, price: p.price || p.preco || null, category: p.category || 'Personalizado' };
+  } catch {}
+  return null;
+}
 const EV_DIR        = path.join(ANALYTICS_DIR, 'events');
 const DAILY_F       = path.join(ANALYTICS_DIR, 'daily.json');
 const PRODS_F       = path.join(ANALYTICS_DIR, 'products.json');
@@ -335,7 +364,7 @@ setInterval(() => {
 
 // ── heartbeat ─────────────────────────────────────────────────────────────────
 function heartbeat({
-  sessionId, page, productId, productName, referrer,
+  sessionId, page, productId, productName, productUrl, referrer,
   utmSource, utmMedium, utmCampaign, utmContent, utmTerm,
   fbclid, gclid,
   ip, ua, language, timezone, screenW, screenH
@@ -455,9 +484,25 @@ function heartbeat({
     }
   }
 
+  // Enrich product info from catalog when productId is present
+  let productPrice    = existing?.productPrice    || null;
+  let productCategory = existing?.productCategory || null;
+  if (productId && !productCategory) {
+    try {
+      const catalogInfo = lookupProductById(productId);
+      if (catalogInfo) {
+        if (!productName && catalogInfo.name) productName = catalogInfo.name;
+        if (catalogInfo.price) productPrice = `R$ ${Number(catalogInfo.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        productCategory = catalogInfo.category;
+      }
+    } catch {}
+  }
+
   sessions.set(sessionId, {
     id: sessionId, startedAt: existing?.startedAt || now, lastSeen: now,
     page: page || '/', productId: productId || null, productName: productName || null,
+    productUrl: productUrl || existing?.productUrl || null,
+    productPrice, productCategory,
     source, ip: cleanIp, device, browser, os,
     language: language || null, timezone: timezone || null,
     utmSource: utmSource || null, utmMedium: utmMedium || null,

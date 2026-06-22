@@ -62,7 +62,9 @@
 
     const productId = params.get('id') || null;
     let productName = null;
+    let productUrl  = null;
     if (productId) {
+      productUrl = window.location.href;
       const el = document.querySelector('[data-product-name], h1.product-title, .product-name');
       if (el) productName = el.textContent.trim().slice(0, 80);
       if (!productName) {
@@ -70,14 +72,14 @@
         if (parts.length > 1 && parts[0].trim().length > 3) productName = parts[0].trim().slice(0, 80);
       }
     }
-    return { page, productId, productName };
+    return { page, productId, productName, productUrl };
   }
 
   // ── Send heartbeat ──────────────────────────────────────────────────────────
   function send() {
-    const { page, productId, productName } = getPageInfo();
+    const { page, productId, productName, productUrl } = getPageInfo();
     const payload = JSON.stringify({
-      sessionId: sid, page, productId, productName,
+      sessionId: sid, page, productId, productName, productUrl,
       referrer, ...utm,
       fbclid: utm.fbclid || null,
       gclid:  utm.gclid  || null,

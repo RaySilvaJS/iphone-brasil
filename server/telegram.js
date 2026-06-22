@@ -213,14 +213,23 @@ function notifyPaidVisitor(session) {
 
   let text = `${icon} <b>NOVO VISITANTE — ${source.toUpperCase()}</b>\n`;
   text += `─────────────────────\n`;
-  text += `📅 <b>Data:</b> ${fmtDateTime(now)}\n\n`;
-  text += `🌎 <b>Origem:</b> ${source}\n`;
+  text += `📅 <b>Data:</b> ${fmtDateTime(now)}\n`;
+
+  // Bloco do produto (exibido apenas quando o visitante está em uma página de produto)
+  if (session.productId) {
+    text += `\n🛒 <b>Produto:</b>\n${session.productName || session.productId}\n`;
+    if (session.productUrl)      text += `\n🔗 <b>Link do Produto:</b>\n${session.productUrl}\n`;
+    if (session.productPrice)    text += `\n💰 <b>Preço:</b>\n${session.productPrice}\n`;
+    if (session.productCategory) text += `\n📂 <b>Categoria:</b>\n${session.productCategory}\n`;
+  }
+
+  text += `\n🌎 <b>Origem:</b> ${source}\n`;
   if (session.device)  text += `📱 <b>Dispositivo:</b> ${session.device}\n`;
   if (session.browser) text += `🌐 <b>Navegador:</b> ${session.browser}\n`;
   if (session.city)    text += `🌍 <b>Cidade:</b> ${session.city}\n`;
   if (session.country) text += `🇧🇷 <b>País:</b> ${session.country}\n`;
 
-  if (session.page) {
+  if (session.page && !session.productId) {
     text += `\n🔗 <b>Página:</b>\n${session.page}\n`;
   }
 
