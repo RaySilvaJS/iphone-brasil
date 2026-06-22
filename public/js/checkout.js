@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
           <input id="billing-whatsapp" type="tel" placeholder="WhatsApp (DDD + número) *" inputmode="numeric" autocomplete="tel"
             style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
-          <input id="billing-cpf" type="text" placeholder="CPF *" inputmode="numeric" maxlength="14"
+          <input id="billing-cpf" type="text" placeholder="CPF (opcional — para nota fiscal)" inputmode="numeric" maxlength="14"
             style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
           <p id="billing-err" style="margin:0;font-size:12px;color:#DC2626;display:none;"></p>
           <button id="billing-submit" onclick="submitBillingData()"
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (errEl) { errEl.style.display = 'none'; }
     if (!nome || nome.length < 3)               { if(errEl){errEl.textContent='Informe o nome completo.';errEl.style.display='block';} return; }
     if (whatsapp.replace(/\D/g,'').length < 10) { if(errEl){errEl.textContent='WhatsApp inválido.';errEl.style.display='block';} return; }
-    if (cpf.replace(/\D/g,'').length !== 11)    { if(errEl){errEl.textContent='CPF inválido.';errEl.style.display='block';} return; }
+    if (cpf && cpf.replace(/\D/g,'').length > 0 && cpf.replace(/\D/g,'').length !== 11) { if(errEl){errEl.textContent='CPF inválido.';errEl.style.display='block';} return; }
 
     if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
     try {
@@ -814,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
               style="padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"/>
             <input id="guest-whatsapp" type="tel" placeholder="WhatsApp (DDD + número) *" inputmode="numeric" autocomplete="tel"
               style="padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"/>
-            <input id="guest-cpf" type="text" placeholder="CPF (somente números) *" inputmode="numeric" maxlength="14"
+            <input id="guest-cpf" type="text" placeholder="CPF (opcional — para nota fiscal)" inputmode="numeric" maxlength="14"
               style="padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"/>
             <p id="guest-err" style="margin:0;font-size:12px;color:#DC2626;display:none;"></p>
             <button id="guest-submit" style="background:#16A34A;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
@@ -853,7 +853,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!nome || nome.length < 3)          { errEl.textContent = 'Informe o nome completo.'; errEl.style.display='block'; return; }
         if (whatsapp.replace(/\D/g,'').length < 10) { errEl.textContent = 'WhatsApp inválido.'; errEl.style.display='block'; return; }
-        if (cpf.replace(/\D/g,'').length !== 11)    { errEl.textContent = 'CPF inválido.'; errEl.style.display='block'; return; }
+        if (cpf && cpf.replace(/\D/g,'').length > 0 && cpf.replace(/\D/g,'').length !== 11) { errEl.textContent = 'CPF inválido.'; errEl.style.display='block'; return; }
 
         btn.disabled = true;
         btn.textContent = 'Aguarde...';

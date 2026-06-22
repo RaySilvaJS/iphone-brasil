@@ -252,6 +252,11 @@ const initWhatsApp = async () => {
       }
       console.log(`[WA] Conectado! Conta: ${state.name || state.phone || 'desconhecido'}`);
       appendWaEvent('connected', wasQr ? `Sessão restaurada via QR Code — conta: ${state.name || state.phone || '?'}` : `Sessão restaurada automaticamente — conta: ${state.name || state.phone || '?'}`);
+      try {
+        const tg = require('./telegram');
+        const icon = wasQr ? '📱' : '🔄';
+        tg.send(`${icon} <b>WhatsApp RECONECTADO</b>\n✅ Bot ativo — conta: <b>${state.name || state.phone || '?'}</b>\n⏰ ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`).catch(() => {});
+      } catch {}
     }
   });
 

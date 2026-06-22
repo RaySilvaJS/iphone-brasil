@@ -1373,16 +1373,17 @@ app.patch('/api/auth/addresses/:id/principal', (req, res) => {
 // ── Guest Checkout — cria conta automática vinculada ao WhatsApp ─────────────
 app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   const { nome, whatsapp, cpf } = req.body || {};
-  if (!nome || !whatsapp || !cpf) {
-    return res.status(400).json({ error: 'Nome, WhatsApp e CPF são obrigatórios.' });
+  if (!nome || !whatsapp) {
+    return res.status(400).json({ error: 'Nome e WhatsApp são obrigatórios.' });
   }
-  if (!validateCPF(cpf)) {
+  if (cpf && cpf.replace(/\D/g, '').length > 0 && !validateCPF(cpf)) {
     return res.status(400).json({ error: 'CPF inválido.' });
   }
   const digits = whatsapp.replace(/\D/g, '');
   if (digits.length < 10 || digits.length > 11) {
     return res.status(400).json({ error: 'WhatsApp inválido. Informe DDD + número.' });
   }
+  const cpfDigits = cpf ? cpf.replace(/\D/g, '') : '';
 
   const users = loadUsers();
   const guestToken = uuidv4();
@@ -1390,7 +1391,7 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   const guestSession = { token: guestToken, createdAt: new Date().toISOString(), expiresAt: guestExpiry, rememberMe: false, userAgent: req.headers['user-agent'] || 'guest' };
 
   // Verifica se já existe conta com esse WhatsApp ou CPF — faz login automático
-  const existingIdx = users.findIndex(u => u.whatsapp === digits || u.cpf === cpf.replace(/\D/g, ''));
+  const existingIdx = users.findIndex(u => u.whatsapp === digits || (cpfDigits && u.cpf === cpfDigits));
   if (existingIdx !== -1) {
     const user = users[existingIdx];
     if (!user.sessions) user.sessions = [];
@@ -1413,7 +1414,7 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   const newUser = {
     id:        uuidv4(),
     nome:      nome.trim(),
-    cpf:       cpf.replace(/\D/g, ''),
+    cpf:       cpfDigits || null,
     whatsapp:  digits,
     email:     tempEmail,
     senha:     bcrypt.hashSync(tempPassword, 10),
