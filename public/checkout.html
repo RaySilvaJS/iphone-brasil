@@ -562,7 +562,14 @@
       <!-- PIX -->
       <div class="co-pay-opt selected" id="co-pix-opt" onclick="selectPayMethod('pix')">
         <input type="radio" name="paymethod" value="pix" checked/>
-        <div class="co-pay-logo pix" style="font-size:13px;font-weight:900;letter-spacing:-.5px">PIX</div>
+        <div class="co-pay-logo pix">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+            <path fill="white" d="M12 2C10 4 8.5 7 9 9.5L12 12L15 9.5C15.5 7 14 4 12 2Z"/>
+            <path fill="white" d="M22 12C20 10 17 8.5 14.5 9L12 12L14.5 15C17 15.5 20 14 22 12Z"/>
+            <path fill="white" d="M12 22C14 20 15.5 17 15 14.5L12 12L9 14.5C8.5 17 10 20 12 22Z"/>
+            <path fill="white" d="M2 12C4 14 7 15.5 9.5 15L12 12L9.5 9C7 8.5 4 10 2 12Z"/>
+          </svg>
+        </div>
         <div>
           <div class="co-pay-label">PIX</div>
           <div class="co-pay-sub">Pagamento instantâneo</div>
@@ -573,7 +580,17 @@
       <!-- Cartão de Crédito -->
       <div class="co-pay-opt" id="co-card-opt" onclick="selectPayMethod('cartao')">
         <input type="radio" name="paymethod" value="cartao"/>
-        <div class="co-pay-logo card" style="font-size:20px;">💳</div>
+        <div class="co-pay-logo card">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none">
+            <rect x="1.5" y="4" width="21" height="16" rx="3" fill="rgba(255,255,255,0.12)" stroke="white" stroke-width="1.5"/>
+            <rect x="1.5" y="8" width="21" height="3.5" fill="rgba(255,255,255,0.38)"/>
+            <rect x="3.5" y="13.5" width="5" height="3.5" rx="1" fill="rgba(255,255,255,0.55)" stroke="white" stroke-width="0.8"/>
+            <circle cx="12" cy="15.2" r="0.8" fill="white"/>
+            <circle cx="14" cy="15.2" r="0.8" fill="white"/>
+            <circle cx="16" cy="15.2" r="0.8" fill="white"/>
+            <circle cx="18" cy="15.2" r="0.8" fill="white"/>
+          </svg>
+        </div>
         <div>
           <div class="co-pay-label">Cartão de Crédito</div>
           <div class="co-pay-sub">Visa, Mastercard, Elo, Amex</div>
@@ -611,7 +628,18 @@
       <!-- Boleto Bancário -->
       <div class="co-pay-opt" id="co-boleto-opt" onclick="selectPayMethod('boleto')">
         <input type="radio" name="paymethod" value="boleto"/>
-        <div class="co-pay-logo boleto">📄</div>
+        <div class="co-pay-logo boleto">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+            <rect x="3" y="2" width="18" height="20" rx="2" fill="none" stroke="white" stroke-width="1.5"/>
+            <rect x="5.5" y="7"  width="1.5" height="10" fill="white"/>
+            <rect x="8"   y="7"  width="0.8" height="10" fill="white"/>
+            <rect x="9.5" y="7"  width="1.5" height="10" fill="white"/>
+            <rect x="12"  y="7"  width="0.8" height="10" fill="white"/>
+            <rect x="13.5" y="7" width="2"   height="10" fill="white"/>
+            <rect x="16.5" y="7" width="1"   height="10" fill="white"/>
+            <rect x="18.5" y="7" width="1"   height="10" fill="white"/>
+          </svg>
+        </div>
         <div>
           <div class="co-pay-label">Boleto Bancário</div>
           <div class="co-pay-sub">Vence em 1 dia útil</div>
