@@ -107,6 +107,8 @@ function validateCoupon(code, context = {}) {
     discount,
     discountType,
     freeShipping: coupon.type === 'free_shipping',
+    pixOnly: coupon.paymentMethod === 'pix',
+    paymentMethod: coupon.paymentMethod || null,
     code: coupon.code,
     couponId: coupon.id,
     description,

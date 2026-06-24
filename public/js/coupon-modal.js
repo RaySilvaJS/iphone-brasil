@@ -177,6 +177,7 @@
             value: coupon.value,
             discount: data.discount || discount,
             freeShipping: data.freeShipping || isFreeShip,
+            pixOnly: data.pixOnly || isPix,
             paymentMethod: coupon.paymentMethod || null,
           };
           setTimeout(() => close(true, saved), 700);
@@ -191,7 +192,7 @@
         btn.style.background = '#16A34A';
         const saved = {
           code: coupon.code, type: coupon.type, value: coupon.value,
-          discount, freeShipping: isFreeShip, paymentMethod: coupon.paymentMethod || null,
+          discount, freeShipping: isFreeShip, pixOnly: isPix, paymentMethod: coupon.paymentMethod || null,
         };
         setTimeout(() => close(true, saved), 700);
       }

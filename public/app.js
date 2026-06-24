@@ -793,8 +793,8 @@ async function buyNow(productId, btn) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productName: product.nome, amount: product.preco })
       }).catch(() => {});
-      _showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {
-        window.location.href = '/cart.html';
+      _showTypingMessage('Produto adicionado! Finalizando pedido...', () => {
+        window.location.href = '/checkout.html?source=cart';
       });
     } catch {
       if (btn) { btn.disabled = false; btn.textContent = 'Comprar Agora'; }

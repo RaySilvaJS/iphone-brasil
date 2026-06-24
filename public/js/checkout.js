@@ -677,6 +677,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) form.classList.toggle('visible', method === 'cartao');
     const countdown = $('co-pix-countdown-bar');
     if (countdown) countdown.style.display = method === 'pix' ? 'flex' : 'none';
+
+    // PIX-only coupon: remove discount if user selects non-PIX payment
+    if (appliedCouponPixOnly && method !== 'pix' && appliedCouponCode) {
+      couponDiscount     = 0;
+      appliedCouponCode  = null;
+      couponFreeShipping = false;
+      appliedCouponPixOnly = false;
+      const couponRow = $('co-coupon-row');
+      const couponMsg = $('co-coupon-msg');
+      const couponInput = $('co-coupon');
+      if (couponRow) couponRow.style.display = 'none';
+      if (couponMsg) {
+        couponMsg.innerHTML = '⚠ Este cupom é válido apenas para pagamento via PIX. Desconto removido.';
+        couponMsg.style.color = '#B45309';
+        couponMsg.style.display = 'block';
+      }
+      if (couponInput) couponInput.value = '';
+      try { sessionStorage.removeItem('jessi-coupon'); } catch {}
+    }
+
     updateTotal();
   };
 
@@ -705,8 +725,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Coupon ────────────────────────────────────────────────────────────────────
-  let appliedCouponCode = null;
-  let couponFreeShipping = false;
+  let appliedCouponCode    = null;
+  let couponFreeShipping   = false;
+  let appliedCouponPixOnly = false;
 
   window.applyCoupon = async function() {
     const btn       = document.querySelector('.co-coupon-btn');
@@ -743,15 +764,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (couponRow) couponRow.style.display = 'none';
         if (couponMsg) { couponMsg.textContent = data.error || 'Cupom inválido.'; couponMsg.style.color = '#DC2626'; couponMsg.style.display = 'block'; }
       } else {
-        couponDiscount = data.discount || 0;
-        appliedCouponCode = data.code;
-        couponFreeShipping = data.freeShipping || false;
+        couponDiscount       = data.discount || 0;
+        appliedCouponCode    = data.code;
+        couponFreeShipping   = data.freeShipping || false;
+        appliedCouponPixOnly = data.pixOnly || false;
 
         if (couponRow) couponRow.style.display = '';
         if (couponVal) couponVal.textContent = couponFreeShipping ? 'Frete grátis' : '- ' + fmt(couponDiscount);
         if (couponMsg) {
-          const desc = data.description || `Cupom ${data.code} aplicado!`;
-          couponMsg.textContent = '✓ ' + desc;
+          const savingsPart = couponFreeShipping
+            ? 'Frete grátis aplicado!'
+            : `Você economizou ${fmt(couponDiscount)}!`;
+          const pixNote = appliedCouponPixOnly
+            ? ' · Válido somente para PIX'
+            : '';
+          couponMsg.innerHTML = `✓ Cupom <strong>${data.code}</strong> aplicado com sucesso! ${savingsPart}${pixNote ? `<br><span style="color:#1D4ED8;font-size:.8rem;">⚡${pixNote}</span>` : ''}`;
           couponMsg.style.color = '#16A34A';
           couponMsg.style.display = 'block';
         }
@@ -788,6 +815,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const sc = JSON.parse(sessionStorage.getItem('jessi-coupon') || 'null');
       if (sc && sc.code && !appliedCouponCode && couponInput) {
+        // Pre-set pixOnly so selectPayMethod can enforce it even before applyCoupon resolves
+        if (sc.pixOnly) appliedCouponPixOnly = true;
         couponInput.value = sc.code;
         setTimeout(() => window.applyCoupon && window.applyCoupon(), 350);
       }
