@@ -201,6 +201,21 @@ app.use(express.static(publicPath));
 app.use('/proofs', express.static(path.join(__dirname, 'data', 'proofs')));
 app.use('/api/payment', paymentRouter);
 
+// Public banner API — returns only active, in-schedule banners
+app.get('/api/banners', (req, res) => {
+  const BANNERS_PATH_PUB = path.join(__dirname, 'data', 'banners.json');
+  let banners = [];
+  try { banners = JSON.parse(fs.readFileSync(BANNERS_PATH_PUB, 'utf-8')); } catch { /* no banners yet */ }
+  const now = Date.now();
+  const active = banners.filter(b => {
+    if (!b.active) return false;
+    if (b.startsAt && new Date(b.startsAt).getTime() > now) return false;
+    if (b.endsAt && new Date(b.endsAt).getTime() < now) return false;
+    return true;
+  }).sort((a, b2) => (a.position || 0) - (b2.position || 0));
+  res.json({ ok: true, banners: active });
+});
+
 // Rotas Administrativas - Movidas para cima para garantir prioridade
 app.post('/api/admin/product', requireAdmin, (req, res) => {
   const products = loadProducts();

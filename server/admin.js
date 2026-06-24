@@ -1526,6 +1526,97 @@ router.patch('/whatsapp-contacts/:phone/consent', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ==================== BANNERS PROMOCIONAIS ====================
+const BANNERS_PATH = path.join(__dirname, 'data', 'banners.json');
+
+const loadBanners = () => {
+  try { return JSON.parse(fs.readFileSync(BANNERS_PATH, 'utf-8')); } catch { return []; }
+};
+const saveBanners = (b) => fs.writeFileSync(BANNERS_PATH, JSON.stringify(b, null, 2), 'utf-8');
+
+function sanitizeHref(href) {
+  if (!href) return '';
+  const s = String(href).trim();
+  if (/^javascript:/i.test(s)) return '';
+  if (/^data:/i.test(s)) return '';
+  return s;
+}
+
+router.get('/banners', adminAuth, (req, res) => {
+  res.json({ ok: true, banners: loadBanners() });
+});
+
+router.post('/banners', adminAuth, (req, res) => {
+  const { name, title, imageMobile, imageDesktop, alt, href, target, position, active, startsAt, endsAt, campaign } = req.body || {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: 'Nome obrigatório.' });
+  const banners = loadBanners();
+  const banner = {
+    id: 'banner_' + Date.now(),
+    name: String(name).trim(),
+    title: String(title || '').trim(),
+    imageMobile: imageMobile || '',
+    imageDesktop: imageDesktop || '',
+    alt: String(alt || '').trim(),
+    href: sanitizeHref(href),
+    target: target === '_blank' ? '_blank' : '_self',
+    position: typeof position === 'number' ? position : (banners.length + 1),
+    active: active !== false,
+    startsAt: startsAt || null,
+    endsAt: endsAt || null,
+    campaign: String(campaign || '').trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  banners.push(banner);
+  saveBanners(banners);
+  res.json({ ok: true, banner });
+});
+
+router.put('/banners/:id', adminAuth, (req, res) => {
+  const banners = loadBanners();
+  const idx = banners.findIndex(b => b.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Banner não encontrado.' });
+  const { name, title, imageMobile, imageDesktop, alt, href, target, position, active, startsAt, endsAt, campaign } = req.body || {};
+  const b = banners[idx];
+  if (name !== undefined) b.name = String(name).trim();
+  if (title !== undefined) b.title = String(title).trim();
+  if (imageMobile !== undefined) b.imageMobile = imageMobile;
+  if (imageDesktop !== undefined) b.imageDesktop = imageDesktop;
+  if (alt !== undefined) b.alt = String(alt).trim();
+  if (href !== undefined) b.href = sanitizeHref(href);
+  if (target !== undefined) b.target = target === '_blank' ? '_blank' : '_self';
+  if (position !== undefined) b.position = Number(position);
+  if (active !== undefined) b.active = !!active;
+  if (startsAt !== undefined) b.startsAt = startsAt || null;
+  if (endsAt !== undefined) b.endsAt = endsAt || null;
+  if (campaign !== undefined) b.campaign = String(campaign).trim();
+  b.updatedAt = new Date().toISOString();
+  saveBanners(banners);
+  res.json({ ok: true, banner: b });
+});
+
+router.patch('/banners/reorder', adminAuth, (req, res) => {
+  const { order } = req.body || {};
+  if (!Array.isArray(order)) return res.status(400).json({ error: 'order deve ser array de IDs.' });
+  const banners = loadBanners();
+  order.forEach((id, i) => {
+    const b = banners.find(b => b.id === id);
+    if (b) b.position = i + 1;
+  });
+  banners.sort((a, b) => (a.position || 0) - (b.position || 0));
+  saveBanners(banners);
+  res.json({ ok: true });
+});
+
+router.delete('/banners/:id', adminAuth, (req, res) => {
+  const banners = loadBanners();
+  const idx = banners.findIndex(b => b.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Banner não encontrado.' });
+  banners.splice(idx, 1);
+  saveBanners(banners);
+  res.json({ ok: true });
+});
+
 module.exports = router;
 module.exports.loadConfig = loadConfig;
 module.exports.loadSecurity = loadSecurity;

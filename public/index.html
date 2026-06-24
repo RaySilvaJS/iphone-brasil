@@ -1324,6 +1324,109 @@ header {
   .skeleton-media { width: 120px; min-width: 120px; }
 }
 
+/* ── BANNERS PROMOCIONAIS ── */
+.banners-section {
+  width: 100%;
+  padding: 10px 16px 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.banners-viewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  aspect-ratio: 38 / 13;
+  background: #1e293b;
+  contain: strict;
+}
+@media (max-width: 640px) {
+  .banners-section { padding: 8px 10px 2px; }
+  .banners-viewport { aspect-ratio: 12 / 5; border-radius: 10px; }
+}
+.banners-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.banner-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100%);
+  transition: transform .55s cubic-bezier(.4,0,.2,1), opacity .55s ease;
+  will-change: transform, opacity;
+  border-radius: 14px;
+}
+.banner-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  z-index: 1;
+}
+.banner-slide.leaving {
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  z-index: 0;
+}
+@media (max-width: 640px) {
+  .banner-slide { border-radius: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .banner-slide { transition: opacity .2s ease; transform: none !important; }
+  .banner-slide.leaving { transform: none !important; }
+}
+.banner-slide a,
+.banner-slide > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.banner-slide a img,
+.banner-slide > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: inherit;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.banners-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 0 2px;
+}
+.banners-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(37,99,235,.2);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background .2s, transform .2s, width .2s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.banners-dot.active {
+  background: var(--blue, #2563EB);
+  transform: scale(1.3);
+  width: 18px;
+  border-radius: 4px;
+}
+
 </style>
 <script src="/js/meta-pixel.js"></script>
 </head>
@@ -1523,6 +1626,14 @@ header {
     <div class="trust-item"><span class="ti-icon"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Produto Original</div>
   </div>
 </div>
+
+<!-- BANNERS PROMOCIONAIS -->
+<section class="banners-section" id="banners-section" style="display:none" aria-label="Banners promocionais">
+  <div class="banners-viewport" id="banners-viewport" role="region" aria-roledescription="carrossel">
+    <div class="banners-track" id="banners-track"></div>
+  </div>
+  <div class="banners-dots" id="banners-dots" role="tablist" aria-label="Navegar entre banners"></div>
+</section>
 
 <!-- CATEGORIAS -->
 <div class="categories-bar">
@@ -1866,5 +1977,154 @@ header {
 <script src="/js/admin-bar.js"></script>
 <script src="/js/admin-edit.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.444.0/dist/umd/lucide.min.js" defer></script>
+<script>
+(function () {
+  'use strict';
+  var section  = document.getElementById('banners-section');
+  var viewport = document.getElementById('banners-viewport');
+  var track    = document.getElementById('banners-track');
+  var dotsEl   = document.getElementById('banners-dots');
+  if (!section || !viewport || !track || !dotsEl) return;
+
+  var banners  = [];
+  var slides   = [];
+  var dots     = [];
+  var current  = 0;
+  var timer    = null;
+  var paused   = false;
+  var resumeTO = null;
+  var INTERVAL = 4500;
+
+  function isMobile() { return window.innerWidth < 768; }
+
+  function escHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function safeHref(s) {
+    var v = String(s || '').trim();
+    if (/^javascript:/i.test(v) || /^data:/i.test(v)) return '#';
+    return v || '#';
+  }
+
+  function buildSlides() {
+    track.innerHTML  = '';
+    dotsEl.innerHTML = '';
+    slides = [];
+    dots   = [];
+    banners.forEach(function (b, i) {
+      var src = (isMobile() && b.imageMobile) ? b.imageMobile : (b.imageDesktop || b.imageMobile || '');
+      if (!src) return;
+
+      var slide = document.createElement('div');
+      slide.className = 'banner-slide' + (slides.length === 0 ? ' active' : '');
+      slide.setAttribute('role', 'tabpanel');
+      slide.setAttribute('aria-label', escHtml(b.name || ('Banner ' + (i + 1))));
+
+      var altText = escHtml(b.alt || b.title || b.name || 'Banner promocional');
+      var href    = safeHref(b.href);
+      var loading = slides.length === 0 ? 'eager' : 'lazy';
+      var prio    = slides.length === 0 ? ' fetchpriority="high"' : '';
+      var rel     = b.target === '_blank' ? ' rel="noopener noreferrer"' : '';
+
+      if (href && href !== '#') {
+        slide.innerHTML =
+          '<a href="' + href + '" target="' + escHtml(b.target || '_self') + '"' + rel + ' aria-label="' + altText + '">' +
+          '<img src="' + escHtml(src) + '" alt="' + altText + '" loading="' + loading + '"' + prio + '>' +
+          '</a>';
+      } else {
+        slide.innerHTML = '<img src="' + escHtml(src) + '" alt="' + altText + '" loading="' + loading + '"' + prio + '>';
+      }
+
+      track.appendChild(slide);
+      slides.push(slide);
+
+      var dot = document.createElement('button');
+      dot.className = 'banners-dot' + (slides.length === 1 ? ' active' : '');
+      dot.setAttribute('role', 'tab');
+      dot.setAttribute('aria-label', 'Banner ' + slides.length);
+      dot.setAttribute('aria-selected', slides.length === 1 ? 'true' : 'false');
+      dot.addEventListener('click', function () { goTo(slides.indexOf(slide)); });
+      dotsEl.appendChild(dot);
+      dots.push(dot);
+    });
+  }
+
+  function goTo(idx) {
+    if (slides.length < 2) return;
+    var prev = current;
+    current  = ((idx % slides.length) + slides.length) % slides.length;
+    if (prev === current) return;
+
+    slides[prev].classList.remove('active');
+    slides[prev].classList.add('leaving');
+    slides[current].classList.add('active');
+
+    dots[prev].classList.remove('active');
+    dots[prev].setAttribute('aria-selected', 'false');
+    dots[current].classList.add('active');
+    dots[current].setAttribute('aria-selected', 'true');
+
+    var leaving = slides[prev];
+    function onEnd() { leaving.classList.remove('leaving'); leaving.removeEventListener('transitionend', onEnd); }
+    leaving.addEventListener('transitionend', onEnd);
+    // Fallback cleanup in case transitionend never fires (e.g. reduced motion)
+    setTimeout(function () { leaving.classList.remove('leaving'); }, 700);
+  }
+
+  function next() { goTo(current + 1); }
+
+  function startTimer() {
+    clearInterval(timer);
+    if (slides.length > 1) timer = setInterval(function () { if (!paused) next(); }, INTERVAL);
+  }
+
+  function pauseFor(ms) {
+    paused = true;
+    clearTimeout(resumeTO);
+    if (ms) resumeTO = setTimeout(function () { paused = false; }, ms);
+  }
+
+  // Mouse
+  viewport.addEventListener('mouseenter', function () { pauseFor(0); });
+  viewport.addEventListener('mouseleave', function () { paused = false; });
+
+  // Touch / swipe
+  var txStart = 0, tyStart = 0;
+  viewport.addEventListener('touchstart', function (e) {
+    txStart = e.changedTouches[0].clientX;
+    tyStart = e.changedTouches[0].clientY;
+    pauseFor(0);
+  }, { passive: true });
+  viewport.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].clientX - txStart;
+    var dy = e.changedTouches[0].clientY - tyStart;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) next(); else goTo(current - 1);
+    }
+    pauseFor(2500);
+  }, { passive: true });
+
+  // Rebuild on resize breakpoint flip (mobile vs desktop image)
+  var lastMobile = isMobile();
+  window.addEventListener('resize', function () {
+    var m = isMobile();
+    if (m !== lastMobile) { lastMobile = m; buildSlides(); startTimer(); }
+  }, { passive: true });
+
+  fetch('/api/banners')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.ok || !Array.isArray(data.banners) || data.banners.length === 0) return;
+      banners = data.banners;
+      section.style.display = '';
+      buildSlides();
+      startTimer();
+    })
+    .catch(function () { /* API falhou — seção permanece oculta */ });
+}());
+</script>
 </body>
 </html>

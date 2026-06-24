@@ -155,6 +155,18 @@ tbody tr:last-child td { border-bottom: none; }
 .input:focus { border-color: var(--blue); }
 .input-group { display: flex; gap: 8px; margin-bottom: 16px; }
 .input-group .input { flex: 1; }
+.bn-label { display:block; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
+.bn-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border); transition:background .15s; cursor:grab; user-select:none; }
+.bn-row:last-child { border-bottom:none; }
+.bn-row:hover { background:var(--bg3); }
+.bn-row.dragging { opacity:.4; }
+.bn-row.drag-over { border-top:2px solid var(--blue); }
+.bn-thumb { width:80px; height:30px; object-fit:cover; border-radius:4px; border:1px solid var(--border); flex-shrink:0; background:var(--bg3); }
+.bn-badge { font-size:10px; font-weight:700; border-radius:4px; padding:2px 7px; }
+.bn-badge.active  { background:rgba(63,185,80,.15); color:var(--green); }
+.bn-badge.inactive { background:rgba(248,81,73,.15); color:var(--red); }
+.bn-badge.scheduled { background:rgba(210,153,34,.15); color:var(--yellow); }
+.bn-badge.expired { background:rgba(125,133,144,.15); color:var(--muted); }
 
 /* ── CHART ── */
 .chart-container { position: relative; height: 200px; }
@@ -534,6 +546,7 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="nav-items">
     <div class="nav-section">Negócio</div>
     <div class="nav-item active" data-page="site"><span class="ni-icon">🌎</span> Site</div>
+    <div class="nav-item" data-page="banners"><span class="ni-icon">🖼️</span> Banners</div>
     <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
     <div class="nav-item" data-page="financeiro"><span class="ni-icon">💰</span> Financeiro <span class="nav-badge" id="fin-badge" style="display:none">0</span></div>
     <div class="nav-item" data-page="analytics"><span class="ni-icon">📊</span> Analytics</div>
@@ -2025,6 +2038,150 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </div><!-- /page-cupons -->
 
+    <!-- ═══ BANNERS PROMOCIONAIS ═══ -->
+    <div class="page" id="page-banners">
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin:0;font-size:15px">Banners cadastrados</h3>
+          <p style="color:var(--muted);font-size:12px;margin:3px 0 0">Arraste para reordenar. A ordem aqui é a exibida no site.</p>
+        </div>
+        <button class="btn-primary" style="padding:8px 18px;font-size:13px" onclick="openBannerForm()">+ Adicionar Banner</button>
+      </div>
+
+      <!-- Lista de banners -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="banner-list" style="min-height:80px">
+          <div class="empty-state" style="padding:40px">Carregando banners...</div>
+        </div>
+      </div>
+
+      <!-- Formulário de criação/edição — modal overlay -->
+      <div id="banner-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);overflow-y:auto;padding:20px">
+        <div style="max-width:640px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+            <h3 id="banner-form-title" style="margin:0;font-size:15px">Novo Banner</h3>
+            <button onclick="closeBannerModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:4px">✕</button>
+          </div>
+
+          <input type="hidden" id="bn-edit-id"/>
+
+          <div style="display:grid;gap:14px">
+
+            <!-- Nome -->
+            <div>
+              <label class="bn-label">Nome interno *</label>
+              <input id="bn-name" class="input" style="width:100%" placeholder="Ex: Promoção Copa do Mundo">
+            </div>
+
+            <!-- Título -->
+            <div>
+              <label class="bn-label">Título exibido (opcional)</label>
+              <input id="bn-title" class="input" style="width:100%" placeholder="Ofertas em iPhones">
+            </div>
+
+            <!-- Alt -->
+            <div>
+              <label class="bn-label">Texto alternativo / alt</label>
+              <input id="bn-alt" class="input" style="width:100%" placeholder="Descrição da imagem para acessibilidade">
+            </div>
+
+            <!-- Imagem mobile -->
+            <div>
+              <label class="bn-label">Imagem Mobile <small style="text-transform:none;color:var(--muted)">(recomendado: 1200 × 500 px · JPG, PNG, WEBP)</small></label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="bn-img-mobile-url" class="input" style="flex:1" placeholder="/uploads/banner_mobile.webp ou URL externa" oninput="bnPreviewUrl('mobile')">
+                <label class="topbar-btn" style="cursor:pointer;padding:6px 12px;font-size:12px;white-space:nowrap">
+                  📁 Upload
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="bnUpload(this,'mobile')">
+                </label>
+              </div>
+              <div id="bn-preview-mobile" style="margin-top:8px;display:none">
+                <p style="font-size:11px;color:var(--muted);margin-bottom:4px">Preview Mobile:</p>
+                <img id="bn-preview-mobile-img" src="" alt="" style="max-width:100%;max-height:120px;border-radius:6px;object-fit:cover;border:1px solid var(--border)">
+              </div>
+              <p id="bn-upload-mobile-status" style="font-size:11px;color:var(--muted);margin-top:4px;display:none"></p>
+            </div>
+
+            <!-- Imagem desktop -->
+            <div>
+              <label class="bn-label">Imagem Desktop <small style="text-transform:none;color:var(--muted)">(recomendado: 1920 × 650 px · JPG, PNG, WEBP)</small></label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="bn-img-desktop-url" class="input" style="flex:1" placeholder="/uploads/banner_desktop.webp ou URL externa" oninput="bnPreviewUrl('desktop')">
+                <label class="topbar-btn" style="cursor:pointer;padding:6px 12px;font-size:12px;white-space:nowrap">
+                  📁 Upload
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="bnUpload(this,'desktop')">
+                </label>
+              </div>
+              <div id="bn-preview-desktop" style="margin-top:8px;display:none">
+                <p style="font-size:11px;color:var(--muted);margin-bottom:4px">Preview Desktop:</p>
+                <img id="bn-preview-desktop-img" src="" alt="" style="max-width:100%;max-height:120px;border-radius:6px;object-fit:cover;border:1px solid var(--border)">
+              </div>
+              <p id="bn-upload-desktop-status" style="font-size:11px;color:var(--muted);margin-top:4px;display:none"></p>
+            </div>
+
+            <!-- Link e target -->
+            <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
+              <div>
+                <label class="bn-label">Link de destino</label>
+                <input id="bn-href" class="input" style="width:100%" placeholder="/categoria/iphones ou https://...">
+              </div>
+              <div>
+                <label class="bn-label">Abrir em</label>
+                <select id="bn-target" class="input">
+                  <option value="_self">Mesma aba</option>
+                  <option value="_blank">Nova aba</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Posição e status -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label class="bn-label">Ordem de exibição</label>
+                <input id="bn-position" type="number" min="1" class="input" style="width:100%" placeholder="1">
+              </div>
+              <div>
+                <label class="bn-label">Status</label>
+                <select id="bn-active" class="input" style="width:100%">
+                  <option value="true">Ativo</option>
+                  <option value="false">Inativo</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Agendamento -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label class="bn-label">Início (opcional)</label>
+                <input id="bn-starts-at" type="datetime-local" class="input" style="width:100%">
+              </div>
+              <div>
+                <label class="bn-label">Término (opcional)</label>
+                <input id="bn-ends-at" type="datetime-local" class="input" style="width:100%">
+              </div>
+            </div>
+
+            <!-- Campanha -->
+            <div>
+              <label class="bn-label">Campanha / categoria vinculada (opcional)</label>
+              <input id="bn-campaign" class="input" style="width:100%" placeholder="Ex: black-friday, iphones">
+            </div>
+
+          </div><!-- /grid -->
+
+          <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+            <button onclick="closeBannerModal()" class="topbar-btn">Cancelar</button>
+            <button onclick="saveBanner()" class="btn-primary" id="bn-save-btn" style="padding:8px 24px">Salvar Banner</button>
+          </div>
+
+        </div>
+      </div><!-- /banner-modal -->
+
+    </div><!-- /page-banners -->
+
     <!-- ═══ MSG GENERATOR ═══ -->
     <div class="page" id="page-msggen">
 
@@ -2209,7 +2366,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', msggen: '✉️ Gerador de Mensagens WhatsApp', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados', produtos: '📱 Produtos Personalizados', cupons: '🎟️ Cupons de Desconto', wac: '📲 WhatsApp Contatos & Consentimento' };
+const pageTitles = { site: '🌎 SITE — Central de Monitoramento', banners: '🖼️ Banners Promocionais', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', msggen: '✉️ Gerador de Mensagens WhatsApp', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados', produtos: '📱 Produtos Personalizados', cupons: '🎟️ Cupons de Desconto', wac: '📲 WhatsApp Contatos & Consentimento' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -2255,6 +2412,7 @@ function loadPage(name) {
   else if (name === 'analytics') loadAnalytics();
   else if (name === 'settings') loadSettings();
   else if (name === 'produtos') loadProdutos();
+  else if (name === 'banners') loadBannersMgmt();
   else if (name === 'cupons') loadCupons();
   else if (name === 'msggen') loadMsgGen();
   else if (name === 'wac') loadWaContacts();
@@ -5851,6 +6009,250 @@ if (adminToken) {
     }
   });
 }
+
+// ═══════════════════════════════════════════════
+// BANNERS PROMOCIONAIS
+// ═══════════════════════════════════════════════
+let _bnList = [];
+let _bnDragSrc = null;
+
+async function loadBannersMgmt() {
+  const listEl = document.getElementById('banner-list');
+  listEl.innerHTML = '<div class="empty-state" style="padding:40px">Carregando...</div>';
+  try {
+    const d = await api.get('/api/admin/banners');
+    if (!d?.ok) throw new Error(d?.error || 'Erro ao carregar banners');
+    _bnList = (d.banners || []).sort((a, b) => (a.position || 0) - (b.position || 0));
+    renderBannerList();
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:40px;color:var(--red)">${esc(e.message)}</div>`;
+  }
+}
+
+function bnStatusLabel(b) {
+  if (!b.active) return { cls: 'inactive', txt: 'Inativo' };
+  const now = Date.now();
+  if (b.startsAt && new Date(b.startsAt).getTime() > now) return { cls: 'scheduled', txt: 'Agendado' };
+  if (b.endsAt && new Date(b.endsAt).getTime() < now) return { cls: 'expired', txt: 'Expirado' };
+  return { cls: 'active', txt: 'Ativo' };
+}
+
+function renderBannerList() {
+  const listEl = document.getElementById('banner-list');
+  if (!_bnList.length) {
+    listEl.innerHTML = '<div class="empty-state" style="padding:40px">Nenhum banner cadastrado. Clique em "+ Adicionar Banner" para começar.</div>';
+    return;
+  }
+  listEl.innerHTML = _bnList.map((b, i) => {
+    const st = bnStatusLabel(b);
+    const thumb = b.imageDesktop || b.imageMobile || '';
+    const thumbHtml = thumb
+      ? `<img class="bn-thumb" src="${esc(thumb)}" alt="${esc(b.name)}" loading="lazy" onerror="this.style.opacity='.2'">`
+      : `<div class="bn-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">🖼️</div>`;
+    return `
+      <div class="bn-row" data-id="${esc(b.id)}" data-idx="${i}"
+           draggable="true" ondragstart="bnDragStart(event,${i})" ondragover="bnDragOver(event)" ondragleave="bnDragLeave(event)" ondrop="bnDrop(event,${i})">
+        <span style="color:var(--muted);font-size:16px;cursor:grab;margin-right:4px">⠿</span>
+        ${thumbHtml}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.name)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.href || '—')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <span class="bn-badge ${st.cls}">${st.txt}</span>
+          <span style="font-size:11px;color:var(--muted)">#${b.position || (i+1)}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
+          <button class="topbar-btn" style="padding:4px 10px;font-size:11px" onclick="editBanner('${esc(b.id)}')">Editar</button>
+          <button class="topbar-btn" style="padding:4px 10px;font-size:11px" onclick="duplicateBanner('${esc(b.id)}')">Duplicar</button>
+          <button class="topbar-btn" style="padding:4px 10px;font-size:11px" onclick="toggleBanner('${esc(b.id)}',${!b.active})">${b.active ? 'Desativar' : 'Ativar'}</button>
+          <button class="topbar-btn" style="padding:4px 10px;font-size:11px;color:var(--red);border-color:rgba(248,81,73,.3)" onclick="deleteBanner('${esc(b.id)}')">Excluir</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Drag-to-reorder
+function bnDragStart(e, idx) {
+  _bnDragSrc = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+function bnDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function bnDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+async function bnDrop(e, toIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  document.querySelectorAll('.bn-row').forEach(r => r.classList.remove('dragging'));
+  if (_bnDragSrc === null || _bnDragSrc === toIdx) return;
+  const moved = _bnList.splice(_bnDragSrc, 1)[0];
+  _bnList.splice(toIdx, 0, moved);
+  renderBannerList();
+  try {
+    const order = _bnList.map(b => b.id);
+    await api.patch('/api/admin/banners/reorder', { order });
+    await loadBannersMgmt();
+  } catch (err) { alert('Erro ao reordenar: ' + err.message); }
+}
+
+// Modal
+function openBannerForm(b) {
+  document.getElementById('banner-form-title').textContent = b ? 'Editar Banner' : 'Novo Banner';
+  document.getElementById('bn-edit-id').value   = b?.id || '';
+  document.getElementById('bn-name').value      = b?.name || '';
+  document.getElementById('bn-title').value     = b?.title || '';
+  document.getElementById('bn-alt').value       = b?.alt || '';
+  document.getElementById('bn-img-mobile-url').value  = b?.imageMobile || '';
+  document.getElementById('bn-img-desktop-url').value = b?.imageDesktop || '';
+  document.getElementById('bn-href').value      = b?.href || '';
+  document.getElementById('bn-target').value    = b?.target || '_self';
+  document.getElementById('bn-position').value  = b?.position || (_bnList.length + 1);
+  document.getElementById('bn-active').value    = b ? String(b.active !== false) : 'true';
+  document.getElementById('bn-starts-at').value = b?.startsAt ? toLocalDatetime(b.startsAt) : '';
+  document.getElementById('bn-ends-at').value   = b?.endsAt   ? toLocalDatetime(b.endsAt)   : '';
+  document.getElementById('bn-campaign').value  = b?.campaign || '';
+  document.getElementById('bn-save-btn').disabled = false;
+  document.getElementById('bn-save-btn').textContent = 'Salvar Banner';
+  // previews
+  bnPreviewUrl('mobile');
+  bnPreviewUrl('desktop');
+  document.getElementById('banner-modal').style.display = 'block';
+}
+
+function closeBannerModal() {
+  document.getElementById('banner-modal').style.display = 'none';
+}
+
+function toLocalDatetime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function bnPreviewUrl(type) {
+  const url = document.getElementById(`bn-img-${type}-url`).value.trim();
+  const wrap = document.getElementById(`bn-preview-${type}`);
+  const img  = document.getElementById(`bn-preview-${type}-img`);
+  if (url) { img.src = url; wrap.style.display = 'block'; }
+  else { wrap.style.display = 'none'; }
+}
+
+async function bnUpload(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  const maxMb = 10;
+  if (file.size > maxMb * 1024 * 1024) { alert(`Arquivo muito grande. Máximo ${maxMb}MB.`); input.value = ''; return; }
+  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowed.includes(file.type)) { alert('Formato inválido. Use JPG, PNG ou WEBP.'); input.value = ''; return; }
+
+  const statusEl = document.getElementById(`bn-upload-${type}-status`);
+  statusEl.textContent = '⏳ Enviando...';
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--muted)';
+
+  try {
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      const ext = file.name.split('.').pop().toLowerCase();
+      const fname = `banner_${type}_${Date.now()}.${ext}`;
+      const d = await api.post('/api/admin/upload', { dataUrl, filename: fname });
+      if (!d?.success) throw new Error(d?.error || 'Erro no upload');
+      document.getElementById(`bn-img-${type}-url`).value = d.url;
+      bnPreviewUrl(type);
+      statusEl.textContent = '✅ Upload concluído: ' + d.url;
+      statusEl.style.color = 'var(--green)';
+    };
+    reader.readAsDataURL(file);
+  } catch (err) {
+    statusEl.textContent = '❌ Erro: ' + err.message;
+    statusEl.style.color = 'var(--red)';
+  }
+  input.value = '';
+}
+
+async function saveBanner() {
+  const id       = document.getElementById('bn-edit-id').value;
+  const name     = document.getElementById('bn-name').value.trim();
+  if (!name) { alert('Nome é obrigatório.'); return; }
+
+  const payload = {
+    name,
+    title:        document.getElementById('bn-title').value.trim(),
+    alt:          document.getElementById('bn-alt').value.trim(),
+    imageMobile:  document.getElementById('bn-img-mobile-url').value.trim(),
+    imageDesktop: document.getElementById('bn-img-desktop-url').value.trim(),
+    href:         document.getElementById('bn-href').value.trim(),
+    target:       document.getElementById('bn-target').value,
+    position:     Number(document.getElementById('bn-position').value) || 1,
+    active:       document.getElementById('bn-active').value === 'true',
+    startsAt:     document.getElementById('bn-starts-at').value ? new Date(document.getElementById('bn-starts-at').value).toISOString() : null,
+    endsAt:       document.getElementById('bn-ends-at').value   ? new Date(document.getElementById('bn-ends-at').value).toISOString()   : null,
+    campaign:     document.getElementById('bn-campaign').value.trim()
+  };
+
+  const btn = document.getElementById('bn-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    let d;
+    if (id) d = await api.put(`/api/admin/banners/${id}`, payload);
+    else     d = await api.post('/api/admin/banners', payload);
+    if (!d?.ok) throw new Error(d?.error || 'Erro ao salvar');
+    closeBannerModal();
+    await loadBannersMgmt();
+  } catch (e) {
+    alert('Erro: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Salvar Banner';
+  }
+}
+
+function editBanner(id) {
+  const b = _bnList.find(b => b.id === id);
+  if (b) openBannerForm(b);
+}
+
+async function duplicateBanner(id) {
+  const b = _bnList.find(b => b.id === id);
+  if (!b) return;
+  const copy = { ...b, name: b.name + ' (Cópia)', active: false, position: _bnList.length + 1 };
+  delete copy.id;
+  try {
+    const d = await api.post('/api/admin/banners', copy);
+    if (!d?.ok) throw new Error(d?.error);
+    await loadBannersMgmt();
+  } catch (e) { alert('Erro ao duplicar: ' + e.message); }
+}
+
+async function toggleBanner(id, active) {
+  try {
+    const d = await api.put(`/api/admin/banners/${id}`, { active });
+    if (!d?.ok) throw new Error(d?.error);
+    await loadBannersMgmt();
+  } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function deleteBanner(id) {
+  const b = _bnList.find(b => b.id === id);
+  if (!confirm(`Excluir o banner "${b?.name || id}"? Esta ação não pode ser desfeita.`)) return;
+  try {
+    const d = await api.del(`/api/admin/banners/${id}`);
+    if (!d?.ok) throw new Error(d?.error);
+    await loadBannersMgmt();
+  } catch (e) { alert('Erro ao excluir: ' + e.message); }
+}
+
+// Close modal on backdrop click
+document.getElementById('banner-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeBannerModal();
+});
 </script>
 </body>
 </html>
