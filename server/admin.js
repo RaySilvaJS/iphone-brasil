@@ -1314,6 +1314,215 @@ router.get('/coupons/:id/stats', adminAuth, (req, res) => {
   }
 });
 
+// ============================================================
+// MSG GENERATOR
+// ============================================================
+const MSG_GEN_PATH = path.join(DATA, 'msg-generator.json');
+const CATALOG_DIR  = path.join(ROOT, 'public', 'data');
+const CATALOG_FILES = ['iphones.json', 'androids.json', 'consoles.json', 'smartwatches.json', 'acessorios.json', 'informatica.json'];
+
+const loadMsgGen = () => {
+  try { return JSON.parse(fs.readFileSync(MSG_GEN_PATH, 'utf-8')); }
+  catch { return { settings: { coupon: '', warranty: '90 dias', pixDiscount: '5', cardInstallments: 'até 12x sem juros', signoff: '' }, favorites: [] }; }
+};
+const saveMsgGen = (d) => fs.writeFileSync(MSG_GEN_PATH, JSON.stringify(d, null, 2));
+
+const searchAllProducts = (q) => {
+  const results = [];
+  const term = (q || '').toLowerCase().trim();
+
+  // Custom products
+  try {
+    const custom = JSON.parse(fs.readFileSync(path.join(DATA, 'products.json'), 'utf-8'));
+    for (const p of custom) {
+      if (!term || (p.name || '').toLowerCase().includes(term) || (p.model || '').toLowerCase().includes(term)) {
+        results.push({ ...p, _source: 'custom' });
+      }
+    }
+  } catch {}
+
+  // Catalog products
+  for (const file of CATALOG_FILES) {
+    try {
+      const items = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR, file), 'utf-8'));
+      for (const p of items) {
+        if (!term || (p.name || '').toLowerCase().includes(term) || (p.model || '').toLowerCase().includes(term)) {
+          results.push({ ...p, _source: 'catalog' });
+        }
+      }
+    } catch {}
+  }
+
+  return results.slice(0, 30);
+};
+
+const getProductById = (id) => {
+  // Custom products first
+  try {
+    const custom = JSON.parse(fs.readFileSync(path.join(DATA, 'products.json'), 'utf-8'));
+    const found = custom.find(p => p.id === id);
+    if (found) return { ...found, _source: 'custom' };
+  } catch {}
+
+  // Catalog files
+  for (const file of CATALOG_FILES) {
+    try {
+      const items = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR, file), 'utf-8'));
+      const found = items.find(p => p.id === id);
+      if (found) return { ...found, _source: 'catalog' };
+    } catch {}
+  }
+  return null;
+};
+
+router.get('/msg-generator/settings', adminAuth, (req, res) => {
+  const d = loadMsgGen();
+  res.json({ ok: true, settings: d.settings });
+});
+
+router.post('/msg-generator/settings', adminAuth, (req, res) => {
+  const d = loadMsgGen();
+  d.settings = { ...d.settings, ...req.body };
+  saveMsgGen(d);
+  res.json({ ok: true, settings: d.settings });
+});
+
+router.get('/msg-generator/favorites', adminAuth, (req, res) => {
+  const d = loadMsgGen();
+  res.json({ ok: true, favorites: d.favorites || [] });
+});
+
+router.post('/msg-generator/favorites', adminAuth, (req, res) => {
+  const d = loadMsgGen();
+  const fav = { id: uuidv4(), ...req.body, savedAt: new Date().toISOString() };
+  d.favorites = [fav, ...(d.favorites || [])].slice(0, 100);
+  saveMsgGen(d);
+  res.json({ ok: true, favorite: fav });
+});
+
+router.delete('/msg-generator/favorites/:id', adminAuth, (req, res) => {
+  const d = loadMsgGen();
+  d.favorites = (d.favorites || []).filter(f => f.id !== req.params.id);
+  saveMsgGen(d);
+  res.json({ ok: true });
+});
+
+router.get('/msg-generator/search', adminAuth, (req, res) => {
+  const results = searchAllProducts(req.query.q);
+  res.json({ ok: true, results });
+});
+
+router.get('/msg-generator/product/:id', adminAuth, (req, res) => {
+  const product = getProductById(req.params.id);
+  if (!product) return res.status(404).json({ ok: false, error: 'Produto não encontrado.' });
+  res.json({ ok: true, product });
+});
+
+// ── WhatsApp Contacts (LGPD consent management) ──────────────────────────────
+const WA_CONSENTS_PATH = path.join(DATA, 'whatsapp_consents.json');
+const USERS_PATH_ADMIN  = path.join(DATA, 'users.json');
+const loadWaConsents  = () => { try { return JSON.parse(fs.readFileSync(WA_CONSENTS_PATH, 'utf-8')); } catch { return []; } };
+const saveWaConsents  = (c) => fs.writeFileSync(WA_CONSENTS_PATH, JSON.stringify(c, null, 2), 'utf-8');
+const loadUsersAdmin  = () => { try { return JSON.parse(fs.readFileSync(USERS_PATH_ADMIN, 'utf-8')); } catch { return []; } };
+
+function fmtPhoneAdmin(d) {
+  const n = String(d || '').replace(/\D/g, '');
+  const s = n.startsWith('55') ? n.slice(2) : n;
+  if (s.length === 11) return `(${s.slice(0,2)}) ${s.slice(2,7)}-${s.slice(7)}`;
+  if (s.length === 10) return `(${s.slice(0,2)}) ${s.slice(2,6)}-${s.slice(6)}`;
+  return n;
+}
+
+router.get('/whatsapp-contacts', adminAuth, (req, res) => {
+  const users    = loadUsersAdmin();
+  const consents = loadWaConsents();
+  const consentMap = new Map(consents.map(c => [c.phone, c]));
+  const userPhones = new Set(users.map(u => u.whatsapp).filter(Boolean));
+
+  const { consent, hasWhatsApp, search } = req.query;
+
+  let contacts = users
+    .filter(u => u.whatsapp)
+    .map(u => {
+      const c = consentMap.get(u.whatsapp);
+      return {
+        id:            u.id,
+        nome:          u.nome || null,
+        email:         u.email || null,
+        phone:         u.whatsapp,
+        phoneFormatted: fmtPhoneAdmin(u.whatsapp),
+        hasWhatsApp:   c?.hasWhatsApp ?? null,
+        consent:       u.whatsappConsent ?? c?.consent ?? false,
+        consentAt:     u.whatsappConsentAt ?? c?.consentAt ?? null,
+        consentOrigin: u.whatsappConsentOrigin ?? c?.consentOrigin ?? null,
+        verifiedAt:    c?.verifiedAt ?? null,
+        createdAt:     u.createdAt,
+        source:        'user'
+      };
+    });
+
+  // Anonymous consents (not linked to a registered user)
+  for (const c of consents) {
+    if (!userPhones.has(c.phone)) {
+      contacts.push({
+        id:            c.id,
+        nome:          null,
+        email:         null,
+        phone:         c.phone,
+        phoneFormatted: fmtPhoneAdmin(c.phone),
+        hasWhatsApp:   c.hasWhatsApp,
+        consent:       c.consent,
+        consentAt:     c.consentAt,
+        consentOrigin: c.consentOrigin,
+        verifiedAt:    c.verifiedAt,
+        createdAt:     c.consentAt,
+        source:        'anonymous'
+      });
+    }
+  }
+
+  if (consent === 'true')      contacts = contacts.filter(c => c.consent === true);
+  if (consent === 'false')     contacts = contacts.filter(c => !c.consent);
+  if (hasWhatsApp === 'true')  contacts = contacts.filter(c => c.hasWhatsApp === true);
+  if (hasWhatsApp === 'false') contacts = contacts.filter(c => c.hasWhatsApp === false);
+  if (search) {
+    const q = search.toLowerCase();
+    contacts = contacts.filter(c =>
+      c.phone?.includes(q) ||
+      c.nome?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q)
+    );
+  }
+
+  contacts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  res.json({ ok: true, total: contacts.length, contacts });
+});
+
+router.patch('/whatsapp-contacts/:phone/consent', adminAuth, (req, res) => {
+  const phone = req.params.phone;
+  const { consent } = req.body || {};
+  const now = new Date().toISOString();
+
+  const consents = loadWaConsents();
+  const idx = consents.findIndex(c => c.phone === phone);
+  if (idx !== -1) {
+    consents[idx].consent    = !!consent;
+    consents[idx].updatedAt  = now;
+    if (!consent) consents[idx].revokedAt = now;
+    saveWaConsents(consents);
+  }
+
+  const users = loadUsersAdmin();
+  const uIdx  = users.findIndex(u => u.whatsapp === phone);
+  if (uIdx !== -1) {
+    users[uIdx].whatsappConsent   = !!consent;
+    users[uIdx].whatsappConsentAt = now;
+    fs.writeFileSync(USERS_PATH_ADMIN, JSON.stringify(users, null, 2), 'utf-8');
+  }
+
+  res.json({ ok: true });
+});
+
 module.exports = router;
 module.exports.loadConfig = loadConfig;
 module.exports.loadSecurity = loadSecurity;

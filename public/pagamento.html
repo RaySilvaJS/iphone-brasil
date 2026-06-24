@@ -501,6 +501,7 @@
   </div>
 </div>
 
+<script src="/js/whatsapp-validator.js"></script>
 <script src="/js/cookie-consent.js"></script>
 <script src="/js/payment.js"></script>
 <script>
@@ -509,6 +510,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // ── WhatsApp Validator no campo de comprovante ─────────────────────
+    new WhatsAppValidator(document.getElementById('proof-phone'), { origin: 'comprovante' });
+
     // ── Popula total no hero e nos campos ocultos ──────────────────────
     const summary  = JSON.parse(localStorage.getItem('checkout-summary') || 'null');
     const shipping = JSON.parse(localStorage.getItem('shipping')          || 'null');

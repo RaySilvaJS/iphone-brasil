@@ -398,6 +398,14 @@ input.error-input { border-color: #DC2626 !important; }
   });
 })();
 </script>
+<script src="/js/whatsapp-validator.js"></script>
+<script>
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    new WhatsAppValidator(document.getElementById('whatsapp'), { origin: 'cadastro' });
+  });
+})();
+</script>
 <script src="/js/cookie-consent.js"></script>
 </body>
 </html>

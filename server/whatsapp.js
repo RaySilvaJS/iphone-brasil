@@ -105,6 +105,44 @@ const resolveWAJid = async (sock, phone) => {
   return jid; // fallback ao JID construído localmente
 };
 
+// ── Verifica se um número possui WhatsApp ativo ────────────────────────────────
+// Exposto como API pública para o endpoint de validação de telefone da loja.
+const checkWhatsApp = async (phone) => {
+  const sock = socketInstance;
+  if (!sock || state.status !== 'connected') {
+    return { hasWhatsApp: null, reason: 'bot_offline' };
+  }
+
+  const jid = toWAJid(phone);
+  if (!jid) return { hasWhatsApp: false, reason: 'invalid_format' };
+
+  const number = jid.replace('@s.whatsapp.net', '');
+  try {
+    const results = await sock.onWhatsApp(number);
+    if (results?.length > 0 && results[0]?.exists) return { hasWhatsApp: true };
+
+    // Fallback: migração 8↔9 dígitos (padrão Brasil)
+    if (number.startsWith('55')) {
+      let alt = null;
+      if (number.length === 13) {
+        const ddd = number.slice(2, 4);
+        const local = number.slice(4);
+        if (local[0] === '9') alt = '55' + ddd + local.slice(1);
+      } else if (number.length === 12) {
+        alt = number.slice(0, 4) + '9' + number.slice(4);
+      }
+      if (alt) {
+        const r2 = await sock.onWhatsApp(alt);
+        if (r2?.length > 0 && r2[0]?.exists) return { hasWhatsApp: true };
+      }
+    }
+    return { hasWhatsApp: false };
+  } catch (e) {
+    console.warn('[WA] checkWhatsApp error:', e.message);
+    return { hasWhatsApp: null, reason: 'check_failed' };
+  }
+};
+
 // ── Formata número para exibição ──────────────────────────────────────────────
 const formatPhoneDisplay = (phone) => {
   if (!phone) return 'Não informado';
@@ -753,6 +791,7 @@ module.exports = {
   sendActivityNotification,
   sendToClient,
   resolveWAJid,
+  checkWhatsApp,
   getSocket,
   getWhatsAppState,
   getWaEvents: loadWaEvents,

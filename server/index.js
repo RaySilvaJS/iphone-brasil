@@ -1130,6 +1130,102 @@ app.post('/api/events/checkout-visit', (req, res) => {
   res.json({ ok: true });
 });
 
+// ===================== WHATSAPP VALIDATION =====================
+
+const waConsentsPath = path.join(__dirname, 'data', 'whatsapp_consents.json');
+const loadConsents = () => { try { return JSON.parse(fs.readFileSync(waConsentsPath, 'utf-8')); } catch { return []; } };
+const saveConsents = (c) => fs.writeFileSync(waConsentsPath, JSON.stringify(c, null, 2), 'utf-8');
+if (!fs.existsSync(waConsentsPath)) fs.writeFileSync(waConsentsPath, '[]', 'utf-8');
+
+const VALID_DDDS = new Set(['11','12','13','14','15','16','17','18','19','21','22','24','27','28','31','32','33','34','35','37','38','41','42','43','44','45','46','47','48','49','51','53','54','55','61','62','63','64','65','66','67','68','69','71','73','74','75','77','79','81','82','83','84','85','86','87','88','89','91','92','93','94','95','96','97','98','99']);
+
+function normalizePhoneDigits(raw) {
+  let d = String(raw || '').replace(/\D/g, '');
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) d = d.slice(2);
+  return d;
+}
+
+// Validate phone + check WhatsApp (10 requests / 5 min per IP)
+app.post('/api/whatsapp/validate-phone', authRateLimit(10, 5 * 60 * 1000), async (req, res) => {
+  const { phone } = req.body || {};
+  if (!phone) return res.status(400).json({ error: 'Telefone obrigatório.' });
+
+  const digits = normalizePhoneDigits(phone);
+  if (digits.length < 10 || digits.length > 11) {
+    return res.status(400).json({ error: 'Número inválido. Informe DDD + número.' });
+  }
+  if (!VALID_DDDS.has(digits.slice(0, 2))) {
+    return res.status(400).json({ error: 'DDD inválido.' });
+  }
+
+  let hasWhatsApp = null;
+  try {
+    const { checkWhatsApp } = require('./whatsapp');
+    const result = await checkWhatsApp(digits);
+    hasWhatsApp = result.hasWhatsApp;
+  } catch (e) {
+    console.error('[WA validate-phone]', e.message);
+  }
+
+  // Persist verification result (create or update)
+  try {
+    const ip = req.ip || '?';
+    const consents = loadConsents();
+    const idx = consents.findIndex(c => c.phone === digits);
+    const now = new Date().toISOString();
+    if (idx !== -1) {
+      consents[idx].hasWhatsApp = hasWhatsApp;
+      consents[idx].verifiedAt = now;
+    } else {
+      consents.push({ id: uuidv4(), phone: digits, hasWhatsApp, verifiedAt: now, verifiedIp: ip, consent: false });
+    }
+    saveConsents(consents);
+  } catch {}
+
+  return res.json({ valid: true, hasWhatsApp, phone: digits });
+});
+
+// Save/revoke consent (LGPD)
+app.post('/api/whatsapp/save-consent', (req, res) => {
+  const { phone, consent, origin } = req.body || {};
+  if (!phone) return res.status(400).json({ error: 'Telefone obrigatório.' });
+
+  const digits = normalizePhoneDigits(phone);
+  const ip = req.ip || '?';
+  const now = new Date().toISOString();
+
+  try {
+    const consents = loadConsents();
+    const idx = consents.findIndex(c => c.phone === digits);
+    const update = { consent: !!consent, consentAt: now, consentIp: ip, consentOrigin: origin || 'unknown', updatedAt: now };
+    if (idx !== -1) {
+      Object.assign(consents[idx], update);
+    } else {
+      consents.push({ id: uuidv4(), phone: digits, hasWhatsApp: null, verifiedAt: null, ...update });
+    }
+    saveConsents(consents);
+  } catch (e) {
+    console.error('[WA save-consent]', e.message);
+  }
+
+  // Also persist on the user record if logged in
+  const user = getAuthUser(req);
+  if (user) {
+    try {
+      const users = loadUsers();
+      const idx = users.findIndex(u => u.id === user.id);
+      if (idx !== -1) {
+        users[idx].whatsappConsent = !!consent;
+        users[idx].whatsappConsentAt = now;
+        users[idx].whatsappConsentOrigin = origin || 'unknown';
+        saveUsers(users);
+      }
+    } catch {}
+  }
+
+  res.json({ ok: true });
+});
+
 // ===================== AUTH ROUTES =====================
 
 app.post('/api/auth/register', authRateLimit(5, 15 * 60 * 1000), (req, res) => {

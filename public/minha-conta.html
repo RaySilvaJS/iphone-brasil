@@ -1197,6 +1197,24 @@ document.addEventListener('click', function(e) {
 
 })();
 </script>
+<script src="/js/whatsapp-validator.js"></script>
+<script>
+(function () {
+  var _waValidator = null;
+  document.addEventListener('DOMContentLoaded', function () {
+    _waValidator = new WhatsAppValidator(
+      document.getElementById('edit-whatsapp'),
+      { origin: 'minha-conta' }
+    );
+  });
+  // Reseta o validator quando o tab de edição é aberto
+  var _origSwitchTab = window.switchTab;
+  window.switchTab = function (tab) {
+    if (_origSwitchTab) _origSwitchTab(tab);
+    if (tab === 'editar' && _waValidator) _waValidator.reset();
+  };
+})();
+</script>
 <script src="/js/cookie-consent.js"></script>
 </body>
 </html>

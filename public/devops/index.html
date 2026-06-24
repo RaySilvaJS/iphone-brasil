@@ -470,6 +470,38 @@ tbody tr:last-child td { border-bottom: none; }
   .term-panel:first-child { border-right: 1px solid var(--border); border-radius: 10px 10px 0 0; border-bottom: none; }
   .term-panel:last-child { border-radius: 0 0 10px 10px; max-height: 220px; }
 }
+
+/* ══════════════════════════════════════════
+   MSG GENERATOR
+═══════════════════════════════════════════ */
+.mg-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
+.mg-product-field { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.mg-product-field:last-child { border-bottom: none; }
+.mg-product-field .mg-key { color: var(--muted); flex-shrink: 0; margin-right: 8px; }
+.mg-product-field .mg-val { color: var(--text); font-weight: 500; text-align: right; }
+.mg-type-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; transition: all .15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.mg-type-btn:hover { color: var(--text); border-color: var(--blue); }
+.mg-type-btn.active { background: rgba(88,166,255,.12); color: var(--blue); border-color: rgba(88,166,255,.35); }
+.mg-tone-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); border-radius: 20px; padding: 5px 14px; font-size: 12px; cursor: pointer; transition: all .15s; }
+.mg-tone-btn:hover { color: var(--text); }
+.mg-tone-btn.active { background: rgba(63,185,80,.12); color: var(--green); border-color: rgba(63,185,80,.35); }
+.mg-msg-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+.mg-msg-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); font-weight: 600; }
+.mg-msg-body { width: 100%; min-height: 120px; background: transparent; border: none; color: var(--text); font-size: 13px; line-height: 1.6; padding: 14px; resize: vertical; font-family: inherit; outline: none; }
+.mg-msg-body:focus { background: rgba(88,166,255,.03); }
+.mg-msg-footer { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--bg3); }
+.mg-search-dropdown { position: absolute; z-index: 100; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; max-height: 220px; overflow-y: auto; width: 100%; margin-top: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.mg-search-item { padding: 10px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border); transition: background .12s; }
+.mg-search-item:last-child { border-bottom: none; }
+.mg-search-item:hover { background: var(--bg3); }
+.mg-search-item .mg-item-name { font-weight: 500; margin-bottom: 2px; }
+.mg-search-item .mg-item-meta { font-size: 11px; color: var(--muted); }
+.mg-fav-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+.mg-fav-card .mg-fav-meta { font-size: 11px; color: var(--muted); margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap; }
+.mg-fav-text { font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.mg-cfg-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 5px; }
+.mg-empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
+@media (max-width: 900px) { .mg-layout { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -508,6 +540,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-section">Operações</div>
     <div class="nav-item" data-page="dashboard"><span class="ni-icon">🖥️</span> Dashboard</div>
     <div class="nav-item" data-page="whatsapp"><span class="ni-icon">💬</span> WhatsApp</div>
+    <div class="nav-item" data-page="msggen"><span class="ni-icon">✉️</span> Mensagens</div>
     <div class="nav-item" data-page="monitor"><span class="ni-icon">📈</span> Monitor</div>
     <div class="nav-item" data-page="deploy"><span class="ni-icon">🚀</span> Deploy</div>
     <div class="nav-section">Segurança</div>
@@ -517,6 +550,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="terminal"><span class="ni-icon">💻</span> Terminal</div>
     <div class="nav-section">Dados</div>
     <div class="nav-item" data-page="clientes"><span class="ni-icon">👤</span> Clientes</div>
+    <div class="nav-item" data-page="wac"><span class="ni-icon">📲</span> WhatsApp Contatos</div>
     <div class="nav-item" data-page="catalogs"><span class="ni-icon">📦</span> Catálogos</div>
     <div class="nav-item" data-page="produtos"><span class="ni-icon">📱</span> Produtos</div>
     <div class="nav-item" data-page="cupons"><span class="ni-icon">🎟️</span> Cupons</div>
@@ -923,6 +957,44 @@ tbody tr:last-child td { border-bottom: none; }
               </tr>
             </thead>
             <tbody id="clientes-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WHATSAPP CONTATOS ═══ -->
+    <div class="page" id="page-wac">
+      <div class="stats-grid" id="wac-stats" style="margin-bottom:16px"></div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <input class="input" id="wac-search" placeholder="Buscar por nome, email ou telefone..." style="flex:1;min-width:200px" oninput="loadWaContactsDebounced()">
+        <select class="input" id="wac-filter-wa" style="width:180px" onchange="loadWaContacts()">
+          <option value="">Todos (WhatsApp)</option>
+          <option value="true">Com WhatsApp</option>
+          <option value="false">Sem WhatsApp</option>
+        </select>
+        <select class="input" id="wac-filter-consent" style="width:180px" onchange="loadWaContacts()">
+          <option value="">Todos (Consentimento)</option>
+          <option value="true">Autorizaram mensagens</option>
+          <option value="false">Sem autorização</option>
+        </select>
+        <button class="btn btn-ghost" onclick="loadWaContacts()">↺ Atualizar</button>
+        <span id="wac-total" style="color:var(--muted);font-size:12px;margin-left:auto"></span>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>WhatsApp</th>
+                <th>Consentimento</th>
+                <th>Origem</th>
+                <th>Verificado em</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="wac-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -1953,6 +2025,108 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </div><!-- /page-cupons -->
 
+    <!-- ═══ MSG GENERATOR ═══ -->
+    <div class="page" id="page-msggen">
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px">
+        <button class="an-tab active" id="mgt-tab-gerador" onclick="mgShowTab('gerador')">✉️ Gerador</button>
+        <button class="an-tab" id="mgt-tab-favoritos" onclick="mgShowTab('favoritos')">⭐ Favoritos</button>
+        <button class="an-tab" id="mgt-tab-config" onclick="mgShowTab('config')">⚙️ Configurações</button>
+      </div>
+
+      <!-- TAB: Gerador -->
+      <div id="mg-tab-gerador">
+        <div class="mg-layout">
+
+          <!-- LEFT: Product Panel -->
+          <div>
+            <div class="card" style="padding:16px;position:relative">
+              <h3 style="margin-bottom:12px">Produto</h3>
+              <div style="position:relative">
+                <input type="text" id="mg-search-input" class="input" placeholder="🔍 Buscar produto..." style="width:100%" oninput="mgHandleSearch(this.value)" autocomplete="off">
+                <div id="mg-search-dropdown" class="mg-search-dropdown" style="display:none"></div>
+              </div>
+              <div id="mg-product-info" style="display:none;margin-top:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px">Produto selecionado</span>
+                  <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px" onclick="mgClearProduct()">✕ Limpar</button>
+                </div>
+                <div id="mg-product-fields"></div>
+              </div>
+              <div id="mg-product-empty" style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0">
+                Busque e selecione um produto
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Generator Panel -->
+          <div>
+            <!-- Tipo de mensagem -->
+            <div class="card" style="padding:16px;margin-bottom:12px">
+              <h3 style="margin-bottom:12px">Tipo de Mensagem</h3>
+              <div style="display:flex;flex-wrap:wrap;gap:6px" id="mg-type-btns"></div>
+            </div>
+
+            <!-- Tom -->
+            <div class="card" style="padding:16px;margin-bottom:12px">
+              <h3 style="margin-bottom:10px">Tom da Mensagem</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap" id="mg-tone-btns"></div>
+            </div>
+
+            <!-- Mensagens geradas -->
+            <div id="mg-messages-area">
+              <div class="mg-empty card">Selecione um produto e o tipo de mensagem para gerar as versões prontas.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB: Favoritos -->
+      <div id="mg-tab-favoritos" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="font-size:15px;font-weight:600">Mensagens Favoritas</h3>
+          <button class="btn btn-ghost" onclick="mgLoadFavorites()">↺ Atualizar</button>
+        </div>
+        <div id="mg-favorites-list"><div class="mg-empty">Carregando...</div></div>
+      </div>
+
+      <!-- TAB: Configurações -->
+      <div id="mg-tab-config" style="display:none">
+        <div style="max-width:560px">
+          <div class="card" style="padding:20px">
+            <h3 style="margin-bottom:16px">Configurações do Gerador</h3>
+            <div style="display:grid;gap:14px">
+              <div>
+                <label class="mg-cfg-label">Cupom padrão</label>
+                <input id="mgcfg-coupon" class="input" style="width:100%" placeholder="Ex: PROMO10">
+              </div>
+              <div>
+                <label class="mg-cfg-label">Garantia padrão</label>
+                <input id="mgcfg-warranty" class="input" style="width:100%" placeholder="Ex: 90 dias de garantia">
+              </div>
+              <div>
+                <label class="mg-cfg-label">Desconto Pix (%)</label>
+                <input id="mgcfg-pixDiscount" class="input" style="width:100%" placeholder="Ex: 5 (sem o %)">
+              </div>
+              <div>
+                <label class="mg-cfg-label">Parcelamento no cartão</label>
+                <input id="mgcfg-cardInstallments" class="input" style="width:100%" placeholder="Ex: até 12x sem juros">
+              </div>
+              <div>
+                <label class="mg-cfg-label">Assinatura / encerramento</label>
+                <input id="mgcfg-signoff" class="input" style="width:100%" placeholder="Ex: Equipe iPhoneBrasil">
+              </div>
+              <button class="btn btn-blue" onclick="mgSaveSettings()">Salvar configurações</button>
+              <div id="mgcfg-feedback" style="font-size:12px;display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-msggen -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -2035,7 +2209,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados', produtos: '📱 Produtos Personalizados', cupons: '🎟️ Cupons de Desconto' };
+const pageTitles = { site: '🌎 SITE — Central de Monitoramento', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', msggen: '✉️ Gerador de Mensagens WhatsApp', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados', produtos: '📱 Produtos Personalizados', cupons: '🎟️ Cupons de Desconto', wac: '📲 WhatsApp Contatos & Consentimento' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -2082,6 +2256,8 @@ function loadPage(name) {
   else if (name === 'settings') loadSettings();
   else if (name === 'produtos') loadProdutos();
   else if (name === 'cupons') loadCupons();
+  else if (name === 'msggen') loadMsgGen();
+  else if (name === 'wac') loadWaContacts();
 }
 
 function refreshCurrent() { loadPage(currentPage); }
@@ -3167,6 +3343,86 @@ function renderClientes(list) {
       <td style="padding:8px;min-width:220px">${endHtml}</td>
     </tr>`;
   }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// WHATSAPP CONTATOS
+// ═══════════════════════════════════════════════
+let _wacDebTimer = null;
+function loadWaContactsDebounced() { clearTimeout(_wacDebTimer); _wacDebTimer = setTimeout(loadWaContacts, 350); }
+
+async function loadWaContacts() {
+  const consent  = document.getElementById('wac-filter-consent')?.value || '';
+  const hasWA    = document.getElementById('wac-filter-wa')?.value || '';
+  const search   = document.getElementById('wac-search')?.value || '';
+  let url = '/api/admin/whatsapp-contacts?_=1';
+  if (consent) url += `&consent=${consent}`;
+  if (hasWA)   url += `&hasWhatsApp=${hasWA}`;
+  if (search)  url += `&search=${encodeURIComponent(search)}`;
+
+  const data = await api.get(url);
+  if (!data) return;
+
+  const statsEl = document.getElementById('wac-stats');
+  const total     = data.total || 0;
+  const withWA    = (data.contacts || []).filter(c => c.hasWhatsApp === true).length;
+  const consented = (data.contacts || []).filter(c => c.consent === true).length;
+  const unknown   = (data.contacts || []).filter(c => c.hasWhatsApp === null).length;
+  if (statsEl) statsEl.innerHTML = [
+    `<div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${total}</div></div>`,
+    `<div class="stat-card"><div class="stat-label">Com WhatsApp</div><div class="stat-value" style="color:var(--green)">${withWA}</div></div>`,
+    `<div class="stat-card"><div class="stat-label">Autorizaram mensagens</div><div class="stat-value" style="color:var(--blue)">${consented}</div></div>`,
+    `<div class="stat-card"><div class="stat-label">Não verificados</div><div class="stat-value" style="color:var(--muted)">${unknown}</div></div>`
+  ].join('');
+
+  const totalEl = document.getElementById('wac-total');
+  if (totalEl) totalEl.textContent = `${total} contato${total !== 1 ? 's' : ''}`;
+
+  renderWaContacts(data.contacts || []);
+}
+
+function renderWaContacts(list) {
+  const tbody = document.getElementById('wac-tbody');
+  if (!tbody) return;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Nenhum contato encontrado</td></tr>';
+    return;
+  }
+
+  function waBadge(v) {
+    if (v === true)  return '<span style="color:var(--green);font-weight:700;font-size:11px">✓ Sim</span>';
+    if (v === false) return '<span style="color:var(--red);font-size:11px">✗ Não</span>';
+    return '<span style="color:var(--muted);font-size:11px">?  Não verificado</span>';
+  }
+  function consentBadge(v) {
+    return v
+      ? '<span style="background:rgba(37,211,102,.15);color:#25D366;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">Autorizado</span>'
+      : '<span style="background:var(--bg3);color:var(--muted);padding:2px 8px;border-radius:12px;font-size:11px">Não autorizado</span>';
+  }
+  function originLabel(o) {
+    const map = { cadastro: 'Cadastro', 'minha-conta': 'Minha Conta', comprovante: 'Comprovante', checkout: 'Checkout', unknown: '—' };
+    return map[o] || esc(o || '—');
+  }
+
+  tbody.innerHTML = list.map(c => `<tr>
+    <td style="padding:8px;font-weight:500">${c.nome ? esc(c.nome) : '<span style="color:var(--muted);font-size:11px">Anônimo</span>'}</td>
+    <td style="padding:8px;font-family:monospace;font-size:12px">${esc(c.phoneFormatted || c.phone)}</td>
+    <td style="padding:8px">${waBadge(c.hasWhatsApp)}</td>
+    <td style="padding:8px">${consentBadge(c.consent)}</td>
+    <td style="padding:8px;font-size:11px;color:var(--muted)">${originLabel(c.consentOrigin)}</td>
+    <td style="padding:8px;font-size:11px;color:var(--muted);white-space:nowrap">${c.verifiedAt ? fmtDate(c.verifiedAt) : '—'}</td>
+    <td style="padding:8px">
+      ${c.consent
+        ? `<button class="btn btn-ghost" style="font-size:11px;padding:3px 10px;color:var(--red)" onclick="revokeWaConsent('${esc(c.phone)}')">Revogar</button>`
+        : '—'}
+    </td>
+  </tr>`).join('');
+}
+
+async function revokeWaConsent(phone) {
+  if (!confirm('Revogar consentimento deste contato?\n\nEle não receberá mais mensagens automáticas.')) return;
+  const r = await api.patch(`/api/admin/whatsapp-contacts/${encodeURIComponent(phone)}/consent`, { consent: false });
+  if (r && r.ok) loadWaContacts();
 }
 
 async function loadAudit() {
