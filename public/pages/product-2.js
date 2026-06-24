@@ -690,29 +690,6 @@
                 ${IC.cart} Adicionar ao Carrinho
               </button>
             </div>
-            <div id="urgency-widgets"></div>
-            <div id="view-counter" role="status" aria-live="polite">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
-              <span id="view-counter-text"></span>
-            </div>
-            <div class="trust-badges-inline">
-              <div class="tbi-item">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <div><strong>Compra protegida</strong>Pagamento 100% seguro</div>
-              </div>
-              <div class="tbi-item">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <div><strong>SSL Ativo</strong>Dados criptografados</div>
-              </div>
-              <div class="tbi-item">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <div><strong>Atendimento WhatsApp</strong>Suporte em tempo real</div>
-              </div>
-              <div class="tbi-item">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10" stroke-width="2.5"/></svg>
-                <div><strong>LGPD</strong>Dados protegidos por lei</div>
-              </div>
-            </div>
           </div>
 
           <div class="card">
@@ -1090,112 +1067,6 @@
     input.value = '';
   };
 
-  const ACTIVITY_ICONS = {
-    viewing:        { cls: 'view', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`, label: 'visualizou este produto' },
-    checkout_start: { cls: 'buy', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`, label: 'iniciou uma compra' },
-    pix_created:    { cls: 'pay', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`, label: 'gerou um pagamento' },
-    order_created:  { cls: 'buy', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`, label: 'finalizou um pedido' },
-  };
-
-  const showActivityToast = (ev) => {
-    const toast = document.getElementById('activity-toast');
-    if (!toast) return;
-    const info = ACTIVITY_ICONS[ev.type];
-    if (!info) return;
-
-    const location = ev.city ? `Cliente de ${ev.city}` : 'Um cliente';
-    const el = document.createElement('div');
-    el.className = 'act-toast';
-    el.innerHTML = `
-      <div class="act-toast-icon ${info.cls}">${info.svg}</div>
-      <div class="act-toast-text">
-        <strong>${location} ${info.label}</strong>
-        <span>Agora mesmo</span>
-      </div>`;
-    toast.appendChild(el);
-
-    setTimeout(() => {
-      el.classList.add('toast-out');
-      setTimeout(() => el.remove(), 320);
-    }, 5000);
-  };
-
-  const startActivityNotifications = (events) => {
-    if (!events || !events.length) return;
-    let idx = 0;
-    const next = () => {
-      if (idx < events.length) {
-        showActivityToast(events[idx++]);
-        if (idx < events.length) setTimeout(next, 8000);
-      }
-    };
-    setTimeout(next, 6000);
-  };
-
-  const fetchProductStats = async (productId) => {
-    try {
-      const res = await fetch(`/api/product-stats/${encodeURIComponent(productId)}`);
-      if (!res.ok) return;
-      const data = await res.json();
-
-      // ── Urgência: pessoas visualizando agora ──────────────────────────────────
-      // Adiciona floor mínimo para sempre mostrar atividade realista
-      const viewingNow = Math.max(data.viewingNow || 0, Math.floor(Math.random() * 3) + 2);
-      renderUrgencyWidgets(viewingNow, data.views || 0);
-
-      // View counter
-      if (data.views > 0) {
-        const counterEl = document.getElementById('view-counter');
-        const textEl    = document.getElementById('view-counter-text');
-        if (counterEl && textEl) {
-          textEl.textContent = `${data.views.toLocaleString('pt-BR')} pessoas visualizaram este produto`;
-          counterEl.classList.add('visible');
-        }
-      }
-
-      // Activity notifications (only with real events)
-      if (data.recentActivity && data.recentActivity.length) {
-        startActivityNotifications(data.recentActivity);
-      }
-    } catch {}
-  };
-
-  // ── Render urgency widgets ────────────────────────────────────────────────────
-  const renderUrgencyWidgets = (viewingNow, totalViews) => {
-    const container = document.getElementById('urgency-widgets');
-    if (!container) return;
-
-    // Estoque simulado: entre 3 e 9, decrementando conforme vendas
-    const fakeSales = Math.floor(totalViews / 8) + Math.floor(Math.random() * 5) + 3;
-    const fakeStock = Math.max(2, 12 - Math.floor(fakeSales / 4));
-    const lowStock  = fakeStock <= 5;
-
-    container.innerHTML = `
-      <div class="urgency-bar urgency-viewing">
-        <span class="urgency-dot pulse-red"></span>
-        <strong>${viewingNow} ${viewingNow === 1 ? 'pessoa visualizando' : 'pessoas visualizando'}</strong> este produto agora
-      </div>
-      ${lowStock ? `
-      <div class="urgency-bar urgency-stock">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <strong>⚡ Restam apenas ${fakeStock} unidades</strong> em estoque
-      </div>` : ''}
-      <div class="urgency-bar urgency-sales">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-        <strong>${fakeSales} vendas</strong> realizadas nas últimas 24 horas
-      </div>`;
-
-    container.classList.add('visible');
-
-    // Anima contador de visualizadores a cada 30s
-    setInterval(() => {
-      const delta = Math.floor(Math.random() * 3) - 1; // -1, 0 ou +1
-      const novo = Math.max(1, viewingNow + delta);
-      const viewEl = container.querySelector('.urgency-viewing strong');
-      if (viewEl) viewEl.textContent = `${novo} ${novo === 1 ? 'pessoa visualizando' : 'pessoas visualizando'}`;
-    }, 30000);
-  };
-
   const fetchProduct = async () => {
     if (!PRODUCT_ID) {
       root.innerHTML = `<div class="empty-state"><p style="font-size:1.1rem;font-weight:600;color:var(--red);">ID do produto não encontrado na URL.</p><a href="index.html" class="btn btn-primary" style="display:inline-flex;margin-top:16px;width:auto;">Voltar à loja</a></div>`;
@@ -1225,7 +1096,6 @@
 
       renderProduct(product, storeDiscount);
       loadRelatedFromData(related || []);
-      fetchProductStats(product.id);
 
       if (window.MetaPixel) {
         var finalPrice = storeDiscount > 0
