@@ -453,7 +453,8 @@ const getTimeAgo = () => {
 // ===== BUILDER DE CARD (retorna string HTML completa — inclui wrapper <section>) =====
 // Mais eficiente que createElement + innerHTML por card:
 // renderProducts faz N/5 parses de HTML em vez de N parses individuais
-const _buildProductCardHTML = (product) => {
+// cardIndex: posição global na página (0-based) — primeiros 4 usam loading="eager"
+const _buildProductCardHTML = (product, cardIndex = 99) => {
   const productUrl = buildProductUrl(product.id);
   const mainImage = getFirstValidImage(product);
   const seller = product.seller || "Apple Store";
@@ -480,7 +481,7 @@ const _buildProductCardHTML = (product) => {
       </button>
 
       ${mainImage
-        ? `<img src="${mainImage}" alt="${cleanProductText(product.name)}" loading="lazy" decoding="async">`
+        ? `<img src="${mainImage}" alt="${cleanProductText(product.name)}" loading="${cardIndex < 4 ? 'eager' : 'lazy'}" decoding="${cardIndex < 4 ? 'sync' : 'async'}"${cardIndex < 2 ? ' fetchpriority="high"' : ''} onerror="this.onerror=null;this.style.opacity='.25';">`
         : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#F1F5F9;">${ICONS.smartphone}</div>`
       }
   </div>
@@ -569,8 +570,9 @@ const renderProducts = (products, onComplete) => {
   const renderNext = () => {
     const end = Math.min(i + BATCH, products.length);
     // Guarda por card: produto com dados ruins não quebra o lote inteiro
-    const html = products.slice(i, end).map(p => {
-      try { return _buildProductCardHTML(p); }
+    const batchStart = i;
+    const html = products.slice(i, end).map((p, localIdx) => {
+      try { return _buildProductCardHTML(p, batchStart + localIdx); }
       catch (e) {
         console.error('[CARD ERROR] id=' + p.id, e.message);
         _debugLog({ type: 'card-error', id: p.id, error: e.message });
@@ -768,7 +770,7 @@ async function addToCart(productId, btn) {
 
 async function buyNow(productId, btn) {
   if (window.Auth && !window.Auth.isLoggedIn()) {
-    window.location.href = 'login.html?redirect=' + encodeURIComponent('product.html?id=' + productId);
+    window.location.href = '/login.html?redirect=' + encodeURIComponent('/product.html?id=' + productId);
     return;
   }
   if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
@@ -952,7 +954,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (window.cart) window.cart.updateUI();
   updateCompareBadge();
   setTimeout(showChat, 5000);
-  setTimeout(preloadAllCatalogs, 800);
+  setTimeout(preloadAllCatalogs, 4000);
 
   // ===== NAVEGAÇÃO COM BOTÕES DO BROWSER (Voltar / Avançar) =====
   window.addEventListener('popstate', () => {
