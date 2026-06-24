@@ -356,10 +356,7 @@ const _buildProductCardHTML = (product) => {
   const precoFinal = precoOriginal * (1 - descontoHoje / 100);
   const isIphone = !!(product.name && product.name.toLowerCase().includes('iphone'));
 
-  return `<section class="olx-adcard" data-product-id="${product.id}"${product.featured ? ' data-featured="1"' : ''}
-    tabindex="0"
-    onclick="cardNavigate(event,'${productUrl}')"
-    onkeydown="cardKeyNav(event,'${productUrl}')">
+  return `<section class="olx-adcard" data-product-id="${product.id}" data-product-url="${productUrl}"${product.featured ? ' data-featured="1"' : ''} tabindex="0">
 
   <div class="olx-adcard__media">
 
@@ -733,16 +730,22 @@ window.addToCart = addToCart;
 window.buyNow = buyNow;
 window.toggleFavorite = toggleFavorite;
 
-/* Card inteiro clicável — ignora cliques em botões/links internos */
-function cardNavigate(e, url) {
+/* Card inteiro clicável via event delegation — sem atributos inline */
+document.addEventListener('click', (e) => {
+  const card = e.target.closest('.olx-adcard');
+  if (!card) return;
   if (e.target.closest('button, a, input, select, [role="button"]')) return;
-  window.location.href = url;
-}
-function cardKeyNav(e, url) {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.location.href = url; }
-}
-window.cardNavigate = cardNavigate;
-window.cardKeyNav = cardKeyNav;
+  const url = card.dataset.productUrl;
+  if (url) window.location.href = url;
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('.olx-adcard[tabindex]');
+  if (!card || document.activeElement !== card) return;
+  e.preventDefault();
+  const url = card.dataset.productUrl;
+  if (url) window.location.href = url;
+});
 
 const showChat = () => {
   chatWidget.classList.add("visible");
