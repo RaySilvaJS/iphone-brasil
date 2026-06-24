@@ -427,6 +427,7 @@ const initWhatsApp = async () => {
     if (upperText.startsWith('APROVADO') || upperText.startsWith('PAGO')) {
       cur.status = 'paid';
       cur.paidAt = new Date().toISOString();
+      if (!cur.tracking) { try { cur.tracking = require('./shipping').generateTracking(cur); } catch(e) { console.error('[tracking]', e.message); } }
       addLog(cur, { type: 'status_update', status: 'paid', admin: adminSender, details: 'Pagamento aprovado via WhatsApp' });
       savePayments(allPayments);
       console.log(`[WA] Pedido ${shortDisplay} marcado como PAGO.`);

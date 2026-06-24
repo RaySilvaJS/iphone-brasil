@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
@@ -15,6 +15,8 @@
   --text: #111111;
   --muted: #777;
   --purple: #6d4aff;
+  --green: #16a34a;
+  --green-bg: rgba(22,163,74,.1);
   --shadow: 0 10px 30px rgba(0,0,0,.08);
   --radius: 22px;
 }
@@ -64,11 +66,11 @@ main {
   margin: 0 auto;
   width: 100%;
 }
-.page-header {
-  margin-bottom: 28px;
-}
+.page-header { margin-bottom: 28px; }
 .page-title { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
 .page-subtitle { color: var(--muted); font-size: 14px; }
+
+/* ── Order card ─────────────────────────────────────────── */
 .order-card {
   background: var(--card);
   border-radius: 18px;
@@ -76,9 +78,9 @@ main {
   padding: 22px 26px;
   margin-bottom: 16px;
   border: 1px solid rgba(0,0,0,.04);
-  transition: box-shadow .2s, transform .2s;
+  transition: box-shadow .2s;
 }
-.order-card:hover { box-shadow: 0 16px 40px rgba(0,0,0,.1); transform: translateY(-2px); }
+.order-card:hover { box-shadow: 0 16px 40px rgba(0,0,0,.1); }
 .order-header {
   display: flex;
   align-items: flex-start;
@@ -95,11 +97,7 @@ main {
   letter-spacing: .06em;
   margin-bottom: 4px;
 }
-.order-product {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.3;
-}
+.order-product { font-size: 16px; font-weight: 700; line-height: 1.3; }
 .order-status {
   display: inline-flex;
   align-items: center;
@@ -111,20 +109,18 @@ main {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.status-pending { background: rgba(237,137,54,.12); color: #c05621; }
-.status-awaiting { background: rgba(109,74,255,.1); color: var(--purple); }
-.status-paid { background: rgba(72,187,120,.12); color: #276749; }
+.status-pending   { background: rgba(237,137,54,.12); color: #c05621; }
+.status-awaiting  { background: rgba(109,74,255,.1); color: var(--purple); }
+.status-paid      { background: rgba(22,163,74,.1); color: var(--green); }
+.status-refused   { background: rgba(220,38,38,.1); color: #dc2626; }
+.status-delivered { background: rgba(22,163,74,.15); color: #14532d; }
 .order-meta {
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
   margin-top: 10px;
 }
-.order-meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+.order-meta-item { display: flex; flex-direction: column; gap: 3px; }
 .order-meta-item .label {
   font-size: 11px;
   color: var(--muted);
@@ -132,20 +128,151 @@ main {
   text-transform: uppercase;
   letter-spacing: .04em;
 }
-.order-meta-item .val {
-  font-size: 15px;
-  font-weight: 600;
-}
+.order-meta-item .val { font-size: 15px; font-weight: 600; }
 .order-meta-item .val.price { color: var(--purple); font-size: 17px; font-weight: 800; }
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-pending   { background: #c05621; }
+.dot-awaiting  { background: var(--purple); }
+.dot-paid      { background: #16a34a; }
+.dot-refused   { background: #dc2626; }
+.dot-delivered { background: #14532d; }
+
+/* ── Tracking toggle bar ────────────────────────────────── */
+.tracking-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(109,74,255,.05);
+  border: 1px solid rgba(109,74,255,.12);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  user-select: none;
 }
-.dot-pending { background: #c05621; }
-.dot-awaiting { background: var(--purple); }
-.dot-paid { background: #48bb78; }
+.tracking-toggle:hover { background: rgba(109,74,255,.09); border-color: rgba(109,74,255,.22); }
+.tracking-toggle-left { display: flex; align-items: center; gap: 10px; }
+.trk-truck-icon { color: var(--purple); flex-shrink: 0; }
+.trk-id-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.trk-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.pill-transit  { background: rgba(245,158,11,.12); color: #b45309; }
+.pill-delivery { background: rgba(109,74,255,.1); color: var(--purple); }
+.pill-done     { background: var(--green-bg); color: var(--green); }
+.pill-waiting  { background: rgba(0,0,0,.06); color: var(--muted); }
+.trk-toggle-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.trk-eta-text { font-size: 12px; color: var(--muted); font-weight: 500; }
+.trk-chevron { color: var(--muted); transition: transform .25s; flex-shrink: 0; }
+.trk-chevron.open { transform: rotate(180deg); }
+
+/* ── Tracking expanded body ─────────────────────────────── */
+.tracking-body {
+  margin-top: 0;
+  padding-top: 16px;
+  overflow: hidden;
+}
+
+/* Progress bar */
+.trk-progress-wrap { margin-bottom: 20px; }
+.trk-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.trk-progress-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.trk-progress-pct { font-size: 13px; font-weight: 700; color: var(--purple); }
+.trk-progress-bg {
+  height: 7px;
+  background: rgba(0,0,0,.07);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.trk-progress-fg {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #6d4aff, #48bb78);
+  transition: width 1.2s cubic-bezier(.4,0,.2,1);
+}
+
+/* Vertical timeline */
+.trk-timeline { display: flex; flex-direction: column; }
+.trk-step { display: flex; gap: 14px; }
+.trk-step-visual { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 34px; }
+.trk-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.trk-circle.done     { background: var(--green); color: #fff; }
+.trk-circle.active   { background: var(--purple); color: #fff; box-shadow: 0 0 0 5px rgba(109,74,255,.15); }
+.trk-circle.upcoming { background: rgba(0,0,0,.07); color: #bbb; }
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(109,74,255,.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(109,74,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(109,74,255,0); }
+}
+.trk-circle.active { animation: pulse-ring 2s ease-out infinite; }
+.trk-line {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  margin: 3px 0;
+}
+.trk-line.done     { background: var(--green); }
+.trk-line.upcoming { background: rgba(0,0,0,.1); }
+
+.trk-step-content { padding: 4px 0 22px; flex: 1; min-width: 0; }
+.trk-step:last-child .trk-step-content { padding-bottom: 0; }
+.trk-step-label { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.trk-step-label.done     { color: var(--text); }
+.trk-step-label.active   { color: var(--purple); }
+.trk-step-label.upcoming { color: var(--muted); }
+.trk-step-loc { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.trk-step-time { font-size: 11px; color: #aaa; margin-top: 3px; font-weight: 500; }
+.trk-step-time.done   { color: #888; }
+.trk-step-time.active { color: var(--purple); font-weight: 600; }
+.trk-badge-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--purple);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: badge-fade 1.5s ease-in-out infinite alternate;
+}
+@keyframes badge-fade { from { opacity: 1; } to { opacity: .65; } }
+
+/* ── Misc ───────────────────────────────────────────────── */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
@@ -154,60 +281,41 @@ main {
   box-shadow: var(--shadow);
 }
 .empty-icon {
-  width: 72px;
-  height: 72px;
+  width: 72px; height: 72px;
   border-radius: 22px;
   background: linear-gradient(135deg, rgba(109,74,255,.1), rgba(109,74,255,.05));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   color: var(--purple);
   margin: 0 auto 20px;
 }
 .empty-state h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-.empty-state p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+.empty-state p  { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
 .btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 24px;
   background: linear-gradient(135deg, #9d6cff, #7f5bff);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  text-decoration: none;
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 700; font-family: inherit;
+  cursor: pointer; text-decoration: none;
   transition: transform .2s, box-shadow .2s;
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(109,74,255,.35); }
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--muted);
-}
+.loading-state { text-align: center; padding: 60px 20px; color: var(--muted); }
 .orders-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-  color: var(--muted);
-  font-size: 14px;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 20px; color: var(--muted); font-size: 14px;
 }
 .orders-count {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 26px; font-weight: 800;
   background: linear-gradient(135deg, var(--purple), #9b7dff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
+
 @media (max-width: 600px) {
-  .order-card { padding: 18px 16px; }
+  .order-card  { padding: 18px 16px; }
   .order-header { flex-direction: column; gap: 10px; }
-  .order-meta { gap: 16px; }
+  .order-meta  { gap: 16px; }
+  .trk-eta-text { display: none; }
 }
 </style>
 <script src="/js/meta-pixel.js"></script>
@@ -222,9 +330,7 @@ main {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         Minha Conta
       </a>
-      <a class="back-link" href="index.html" style="color:var(--muted)">
-        Loja
-      </a>
+      <a class="back-link" href="index.html" style="color:var(--muted)">Loja</a>
     </div>
   </div>
 </header>
@@ -234,7 +340,6 @@ main {
     <h1 class="page-title">Meus Pedidos</h1>
     <p class="page-subtitle">Histórico de todas as suas compras</p>
   </div>
-
   <div id="loading-state" class="loading-state">Carregando seus pedidos...</div>
   <div id="orders-content" style="display:none;"></div>
 </main>
@@ -242,6 +347,8 @@ main {
 <script>
 (function () {
   const AUTH_KEY = 'user-session';
+  const openTracking = new Set(); // keep expand state across refreshes
+  let refreshTimer = null;
 
   function getSession() {
     try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch(e) { return null; }
@@ -253,33 +360,251 @@ main {
     return;
   }
 
+  // ── Formatters ────────────────────────────────────────────────────────────
+
   function formatBRL(v) {
     return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
   function formatDate(iso) {
     if (!iso) return '—';
+    try { return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    catch(e) { return iso; }
+  }
+
+  function formatShortDate(iso) {
+    if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const d = new Date(iso);
+      return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     } catch(e) { return iso; }
   }
 
-  function shortId(id) {
-    if (!id) return '—';
-    return '#' + id.replace(/-/g, '').slice(0, 8).toUpperCase();
+  function formatETA(iso) {
+    if (!iso) return null;
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const diffDays = Math.ceil((d - now) / 86400000);
+      const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      if (diffDays <= 0) return dateStr;
+      if (diffDays === 1) return dateStr + ' · amanhã';
+      return dateStr + ' · ' + diffDays + ' dias';
+    } catch(e) { return iso; }
   }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ── Status helpers ────────────────────────────────────────────────────────
 
   function statusInfo(status) {
     switch (status) {
-      case 'paid':
-        return { label: 'Pago', cls: 'status-paid', dotCls: 'dot-paid' };
-      case 'awaiting_validation':
-        return { label: 'Comprovante enviado', cls: 'status-awaiting', dotCls: 'dot-awaiting' };
+      case 'paid':               return { label: 'Pago', cls: 'status-paid', dotCls: 'dot-paid' };
+      case 'awaiting_validation':return { label: 'Comprovante enviado', cls: 'status-awaiting', dotCls: 'dot-awaiting' };
+      case 'refused':            return { label: 'Recusado', cls: 'status-refused', dotCls: 'dot-refused' };
       case 'pending':
-      default:
-        return { label: 'Aguardando pagamento', cls: 'status-pending', dotCls: 'dot-pending' };
+      default:                   return { label: 'Aguardando pagamento', cls: 'status-pending', dotCls: 'dot-pending' };
     }
   }
+
+  // ── Tracking helpers ──────────────────────────────────────────────────────
+
+  // Returns 'done' | 'active' | 'upcoming' for each step
+  function getStepStates(steps) {
+    const now = Date.now();
+    let lastDoneIdx = -1;
+    for (let i = 0; i < steps.length; i++) {
+      if (new Date(steps[i].timestamp).getTime() <= now) lastDoneIdx = i;
+    }
+    return steps.map((_, i) => {
+      if (i < lastDoneIdx) return 'done';
+      if (i === lastDoneIdx) return 'active';
+      return 'upcoming';
+    });
+  }
+
+  function trackingProgress(states) {
+    const done = states.filter(s => s !== 'upcoming').length;
+    return Math.round((done / states.length) * 100);
+  }
+
+  function trackingStatusLabel(steps, states) {
+    const activeIdx = states.lastIndexOf('active');
+    if (activeIdx === -1) return { label: 'Aguardando', pillCls: 'pill-waiting' };
+    const step = steps[activeIdx];
+    if (step.step === 'delivered') return { label: 'Entregue', pillCls: 'pill-done' };
+    if (step.step === 'out_for_delivery') return { label: 'Saindo para entrega', pillCls: 'pill-delivery' };
+    if (step.step === 'in_transit') return { label: 'Em trânsito', pillCls: 'pill-transit' };
+    return { label: step.label, pillCls: 'pill-waiting' };
+  }
+
+  // SVG icons per step type (white on colored circle)
+  function stepIcon(stepKey, state) {
+    if (state === 'done') {
+      // White checkmark for all done steps
+      return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    }
+    if (state === 'upcoming') {
+      return `<svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" fill="currentColor"/></svg>`;
+    }
+    // Active — step-specific icon
+    const icons = {
+      payment_approved: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+      preparing: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`,
+      dispatched: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+      in_transit: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+      out_for_delivery: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+      delivered: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    };
+    return icons[stepKey] || icons.dispatched;
+  }
+
+  // ── Render tracking ───────────────────────────────────────────────────────
+
+  function renderTracking(order) {
+    const trk = order.tracking;
+    if (!trk || !trk.steps || trk.steps.length === 0) {
+      return `<div class="tracking-toggle" style="cursor:default; opacity:.6;">
+        <div class="tracking-toggle-left">
+          <span class="trk-truck-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+          <div><div class="trk-id-label">Rastreio em processamento</div></div>
+        </div>
+      </div>`;
+    }
+
+    const states  = getStepStates(trk.steps);
+    const pct     = trackingProgress(states);
+    const stLabel = trackingStatusLabel(trk.steps, states);
+    const isOpen  = openTracking.has(order.id);
+    const etaStr  = formatETA(trk.estimatedDelivery);
+    const isDelivered = states[states.length - 1] === 'done' || states[states.length - 1] === 'active';
+
+    let html = `<div class="tracking-toggle" onclick="toggleTracking('${escapeHtml(order.id)}')" id="trk-toggle-${escapeHtml(order.id)}">
+      <div class="tracking-toggle-left">
+        <span class="trk-truck-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+          </svg>
+        </span>
+        <div>
+          <div class="trk-id-label">${escapeHtml(trk.trackingId)}</div>
+          <span class="trk-status-pill ${stLabel.pillCls}">${escapeHtml(stLabel.label)}</span>
+        </div>
+      </div>
+      <div class="trk-toggle-right">
+        ${etaStr ? `<span class="trk-eta-text">Prev. ${etaStr}</span>` : ''}
+        <svg class="trk-chevron${isOpen ? ' open' : ''}" id="trk-chevron-${escapeHtml(order.id)}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+    </div>`;
+
+    // Timeline body
+    html += `<div class="tracking-body" id="trk-body-${escapeHtml(order.id)}" style="display:${isOpen ? 'block' : 'none'};">`;
+
+    // Progress bar
+    html += `<div class="trk-progress-wrap">
+      <div class="trk-progress-meta">
+        <span class="trk-progress-label">Progresso do pedido</span>
+        <span class="trk-progress-pct">${pct}%</span>
+      </div>
+      <div class="trk-progress-bg">
+        <div class="trk-progress-fg" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+
+    // Timeline steps
+    html += `<div class="trk-timeline">`;
+    trk.steps.forEach(function(step, i) {
+      const state     = states[i];
+      const isLast    = i === trk.steps.length - 1;
+      const lineCls   = state === 'done' ? 'done' : 'upcoming';
+      const icon      = stepIcon(step.step, state);
+      const isNow     = state === 'active';
+      const badgeNow  = isNow ? `<span class="trk-badge-now">agora</span>` : '';
+
+      html += `<div class="trk-step">
+        <div class="trk-step-visual">
+          <div class="trk-circle ${state}">${icon}</div>
+          ${!isLast ? `<div class="trk-line ${lineCls}"></div>` : ''}
+        </div>
+        <div class="trk-step-content">
+          <div class="trk-step-label ${state}">${escapeHtml(step.label)}${badgeNow}</div>
+          <div class="trk-step-loc">${escapeHtml(step.location)}</div>
+          <div class="trk-step-time ${state}">${formatShortDate(step.timestamp)}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`; // trk-timeline
+
+    if (etaStr && !isDelivered) {
+      html += `<div style="margin-top:16px; padding:10px 14px; background:rgba(109,74,255,.05); border-radius:10px; border:1px solid rgba(109,74,255,.1);">
+        <span style="font-size:12px; color:var(--muted); font-weight:500;">Previsão de entrega: </span>
+        <span style="font-size:13px; font-weight:700; color:var(--purple);">${escapeHtml(etaStr)}</span>
+      </div>`;
+    }
+
+    html += `</div>`; // tracking-body
+    return html;
+  }
+
+  // ── Toggle tracking open/close ────────────────────────────────────────────
+
+  window.toggleTracking = function(orderId) {
+    const body    = document.getElementById('trk-body-' + orderId);
+    const chevron = document.getElementById('trk-chevron-' + orderId);
+    if (!body) return;
+    const isOpen = body.style.display !== 'none';
+    if (isOpen) {
+      body.style.display = 'none';
+      if (chevron) chevron.classList.remove('open');
+      openTracking.delete(orderId);
+    } else {
+      body.style.display = 'block';
+      if (chevron) chevron.classList.add('open');
+      openTracking.add(orderId);
+      // Animate progress bar
+      const fg = body.querySelector('.trk-progress-fg');
+      if (fg) {
+        const target = fg.style.width;
+        fg.style.width = '0%';
+        setTimeout(() => { fg.style.width = target; }, 30);
+      }
+    }
+  };
+
+  // ── Render order card ─────────────────────────────────────────────────────
+
+  function renderOrderCard(order) {
+    const st = statusInfo(order.status);
+    const displayId = order.shortId ? '#' + order.shortId : '#' + (order.id || '').replace(/-/g, '').slice(0, 8).toUpperCase();
+
+    let html = `<div class="order-card">
+      <div class="order-header">
+        <div>
+          <div class="order-id">Pedido ${escapeHtml(displayId)}</div>
+          <div class="order-product">${escapeHtml(order.productName || order.productId || 'Produto')}</div>
+        </div>
+        <span class="order-status ${st.cls}"><span class="dot ${st.dotCls}"></span>${st.label}</span>
+      </div>
+      <div class="order-meta">
+        <div class="order-meta-item"><span class="label">Valor Total</span><span class="val price">${formatBRL(order.amount)}</span></div>
+        <div class="order-meta-item"><span class="label">Data</span><span class="val">${formatDate(order.createdAt)}</span></div>
+        ${order.address ? `<div class="order-meta-item"><span class="label">Destino</span><span class="val">${escapeHtml((order.address.cidade || '') + (order.address.estado ? ', ' + order.address.estado : ''))}</span></div>` : ''}
+      </div>`;
+
+    if (order.status === 'paid') {
+      html += renderTracking(order);
+    }
+
+    html += `</div>`;
+    return html;
+  }
+
+  // ── Render all orders ─────────────────────────────────────────────────────
 
   function renderOrders(orders) {
     const container = document.getElementById('orders-content');
@@ -287,44 +612,46 @@ main {
     document.getElementById('loading-state').style.display = 'none';
 
     if (!orders || orders.length === 0) {
-      container.innerHTML = '<div class="empty-state">' +
-        '<div class="empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>' +
-        '<h3>Nenhum pedido encontrado</h3>' +
-        '<p>Você ainda não realizou compras. Explore nossa loja!</p>' +
-        '<a href="index.html" class="btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Ver iPhones</a>' +
-        '</div>';
+      container.innerHTML = `<div class="empty-state">
+        <div class="empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+        <h3>Nenhum pedido encontrado</h3>
+        <p>Você ainda não realizou compras. Explore nossa loja!</p>
+        <a href="index.html" class="btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Ver iPhones</a>
+      </div>`;
       return;
     }
 
-    const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const sorted = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    let html = '<div class="orders-summary"><span class="orders-count">' + sortedOrders.length + '</span><span>pedido' + (sortedOrders.length !== 1 ? 's' : '') + ' encontrado' + (sortedOrders.length !== 1 ? 's' : '') + '</span></div>';
+    let html = `<div class="orders-summary"><span class="orders-count">${sorted.length}</span><span>pedido${sorted.length !== 1 ? 's' : ''} encontrado${sorted.length !== 1 ? 's' : ''}</span></div>`;
+    sorted.forEach(function(order) { html += renderOrderCard(order); });
+    container.innerHTML = html;
 
-    sortedOrders.forEach(function (order) {
-      const st = statusInfo(order.status);
-      html += '<div class="order-card">' +
-        '<div class="order-header">' +
-          '<div>' +
-            '<div class="order-id">Pedido ' + shortId(order.id) + '</div>' +
-            '<div class="order-product">' + escapeHtml(order.productName || order.productId || 'Produto') + '</div>' +
-          '</div>' +
-          '<span class="order-status ' + st.cls + '"><span class="dot ' + st.dotCls + '"></span>' + st.label + '</span>' +
-        '</div>' +
-        '<div class="order-meta">' +
-          '<div class="order-meta-item"><span class="label">Valor Total</span><span class="val price">' + formatBRL(order.amount) + '</span></div>' +
-          '<div class="order-meta-item"><span class="label">Data</span><span class="val">' + formatDate(order.createdAt) + '</span></div>' +
-        '</div>' +
-      '</div>';
+    // Auto-open tracking for most recent paid order (first time)
+    if (openTracking.size === 0) {
+      const firstPaid = sorted.find(o => o.status === 'paid' && o.tracking);
+      if (firstPaid) window.toggleTracking(firstPaid.id);
+    }
+
+    // Auto-refresh if any order has tracking in transit
+    const needsRefresh = sorted.some(function(o) {
+      if (!o.tracking || !o.tracking.steps) return false;
+      const states = getStepStates(o.tracking.steps);
+      const lastActive = states.lastIndexOf('active');
+      return lastActive !== -1 && o.tracking.steps[lastActive].step !== 'delivered';
     });
 
-    container.innerHTML = html;
+    if (needsRefresh && !refreshTimer) {
+      refreshTimer = setInterval(function() { loadOrders(true); }, 60000);
+    } else if (!needsRefresh && refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
   }
 
-  function escapeHtml(s) {
-    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
+  // ── Load orders ───────────────────────────────────────────────────────────
 
-  async function loadOrders() {
+  async function loadOrders(silent) {
     try {
       const r = await fetch('/api/auth/orders', { headers: { 'x-auth-token': session.token } });
       if (r.status === 401) { localStorage.removeItem(AUTH_KEY); window.location.href = 'login.html'; return; }
@@ -332,10 +659,10 @@ main {
       if (data.success) {
         renderOrders(data.orders);
       } else {
-        document.getElementById('loading-state').textContent = 'Erro ao carregar pedidos.';
+        if (!silent) document.getElementById('loading-state').textContent = 'Erro ao carregar pedidos.';
       }
     } catch(e) {
-      document.getElementById('loading-state').textContent = 'Erro de conexão. Recarregue a página.';
+      if (!silent) document.getElementById('loading-state').textContent = 'Erro de conexão. Recarregue a página.';
     }
   }
 

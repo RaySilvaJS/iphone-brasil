@@ -1397,6 +1397,19 @@ app.get('/api/auth/orders', (req, res) => {
   let payments = [];
   try { payments = JSON.parse(fs.readFileSync(paymentsFilePath, 'utf-8')); } catch (e) {}
   const orders = payments.filter(p => p.userId === u.id);
+  // Lazy-generate tracking for paid orders without it (retroactive for existing orders)
+  let dirty = false;
+  orders.forEach(o => {
+    if (o.status === 'paid' && !o.tracking) {
+      try {
+        const t = require('./shipping').generateTracking(o);
+        o.tracking = t;
+        const idx = payments.findIndex(p => p.id === o.id);
+        if (idx !== -1) { payments[idx].tracking = t; dirty = true; }
+      } catch(e) {}
+    }
+  });
+  if (dirty) try { fs.writeFileSync(paymentsFilePath, JSON.stringify(payments, null, 2), 'utf-8'); } catch(e) {}
   res.json({ success: true, orders });
 });
 

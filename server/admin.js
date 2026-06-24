@@ -909,7 +909,10 @@ router.patch('/orders/:id', adminAuth, async (req, res) => {
     });
 
     // Timestamps
-    if (newStatus === 'paid')    payments[idx].paidAt    = new Date().toISOString();
+    if (newStatus === 'paid') {
+      payments[idx].paidAt = new Date().toISOString();
+      if (!payments[idx].tracking) { try { payments[idx].tracking = require('./shipping').generateTracking(payments[idx]); } catch(e) { console.error('[tracking]', e.message); } }
+    }
     if (newStatus === 'refused') payments[idx].refusedAt = new Date().toISOString();
 
     fs.writeFileSync(path.join(DATA, 'payments.json'), JSON.stringify(payments, null, 2));
