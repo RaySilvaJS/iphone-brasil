@@ -53,6 +53,37 @@ const productCache = {};
 const catalogCache = {};
 const catalogPromises = {}; // deduplicação: evita 2 fetches simultâneos do mesmo catálogo
 
+// ===== MODO DE DIAGNÓSTICO (?debugProdutos=1) =====
+const _debugEnabled = /[?&]debugProdutos=1/.test(location.search);
+const _debugEntries = [];
+function _debugLog(entry) {
+  if (!_debugEnabled) return;
+  _debugEntries.push({ ms: Date.now(), ...entry });
+  _renderDebugPanel();
+}
+function _renderDebugPanel() {
+  const el = document.getElementById('_dbg_panel_body');
+  if (!el) return;
+  el.innerHTML = _debugEntries.map(e => {
+    const t = `[+${e.ms - _debugEntries[0].ms}ms] `;
+    if (e.type === 'fetch')       return `${t}<b style="color:#4af">FETCH</b> ${e.url}<br>&nbsp;&nbsp;HTTP ${e.status} ${e.ok ? '✅' : '❌'} | ${e.ct || 'sem content-type'}`;
+    if (e.type === 'fetch-error') return `${t}<b style="color:#f55">ERRO</b> ${e.error} | url: ${e.url}`;
+    if (e.type === 'fail')        return `${t}<b style="color:#f88">FALHA</b> ${e.key}: 2 tentativas falharam`;
+    if (e.type === 'loaded')      return `${t}<b style="color:#4f4">OK</b> ${e.key}: ${e.count} produtos`;
+    if (e.type === 'render')      return `${t}<b style="color:#ff4">RENDER</b> ${e.count} cards`;
+    if (e.type === 'card-error')  return `${t}<b style="color:#f55">CARD ERR</b> id=${e.id}: ${e.error}`;
+    if (e.type === 'catch')       return `${t}<b style="color:#f55">CATCH</b> ${e.name}: ${e.message}`;
+    return `${t}${JSON.stringify(e)}`;
+  }).join('<br>') + `<br><br><b style="color:#ff0">UA:</b> ${navigator.userAgent.replace(/;/g,' |')}`;
+}
+function _initDebugPanel() {
+  if (!_debugEnabled) return;
+  const p = document.createElement('div');
+  p.style.cssText = 'position:fixed;top:8px;right:8px;z-index:2147483647;background:rgba(0,0,0,.92);color:#0f0;font:11px/1.6 monospace;padding:12px 14px;border-radius:10px;max-width:min(94vw,520px);max-height:80vh;overflow-y:auto;box-shadow:0 4px 32px rgba(0,0,0,.6)';
+  p.innerHTML = '<b style="color:#ff0;font-size:13px">🔍 Debug Produtos</b> <small style="color:#aaa">(remove ?debugProdutos=1 para ocultar)</small><br><br><span id="_dbg_panel_body">Inicializando…</span>';
+  document.body.appendChild(p);
+}
+
 // ===== CACHE DE FAVORITOS — lê localStorage UMA vez, não por card =====
 let _favsCache = null;
 const _getFavs = () => {
@@ -96,51 +127,72 @@ const _scheduleProductCachePopulation = (products) => {
   }
 };
 
+// Executa um único fetch com timeout opcional (AbortController) e retorna
+// o array de produtos ou null em caso de erro. Compatível com Safari iOS 11+.
+const _doFetch = async (url, attempt) => {
+  // AbortController não existe em Safari iOS < 11.3 — usar feature detection
+  let controller = null;
+  let timeoutId  = null;
+  if (typeof AbortController !== 'undefined') {
+    controller = new AbortController();
+    timeoutId  = setTimeout(() => {
+      controller.abort();
+      console.warn(`[FETCH TIMEOUT] ${url} tentativa ${attempt} — abortado após 45s`);
+    }, 45000);
+  }
+  try {
+    const res = await fetch(url, controller ? { signal: controller.signal } : {});
+    if (timeoutId) clearTimeout(timeoutId);
+    const ct = (res.headers.get('content-type') || '');
+    _debugLog({ type: 'fetch', url, status: res.status, ok: res.ok, ct, attempt });
+    if (!res.ok) {
+      console.warn(`[FETCH] ${url}: HTTP ${res.status} | content-type: ${ct}`);
+      return null;
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId);
+    _debugLog({ type: 'fetch-error', url, error: err.name + ': ' + (err.message || ''), attempt });
+    console.error(`[FETCH ERROR] ${url} tentativa ${attempt}:`, err.name, err.message || String(err));
+    return null;
+  }
+};
+
 const loadCatalog = async (key) => {
   if (catalogCache[key]) {
     console.log(`[CACHE HIT] ${key}: ${catalogCache[key].length} produtos em memória`);
     return catalogCache[key];
   }
   // Deduplicação: retorna a promise existente se o fetch já está em andamento
-  // Evita 2 downloads simultâneos do mesmo JSON (ex: clique do user + preloader)
   if (catalogPromises[key]) {
     console.log(`[DEDUP] ${key}: aguardando fetch já em andamento`);
     return catalogPromises[key];
   }
 
   const promise = (async () => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      console.warn(`[FETCH TIMEOUT] ${key} — abortado após 20s`);
-    }, 20000);
-
     try {
-      const t0 = performance.now();
-      console.log(`[FETCH] Categoria carregada: iniciando download de ${key}`);
-      const res = await fetch(CATALOGS[key], { signal: controller.signal });
-      clearTimeout(timeoutId);
+      const url = CATALOGS[key];
+      let products = await _doFetch(url, 1);
 
-      if (!res.ok) {
-        console.warn(`[FETCH] ${key}: HTTP ${res.status}`);
+      // Única retry automática após falha (rede móvel instável)
+      if (products === null) {
+        console.log(`[FETCH RETRY] ${key}: nova tentativa em 1.5s...`);
+        await new Promise(r => setTimeout(r, 1500));
+        products = await _doFetch(url, 2);
+      }
+
+      if (products === null) {
+        console.error(`[FETCH FAIL] ${key}: falha após 2 tentativas — retornando vazio`);
+        _debugLog({ type: 'fail', key });
         return [];
       }
 
-      console.log(`[FETCH] ${key}: resposta recebida, parseando JSON...`);
-      const products = await res.json();
-      console.log(`[FETCH] ${key}: ${(performance.now() - t0).toFixed(0)}ms — Produtos encontrados: ${products.length}`);
-
       catalogCache[key] = products;
       _scheduleProductCachePopulation(products);
+      _debugLog({ type: 'loaded', key, count: products.length });
+      console.log(`[FETCH] ${key}: ${products.length} produtos carregados`);
       return products;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
-        console.error(`[FETCH] ${key}: timeout de 20s — conexão muito lenta ou arquivo grande demais`);
-      } else {
-        console.error(`[FETCH ERROR] ${key}:`, err.name, err.message || String(err));
-      }
-      return [];
     } finally {
       delete catalogPromises[key];
     }
@@ -460,7 +512,15 @@ const renderProducts = (products, onComplete) => {
 
   const renderNext = () => {
     const end = Math.min(i + BATCH, products.length);
-    const html = products.slice(i, end).map(_buildProductCardHTML).join('');
+    // Guarda por card: produto com dados ruins não quebra o lote inteiro
+    const html = products.slice(i, end).map(p => {
+      try { return _buildProductCardHTML(p); }
+      catch (e) {
+        console.error('[CARD ERROR] id=' + p.id, e.message);
+        _debugLog({ type: 'card-error', id: p.id, error: e.message });
+        return '';
+      }
+    }).join('');
 
     if (i === 0) {
       productsGrid.innerHTML = html; // primeiro batch: substitui conteúdo do grid
@@ -566,7 +626,12 @@ const fetchProducts = async () => {
       updateLoadMoreBtn(products.length, Math.min(PRODUCTS_PER_PAGE, products.length));
     });
   } catch (err) {
-    console.error('[FETCH] Erro ao renderizar:', err.name, err.message || String(err));
+    console.error('[FETCH] Erro ao renderizar produtos:', {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    });
+    _debugLog({ type: 'catch', name: err.name, message: err.message || String(err) });
     hideSkeleton();
     if (productsGrid) {
       productsGrid.innerHTML = '<p class="empty-state" style="color:#c53030;padding:40px 20px;text-align:center;">Erro ao carregar produtos. Verifique sua conexão e tente novamente.</p>';
@@ -805,6 +870,7 @@ function _appendMoreProducts() {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+  _initDebugPanel();
   await fetchProducts();
   if (window.cart) window.cart.updateUI();
   updateCompareBadge();

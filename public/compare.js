@@ -1,6 +1,7 @@
 // ========== COMPARADOR DE PRODUTOS ==========
 
-let compareList = JSON.parse(localStorage.getItem('compare-list') || '[]');
+let compareList = [];
+try { compareList = JSON.parse(localStorage.getItem('compare-list') || '[]'); } catch(e) { compareList = []; }
 
 function toggleCompare(productId) {
   const index = compareList.indexOf(productId);

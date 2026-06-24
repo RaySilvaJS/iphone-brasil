@@ -68,7 +68,7 @@ class Cart {
   }
 
   saveCart() {
-    localStorage.setItem(CART_KEY, JSON.stringify(this.items));
+    try { localStorage.setItem(CART_KEY, JSON.stringify(this.items)); } catch(e) {}
   }
 
   addItem(product, quantity = 1) {
