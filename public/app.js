@@ -550,6 +550,11 @@ const fetchProducts = async () => {
     }
 
     products = products.filter(p => p.price && p.price > 0);
+    // Produtos em promoção (isPromo ou imagem customizada via upload) aparecem primeiro
+    products.sort((a, b) => {
+      const isPromo = p => p.isPromo || (Array.isArray(p.images) && p.images[0] && p.images[0].startsWith('/uploads/'));
+      return (isPromo(b) ? 1 : 0) - (isPromo(a) ? 1 : 0);
+    });
     console.log('[RENDER] Iniciando render | Produtos encontrados:', products.length);
     currentProducts = products;
     currentPage = 1;
