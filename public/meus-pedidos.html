@@ -8,16 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="/css/brand.css">
 <style>
 :root {
-  --bg: #f5f5f7;
-  --card: #ffffff;
-  --text: #111111;
-  --muted: #777;
-  --purple: #6d4aff;
-  --green: #16a34a;
-  --green-bg: rgba(22,163,74,.1);
-  --shadow: 0 10px 30px rgba(0,0,0,.08);
+  --purple: var(--blue-dark);
+  --shadow: 0 10px 30px rgba(233,138,166,.1);
   --radius: 22px;
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -32,7 +27,7 @@ body {
 }
 header {
   padding: 16px 20px;
-  background: rgba(245,245,247,.85);
+  background: rgba(253,244,247,.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.05);
   position: sticky;
@@ -110,7 +105,7 @@ main {
   flex-shrink: 0;
 }
 .status-pending   { background: rgba(237,137,54,.12); color: #c05621; }
-.status-awaiting  { background: rgba(109,74,255,.1); color: var(--purple); }
+.status-awaiting  { background: rgba(233,138,166,.1); color: var(--purple); }
 .status-paid      { background: rgba(22,163,74,.1); color: var(--green); }
 .status-refused   { background: rgba(220,38,38,.1); color: #dc2626; }
 .status-delivered { background: rgba(22,163,74,.15); color: #14532d; }
@@ -146,13 +141,13 @@ main {
   margin-top: 18px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(109,74,255,.05);
-  border: 1px solid rgba(109,74,255,.12);
+  background: rgba(233,138,166,.05);
+  border: 1px solid rgba(233,138,166,.12);
   cursor: pointer;
   transition: background .15s, border-color .15s;
   user-select: none;
 }
-.tracking-toggle:hover { background: rgba(109,74,255,.09); border-color: rgba(109,74,255,.22); }
+.tracking-toggle:hover { background: rgba(233,138,166,.09); border-color: rgba(233,138,166,.22); }
 .tracking-toggle-left { display: flex; align-items: center; gap: 10px; }
 .trk-truck-icon { color: var(--purple); flex-shrink: 0; }
 .trk-id-label {
@@ -173,7 +168,7 @@ main {
   margin-top: 2px;
 }
 .pill-transit  { background: rgba(245,158,11,.12); color: #b45309; }
-.pill-delivery { background: rgba(109,74,255,.1); color: var(--purple); }
+.pill-delivery { background: rgba(233,138,166,.1); color: var(--purple); }
 .pill-done     { background: var(--green-bg); color: var(--green); }
 .pill-waiting  { background: rgba(0,0,0,.06); color: var(--muted); }
 .trk-toggle-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -207,7 +202,7 @@ main {
 .trk-progress-fg {
   height: 100%;
   border-radius: 10px;
-  background: linear-gradient(90deg, #6d4aff, #48bb78);
+  background: linear-gradient(90deg, #E98AA6, #48bb78);
   transition: width 1.2s cubic-bezier(.4,0,.2,1);
 }
 
@@ -227,12 +222,12 @@ main {
   z-index: 1;
 }
 .trk-circle.done     { background: var(--green); color: #fff; }
-.trk-circle.active   { background: var(--purple); color: #fff; box-shadow: 0 0 0 5px rgba(109,74,255,.15); }
+.trk-circle.active   { background: var(--purple); color: #fff; box-shadow: 0 0 0 5px rgba(233,138,166,.15); }
 .trk-circle.upcoming { background: rgba(0,0,0,.07); color: #bbb; }
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 rgba(109,74,255,.4); }
-  70%  { box-shadow: 0 0 0 10px rgba(109,74,255,0); }
-  100% { box-shadow: 0 0 0 0 rgba(109,74,255,0); }
+  0%   { box-shadow: 0 0 0 0 rgba(233,138,166,.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(233,138,166,0); }
+  100% { box-shadow: 0 0 0 0 rgba(233,138,166,0); }
 }
 .trk-circle.active { animation: pulse-ring 2s ease-out infinite; }
 .trk-line {
@@ -283,7 +278,7 @@ main {
 .empty-icon {
   width: 72px; height: 72px;
   border-radius: 22px;
-  background: linear-gradient(135deg, rgba(109,74,255,.1), rgba(109,74,255,.05));
+  background: linear-gradient(135deg, rgba(233,138,166,.1), rgba(233,138,166,.05));
   display: flex; align-items: center; justify-content: center;
   color: var(--purple);
   margin: 0 auto 20px;
@@ -293,13 +288,13 @@ main {
 .btn-primary {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  background: linear-gradient(135deg, #E98AA6, #D96B8A);
   color: #fff; border: none; border-radius: 12px;
   font-size: 15px; font-weight: 700; font-family: inherit;
   cursor: pointer; text-decoration: none;
   transition: transform .2s, box-shadow .2s;
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(109,74,255,.35); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(233,138,166,.35); }
 .loading-state { text-align: center; padding: 60px 20px; color: var(--muted); }
 .orders-summary {
   display: flex; align-items: center; gap: 8px;
@@ -307,7 +302,7 @@ main {
 }
 .orders-count {
   font-size: 26px; font-weight: 800;
-  background: linear-gradient(135deg, var(--purple), #9b7dff);
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 
@@ -541,7 +536,7 @@ main {
     html += `</div>`; // trk-timeline
 
     if (etaStr && !isDelivered) {
-      html += `<div style="margin-top:16px; padding:10px 14px; background:rgba(109,74,255,.05); border-radius:10px; border:1px solid rgba(109,74,255,.1);">
+      html += `<div style="margin-top:16px; padding:10px 14px; background:rgba(233,138,166,.05); border-radius:10px; border:1px solid rgba(233,138,166,.1);">
         <span style="font-size:12px; color:var(--muted); font-weight:500;">Previsão de entrega: </span>
         <span style="font-size:13px; font-weight:700; color:var(--purple);">${escapeHtml(etaStr)}</span>
       </div>`;

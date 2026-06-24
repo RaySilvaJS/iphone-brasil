@@ -8,24 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/css/brand.css">
   <style>
-    :root {
-      --blue:      #2563EB;
-      --blue-dark: #1D4ED8;
-      --blue-light:#EFF6FF;
-      --yellow:    #F59E0B;
-      --green:     #16A34A;
-      --green-bg:  #F0FDF4;
-      --red:       #DC2626;
-      --bg:        #F1F5F9;
-      --card:      #FFFFFF;
-      --text:      #0F172A;
-      --text-2:    #475569;
-      --muted:     #94A3B8;
-      --border:    #E2E8F0;
-      --shadow:    0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
-      --radius:    12px;
-    }
     *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
     body {
@@ -321,7 +305,7 @@
   <div class="page-shell">
     <div class="page-header">
       <h1 style="display:flex;align-items:center;gap:10px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#2563EB;flex-shrink:0"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--blue);flex-shrink:0"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         Meu Carrinho
       </h1>
       <button class="button button-primary" type="button" onclick="proceedToCheckout()">Finalizar Compra →</button>

@@ -6,20 +6,10 @@
 <title>Termos de Uso - jessi.iphones</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/brand.css">
 <style>
 :root {
-  --blue: #2563EB;
-  --blue-dark: #1D4ED8;
-  --blue-light: #EFF6FF;
-  --yellow: #F59E0B;
-  --bg: #F1F5F9;
-  --card: #fff;
-  --text: #0F172A;
-  --text-2: #475569;
-  --muted: #94A3B8;
-  --border: #E2E8F0;
-  --radius: 12px;
-  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --shadow: 0 1px 3px rgba(233,138,166,.08), 0 4px 16px rgba(233,138,166,.06);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { overflow-x: hidden; width: 100%; }
@@ -64,7 +54,7 @@ a { text-decoration: none; color: inherit; }
   transition: background .15s, color .15s;
   margin-bottom: 2px;
 }
-.terms-nav a:hover { background: var(--blue-light); color: var(--blue); }
+.terms-nav a:hover { background: var(--blue-light); color: var(--rose-dark); }
 
 /* CONTENT */
 .terms-content {}
@@ -85,7 +75,7 @@ a { text-decoration: none; color: inherit; }
   align-items: center;
   gap: 10px;
   padding-bottom: 14px;
-  border-bottom: 2px solid var(--blue-light);
+  border-bottom: 2px solid var(--border);
   color: var(--text);
 }
 .terms-section h2 .sec-num {
@@ -106,17 +96,17 @@ a { text-decoration: none; color: inherit; }
 .terms-section h3 { font-size: 15px; font-weight: 700; color: var(--text); margin: 16px 0 8px; }
 .terms-section ul { margin: 0 0 12px 20px; }
 .terms-section ul li { font-size: 14px; color: var(--text-2); margin-bottom: 6px; }
-.terms-section a { color: var(--blue); font-weight: 600; }
+.terms-section a { color: var(--blue-dark); font-weight: 600; }
 
 /* HIGHLIGHT */
 .highlight-box {
   background: var(--blue-light);
-  border-left: 4px solid var(--blue);
+  border-left: 4px solid var(--blue-dark);
   border-radius: 0 8px 8px 0;
   padding: 14px 18px;
   margin: 12px 0;
   font-size: 14px;
-  color: #1e40af;
+  color: var(--rose-dark);
 }
 
 /* ACCEPTANCE BOX */
@@ -142,7 +132,7 @@ a { text-decoration: none; color: inherit; }
   font-size: 14px;
   transition: background .2s;
 }
-.acceptance-box .btn-accept:hover { background: var(--blue-dark); }
+.acceptance-box .btn-accept:hover { background: var(--rose-dark); }
 .acceptance-box .terms-date { font-size: 12px; color: #64748B; margin-top: 16px; }
 
 /* FOOTER */

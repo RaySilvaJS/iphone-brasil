@@ -8,20 +8,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="/css/brand.css">
 <style>
 :root {
-  --blue: #2563EB;
-  --blue-dark: #1D4ED8;
-  --blue-light: #EFF6FF;
-  --yellow: #F59E0B;
-  --bg: #F1F5F9;
-  --card: #fff;
-  --text: #0F172A;
-  --text-2: #475569;
-  --muted: #94A3B8;
-  --border: #E2E8F0;
-  --radius: 12px;
-  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --shadow: 0 1px 3px rgba(233,138,166,.08), 0 4px 16px rgba(233,138,166,.06);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { overflow-x: hidden; width: 100%; }
@@ -63,7 +53,7 @@ a { text-decoration: none; color: inherit; }
 
 /* HERO */
 .hero {
-  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+  background: linear-gradient(135deg, var(--rose-dark) 0%, #3D1526 100%);
   color: #fff;
   padding: 60px 24px;
   text-align: center;
@@ -112,8 +102,8 @@ a { text-decoration: none; color: inherit; }
   color: var(--text-2);
   transition: all .15s;
 }
-.faq-cat.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-.faq-cat:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+.faq-cat.active { background: var(--rose-dark); color: #fff; border-color: var(--rose-dark); }
+.faq-cat:hover:not(.active) { border-color: var(--blue-dark); color: var(--blue-dark); }
 
 /* ACCORDION */
 .faq-section { margin-bottom: 40px; }
@@ -126,7 +116,7 @@ a { text-decoration: none; color: inherit; }
   gap: 10px;
   color: var(--text);
 }
-.faq-section-title svg { color: var(--blue); }
+.faq-section-title svg { color: var(--blue-dark); }
 
 .accordion-item {
   background: var(--card);
@@ -137,7 +127,7 @@ a { text-decoration: none; color: inherit; }
   overflow: hidden;
   transition: box-shadow .2s;
 }
-.accordion-item.open { box-shadow: 0 4px 20px rgba(37,99,235,.12); border-color: rgba(37,99,235,.2); }
+.accordion-item.open { box-shadow: 0 4px 20px rgba(233,138,166,.15); border-color: rgba(233,138,166,.3); }
 
 .accordion-btn {
   width: 100%;
@@ -157,7 +147,7 @@ a { text-decoration: none; color: inherit; }
   transition: background .15s;
 }
 .accordion-btn:hover { background: var(--bg); }
-.accordion-item.open .accordion-btn { background: var(--blue-light); color: var(--blue); }
+.accordion-item.open .accordion-btn { background: var(--blue-light); color: var(--rose-dark); }
 .accordion-icon {
   width: 28px;
   height: 28px;
@@ -169,8 +159,8 @@ a { text-decoration: none; color: inherit; }
   flex-shrink: 0;
   transition: transform .3s, background .2s;
 }
-.accordion-item.open .accordion-icon { background: rgba(37,99,235,.1); }
-.accordion-item.open .accordion-icon svg { transform: rotate(180deg); color: var(--blue); }
+.accordion-item.open .accordion-icon { background: rgba(233,138,166,.1); }
+.accordion-item.open .accordion-icon svg { transform: rotate(180deg); color: var(--rose-dark); }
 .accordion-icon svg { transition: transform .3s, color .2s; color: var(--muted); }
 
 .accordion-body {
@@ -186,13 +176,13 @@ a { text-decoration: none; color: inherit; }
 }
 .accordion-body-inner p { margin-bottom: 10px; }
 .accordion-body-inner p:last-child { margin-bottom: 0; }
-.accordion-body-inner a { color: var(--blue); font-weight: 600; }
+.accordion-body-inner a { color: var(--blue-dark); font-weight: 600; }
 .accordion-body-inner ul { margin: 8px 0 8px 20px; }
 .accordion-body-inner ul li { margin-bottom: 6px; }
 
 /* CTA */
 .cta-block {
-  background: linear-gradient(135deg, var(--blue-light), #e0e7ff);
+  background: linear-gradient(135deg, var(--blue-light), #F8B4C5);
   border-radius: var(--radius);
   padding: 36px 32px;
   text-align: center;
@@ -205,7 +195,7 @@ a { text-decoration: none; color: inherit; }
   align-items: center;
   gap: 8px;
   padding: 12px 28px;
-  background: var(--blue);
+  background: var(--rose-dark);
   color: #fff;
   border-radius: 10px;
   font-weight: 700;

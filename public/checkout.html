@@ -8,12 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/css/brand.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      background: #F1F5F9;
+      background: var(--bg);
       color: #111827;
       font-size: 14px;
       line-height: 1.5;
@@ -63,7 +64,7 @@
     /* SECTION CARD */
     .co-card {
       background: #fff;
-      border: 1px solid #E5E7EB;
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
     }
@@ -76,7 +77,7 @@
     .co-card-hdr svg { color: #6B7280; flex-shrink: 0; }
     .co-card-hdr .co-step-badge {
       width: 22px; height: 22px; border-radius: 50%;
-      background: #2563EB; color: #fff;
+      background: var(--blue); color: #fff;
       font-size: 12px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
@@ -124,7 +125,7 @@
       background: #fff;
       width: 100%;
     }
-    .co-field input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    .co-field input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(233,138,166,.2); }
     .co-field input::placeholder { color: #D1D5DB; }
     .co-field input[readonly] { background: #F8FAFC; color: #374151; cursor: default; }
     .co-field input.co-field-ok { border-color: #16A34A; background: #F0FDF4; }
@@ -137,7 +138,7 @@
     .co-cep-spinner {
       position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
       width: 16px; height: 16px;
-      border: 2px solid #E5E7EB; border-top-color: #2563EB;
+      border: 2px solid var(--border); border-top-color: var(--blue);
       border-radius: 50%; animation: coSpin .7s linear infinite;
       display: none;
     }
@@ -150,18 +151,18 @@
       cursor: pointer; margin-bottom: 8px; transition: all .15s;
     }
     .co-addr-opt:last-of-type { margin-bottom: 0; }
-    .co-addr-opt.selected { border-color: #2563EB; background: #EFF6FF; }
-    .co-addr-opt input[type=radio] { margin-top: 2px; accent-color: #2563EB; flex-shrink: 0; }
+    .co-addr-opt.selected { border-color: var(--blue); background: var(--blue-light); }
+    .co-addr-opt input[type=radio] { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
     .co-addr-name { font-weight: 700; font-size: 13px; color: #111827; }
     .co-addr-badge {
       display: inline-block; margin-left: 6px; padding: 1px 6px;
-      background: #DBEAFE; color: #2563EB; border-radius: 4px;
+      background: var(--blue-light); color: var(--rose-dark); border-radius: 4px;
       font-size: 10px; font-weight: 700;
     }
     .co-addr-line { font-size: 12px; color: #6B7280; margin-top: 2px; line-height: 1.4; }
     .co-add-addr-link {
       display: inline-flex; align-items: center; gap: 4px;
-      margin-top: 12px; color: #2563EB; font-size: 13px; font-weight: 600;
+      margin-top: 12px; color: var(--blue-dark); font-size: 13px; font-weight: 600;
       cursor: pointer; background: none; border: none; padding: 0;
     }
     .co-add-addr-link:hover { text-decoration: underline; }
@@ -185,15 +186,15 @@
       color: #111827; font-size: 14px; outline: none;
       transition: border-color .15s, box-shadow .15s;
     }
-    .co-cep-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    .co-cep-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(233,138,166,.2); }
     .co-cep-input::placeholder { color: #D1D5DB; }
     .co-calc-btn {
-      padding: 10px 16px; background: #2563EB; color: #fff;
+      padding: 10px 16px; background: var(--blue); color: #fff;
       border: none; border-radius: 8px; cursor: pointer;
       font-size: 13px; font-weight: 600; white-space: nowrap;
       transition: background .15s;
     }
-    .co-calc-btn:hover { background: #1D4ED8; }
+    .co-calc-btn:hover { background: var(--blue-dark); }
     .co-cep-hint { font-size: 11px; color: #9CA3AF; margin-top: 4px; }
 
     /* SHIPPING OPTIONS */
@@ -203,8 +204,8 @@
       cursor: pointer; margin-bottom: 8px; transition: all .15s;
     }
     .co-ship-opt:last-child { margin-bottom: 0; }
-    .co-ship-opt.selected { border-color: #2563EB; background: #EFF6FF; }
-    .co-ship-opt input[type=radio] { accent-color: #2563EB; flex-shrink: 0; }
+    .co-ship-opt.selected { border-color: var(--blue); background: var(--blue-light); }
+    .co-ship-opt input[type=radio] { accent-color: var(--blue); flex-shrink: 0; }
     .co-ship-icon {
       width: 34px; height: 34px; background: #F1F5F9; border-radius: 8px;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -222,8 +223,8 @@
       cursor: pointer; margin-bottom: 8px; transition: all .15s; background: #fff;
     }
     .co-pay-opt:last-child { margin-bottom: 0; }
-    .co-pay-opt.selected { border-color: #2563EB; background: #EFF6FF; }
-    .co-pay-opt input[type=radio] { accent-color: #2563EB; flex-shrink: 0; }
+    .co-pay-opt.selected { border-color: var(--blue); background: var(--blue-light); }
+    .co-pay-opt input[type=radio] { accent-color: var(--blue); flex-shrink: 0; }
     .co-pay-logo {
       width: 40px; height: 40px; border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
@@ -255,7 +256,7 @@
       border-radius: 8px; color: #111827; font-size: 14px; outline: none;
       transition: border-color .15s;
     }
-    .co-form-field input:focus { border-color: #2563EB; }
+    .co-form-field input:focus { border-color: var(--blue); }
     .co-form-field input::placeholder { color: #D1D5DB; }
 
     /* FATURAMENTO */
@@ -276,7 +277,7 @@
       transition: border-color .15s;
       text-transform: uppercase;
     }
-    .co-coupon-input:focus { border-color: #2563EB; }
+    .co-coupon-input:focus { border-color: var(--blue); }
     .co-coupon-input::placeholder { text-transform: none; color: #D1D5DB; }
     .co-coupon-btn {
       padding: 10px 14px; background: #F1F5F9; color: #374151;
@@ -357,13 +358,13 @@
 
     /* SAVE ADDR BTN */
     .co-save-addr-btn {
-      width: 100%; padding: 13px; background: #2563EB; color: #fff;
+      width: 100%; padding: 13px; background: var(--blue); color: #fff;
       border: none; border-radius: 10px; cursor: pointer;
       font-size: 14px; font-weight: 700; margin-top: 14px;
       transition: background .15s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .co-save-addr-btn:hover { background: #1D4ED8; }
+    .co-save-addr-btn:hover { background: var(--blue-dark); }
     .co-save-addr-btn[disabled] { opacity: .5; cursor: not-allowed; }
 
     /* LOADER */
@@ -373,8 +374,8 @@
       animation: coSpin .7s linear infinite; display: inline-block; vertical-align: middle;
     }
     .co-spinner.dark {
-      border-color: #E5E7EB;
-      border-top-color: #2563EB;
+      border-color: var(--border);
+      border-top-color: var(--blue);
     }
     @keyframes coSpin { to { transform: rotate(360deg); } }
 
@@ -421,8 +422,8 @@
       <span>Carrinho</span>
     </div>
     <div style="flex:1;height:2px;background:#16A34A;margin:0 8px;min-width:24px;"></div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#2563EB;">
-      <div style="width:22px;height:22px;border-radius:50%;background:#2563EB;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--blue);">
+      <div style="width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</div>
       <span>Checkout</span>
     </div>
     <div style="flex:1;height:2px;background:#E5E7EB;margin:0 8px;min-width:24px;"></div>
@@ -442,7 +443,7 @@
       Seus produtos
     </div>
     <div id="co-items-list"></div>
-    <p id="co-items-empty" class="co-muted" style="padding:14px 18px;display:none;">Carrinho vazio. <a href="index.html" style="color:#2563EB;">Voltar à loja →</a></p>
+    <p id="co-items-empty" class="co-muted" style="padding:14px 18px;display:none;">Carrinho vazio. <a href="index.html" style="color:var(--blue-dark);">Voltar à loja →</a></p>
   </div>
 
   <!-- 2. ENDEREÇO DE ENTREGA -->
@@ -481,7 +482,7 @@
               <input id="addr-cep" type="text" placeholder="00000-000" inputmode="numeric" maxlength="9" autocomplete="postal-code"/>
               <span class="co-cep-spinner" id="addr-cep-spinner"></span>
             </div>
-            <a href="https://buscacepinter.correios.com.br/app/endereco/index.php" target="_blank" rel="noopener" style="font-size:11px;color:#2563EB;margin-top:3px;display:inline-block">Não sei meu CEP</a>
+            <a href="https://buscacepinter.correios.com.br/app/endereco/index.php" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue-dark);margin-top:3px;display:inline-block">Não sei meu CEP</a>
           </div>
 
           <!-- Rua + Número -->

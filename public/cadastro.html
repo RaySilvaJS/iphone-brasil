@@ -8,21 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="/css/brand.css">
 <style>
-:root {
-  --blue:      #2563EB;
-  --blue-dark: #1D4ED8;
-  --yellow:    #F59E0B;
-  --green:     #16A34A;
-  --bg:        #F1F5F9;
-  --card:      #FFFFFF;
-  --text:      #0F172A;
-  --text-2:    #475569;
-  --muted:     #94A3B8;
-  --border:    #E2E8F0;
-  --shadow:    0 4px 24px rgba(0,0,0,.08);
-  --radius:    14px;
-}
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html, body { width:100%; max-width:100%; overflow-x:hidden; }
 body {
@@ -75,7 +62,7 @@ main {
   background: var(--blue); color: #fff;
   display: inline-grid; place-items: center;
   font-size: 22px; margin-bottom: 12px;
-  box-shadow: 0 6px 20px rgba(37,99,235,.25);
+  box-shadow: 0 6px 20px rgba(233,138,166,.25);
 }
 .card-title { font-size: 23px; font-weight: 800; margin-bottom: 4px; text-align: center; }
 .card-subtitle { color: var(--text-2); font-size: 14px; margin-bottom: 26px; text-align: center; }
@@ -100,7 +87,7 @@ input {
 }
 input:focus {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  box-shadow: 0 0 0 3px rgba(233,138,166,.15);
   background: #fff;
 }
 input.error-input { border-color: #DC2626 !important; }
@@ -132,7 +119,7 @@ input.error-input { border-color: #DC2626 !important; }
   transition: background .2s, transform .15s, box-shadow .2s;
   margin-top: 6px;
 }
-.btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,.3); }
+.btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(233,138,166,.3); }
 .btn-primary:active { transform: translateY(0); }
 .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
 

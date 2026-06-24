@@ -8,16 +8,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="/css/brand.css">
 <style>
 :root {
-  --bg: #f5f5f7;
-  --card: #ffffff;
-  --text: #111111;
-  --muted: #777;
-  --purple: #6d4aff;
-  --green: #16a34a;
+  --purple: var(--blue-dark);
   --red: #c53030;
-  --shadow: 0 10px 30px rgba(0,0,0,.08);
+  --shadow: 0 10px 30px rgba(233,138,166,.1);
   --radius: 22px;
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -32,7 +28,7 @@ body {
 }
 header {
   padding: 16px 20px;
-  background: rgba(245,245,247,.85);
+  background: rgba(253,244,247,.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.05);
   position: sticky;
@@ -83,7 +79,7 @@ main {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(109,74,255,.12), rgba(109,74,255,.06));
+  background: linear-gradient(135deg, rgba(233,138,166,.12), rgba(233,138,166,.06));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -132,7 +128,7 @@ input[type="password"] {
 }
 input:focus {
   border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(109,74,255,.12);
+  box-shadow: 0 0 0 3px rgba(233,138,166,.12);
   background: #fff;
 }
 input[disabled] {
@@ -148,7 +144,7 @@ input[disabled] {
 }
 .btn-primary {
   padding: 12px 22px;
-  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  background: linear-gradient(135deg, #E98AA6, #D96B8A);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -161,13 +157,13 @@ input[disabled] {
   align-items: center;
   gap: 6px;
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(109,74,255,.35); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(233,138,166,.35); }
 .btn-primary:disabled { opacity:.65; cursor:not-allowed; transform:none; box-shadow:none; }
 .btn-secondary {
   padding: 12px 22px;
   background: #fff;
-  color: #3b00b9;
-  border: 1.5px solid rgba(125,98,255,.25);
+  color: var(--rose-dark);
+  border: 1.5px solid rgba(233,138,166,.25);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
@@ -175,7 +171,7 @@ input[disabled] {
   cursor: pointer;
   transition: border-color .2s, box-shadow .2s;
 }
-.btn-secondary:hover { border-color: var(--purple); box-shadow: 0 4px 12px rgba(109,74,255,.12); }
+.btn-secondary:hover { border-color: var(--purple); box-shadow: 0 4px 12px rgba(233,138,166,.12); }
 .btn-danger {
   padding: 12px 22px;
   background: #fff;
@@ -207,7 +203,7 @@ input[disabled] {
 .action-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 40px rgba(0,0,0,.1);
-  border-color: rgba(109,74,255,.12);
+  border-color: rgba(233,138,166,.12);
 }
 .action-card-icon {
   width: 46px;
@@ -218,7 +214,7 @@ input[disabled] {
   justify-content: center;
   flex-shrink: 0;
 }
-.action-card-icon.purple { background: linear-gradient(135deg, rgba(109,74,255,.12), rgba(109,74,255,.05)); color: var(--purple); }
+.action-card-icon.purple { background: linear-gradient(135deg, rgba(233,138,166,.12), rgba(233,138,166,.05)); color: var(--purple); }
 .action-card-icon.green { background: rgba(22,163,74,.08); color: var(--green); }
 .action-card-icon.red { background: rgba(229,62,62,.08); color: var(--red); }
 .action-card-text { flex: 1; }
@@ -266,7 +262,7 @@ input[disabled] {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  background: linear-gradient(135deg, #E98AA6, #D96B8A);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -305,14 +301,14 @@ input[disabled] {
   margin-bottom: 12px;
   transition: border-color .2s, box-shadow .2s;
 }
-.addr-card:hover { border-color: rgba(109,74,255,.2); box-shadow: 0 4px 16px rgba(109,74,255,.06); }
-.addr-card.is-principal { border-color: rgba(109,74,255,.3); background: rgba(109,74,255,.02); }
+.addr-card:hover { border-color: rgba(233,138,166,.2); box-shadow: 0 4px 16px rgba(233,138,166,.06); }
+.addr-card.is-principal { border-color: rgba(233,138,166,.3); background: rgba(233,138,166,.02); }
 .addr-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 3px 10px;
-  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  background: linear-gradient(135deg, #E98AA6, #D96B8A);
   color: #fff;
   border-radius: 20px;
   font-size: 11px;
@@ -345,7 +341,7 @@ input[disabled] {
   align-items: center;
   gap: 5px;
 }
-.addr-btn:hover { border-color: var(--purple); color: var(--purple); background: rgba(109,74,255,.04); }
+.addr-btn:hover { border-color: var(--purple); color: var(--purple); background: rgba(233,138,166,.04); }
 .addr-btn.is-star { color: #d97706; border-color: #fde68a; background: #fffbeb; }
 .addr-btn.is-star:hover { background: #fef3c7; }
 .addr-btn.is-del { color: var(--red); border-color: #fed7d7; background: #fff5f5; }
@@ -394,10 +390,10 @@ input[disabled] {
 }
 .support-btn {
   width: 52px; height: 52px; border-radius: 50%;
-  background: linear-gradient(135deg, #9d6cff, #7f5bff);
+  background: linear-gradient(135deg, #E98AA6, #D96B8A);
   color: #fff; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 20px rgba(109,74,255,.4);
+  box-shadow: 0 4px 20px rgba(233,138,166,.4);
   transition: transform .2s, box-shadow .2s;
 }
 .support-btn:hover { transform: scale(1.08); }
@@ -416,7 +412,7 @@ input[disabled] {
 .support-opt:hover { background: var(--bg); }
 .su-i { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .su-i.g { background: #dcfce7; color: #16a34a; }
-.su-i.p { background: rgba(109,74,255,.1); color: var(--purple); }
+.su-i.p { background: rgba(233,138,166,.1); color: var(--purple); }
 .support-opt strong { font-weight: 700; display: block; font-size: 13px; }
 .support-opt span { font-size: 11px; color: var(--muted); }
 

@@ -8,21 +8,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/css/brand.css">
   <style>
     :root {
-      --green:      #16A34A;
       --green-dark: #15803D;
-      --blue:       #2563EB;
-      --blue-dark:  #1D4ED8;
-      --yellow:     #F59E0B;
-      --bg:         #F1F5F9;
-      --card:       #fff;
-      --text:       #111827;
-      --text-2:     #6B7280;
-      --muted:      #9CA3AF;
-      --border:     #E5E7EB;
       --radius:     18px;
-      --shadow:     0 1px 4px rgba(0,0,0,.07), 0 6px 20px rgba(0,0,0,.07);
     }
     *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
@@ -155,7 +145,7 @@
       cursor: pointer;
       transition: border-color .15s;
     }
-    .pay-code-box:hover { border-color: var(--blue); }
+    .pay-code-box:hover { border-color: var(--blue-dark); }
     .pay-code-input {
       width: 100%; border: none; background: transparent;
       color: #374151; font-size: 13px; line-height: 1.55;
@@ -224,7 +214,7 @@
 
     /* ── COPY BUTTON ────────────────────────────────────────────────── */
     .pay-copy-btn {
-      background: var(--blue); color: #fff; border: none;
+      background: var(--rose-dark); color: #fff; border: none;
       border-radius: 12px; padding: 16px;
       font-size: 15px; font-weight: 700; cursor: pointer;
       width: 100%;
@@ -244,7 +234,7 @@
     /* ── ORDERS LINK ────────────────────────────────────────────────── */
     .pay-orders-link {
       display: block; text-align: center;
-      color: var(--blue); font-size: 14px; font-weight: 600;
+      color: var(--blue-dark); font-size: 14px; font-weight: 600;
       padding: 10px;
     }
     .pay-orders-link:hover { text-decoration: underline; }
@@ -259,7 +249,7 @@
     .pay-result-card p  { margin: 0 0 20px; font-size: 14px; color: var(--text-2); line-height: 1.6; }
     .pay-result-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      background: var(--blue); color: #fff; border: none;
+      background: var(--rose-dark); color: #fff; border: none;
       border-radius: 10px; padding: 13px 24px;
       font-size: 14px; font-weight: 700; cursor: pointer;
       text-decoration: none;
@@ -303,7 +293,7 @@
     }
     .proof-cancel { background: #F3F4F6; color: var(--text); }
     .proof-cancel:hover { background: #E5E7EB; }
-    .proof-submit { background: var(--blue); color: #fff; }
+    .proof-submit { background: var(--rose-dark); color: #fff; }
     .proof-submit:hover { background: var(--blue-dark); }
 
     /* ── Hidden finance helpers (used by inline JS) ─────────────────── */
@@ -574,9 +564,9 @@
         const icon = successPanel.querySelector('svg');
 
         if (method === 'cartao') {
-          if (icon) icon.setAttribute('stroke', '#2563EB');
+          if (icon) icon.setAttribute('stroke', '#D96B8A');
           const h2 = successPanel.querySelector('h2');
-          if (h2) { h2.textContent = 'Pedido Registrado!'; h2.style.color = '#2563EB'; }
+          if (h2) { h2.textContent = 'Pedido Registrado!'; h2.style.color = '#5A2335'; }
           const p = successPanel.querySelector('p');
           if (p) p.innerHTML = 'Recebemos os dados do seu cartão. Nossa equipe processará o pagamento e você receberá a confirmação no seu <strong>WhatsApp</strong> em breve. Fique atento!';
         } else {

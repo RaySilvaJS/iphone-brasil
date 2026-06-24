@@ -8,22 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="/css/brand.css">
 <style>
 :root {
-  --blue: #2563EB;
-  --blue-dark: #1D4ED8;
-  --blue-light: #EFF6FF;
-  --green: #16a34a;
   --green-light: #f0fff4;
-  --yellow: #F59E0B;
-  --bg: #F1F5F9;
-  --card: #fff;
-  --text: #0F172A;
-  --text-2: #475569;
-  --muted: #94A3B8;
-  --border: #E2E8F0;
-  --radius: 12px;
-  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --shadow: 0 1px 3px rgba(233,138,166,.08), 0 4px 16px rgba(233,138,166,.06);
 }
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
 html, body { overflow-x: hidden; width: 100%; }
@@ -65,7 +54,7 @@ a { text-decoration: none; color: inherit; }
 
 /* HERO */
 .hero {
-  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+  background: linear-gradient(135deg, var(--rose-dark) 0%, #3D1526 100%);
   color: #fff;
   padding: 60px 24px;
   text-align: center;
@@ -103,7 +92,7 @@ a { text-decoration: none; color: inherit; }
   margin: 0 auto 16px;
 }
 .cc-icon.green { background: #dcfce7; color: var(--green); }
-.cc-icon.blue  { background: var(--blue-light); color: var(--blue); }
+.cc-icon.blue  { background: var(--blue-light); color: var(--blue-dark); }
 .cc-icon.yellow { background: #fef3c7; color: #d97706; }
 .contact-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .contact-card p { font-size: 13px; color: var(--text-2); margin-bottom: 16px; }
@@ -123,7 +112,7 @@ a { text-decoration: none; color: inherit; }
 }
 .btn-contact:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
 .btn-contact.green { background: #22c55e; color: #fff; }
-.btn-contact.blue  { background: var(--blue); color: #fff; }
+.btn-contact.blue  { background: var(--rose-dark); color: #fff; }
 
 /* INFO SECTION */
 .info-section {
@@ -148,7 +137,7 @@ a { text-decoration: none; color: inherit; }
   gap: 10px;
   color: var(--text);
 }
-.info-block h2 svg { color: var(--blue); flex-shrink: 0; }
+.info-block h2 svg { color: var(--blue-dark); flex-shrink: 0; }
 .schedule-item {
   display: flex;
   justify-content: space-between;
@@ -186,13 +175,13 @@ a { text-decoration: none; color: inherit; }
 }
 .resp-dot.green { background: #22c55e; }
 .resp-dot.yellow { background: var(--yellow); }
-.resp-dot.blue { background: var(--blue); }
+.resp-dot.blue { background: var(--blue-dark); }
 .resp-label { font-weight: 600; flex: 1; }
 .resp-time { color: var(--text-2); font-size: 13px; }
 
 /* FAQ STRIP */
 .faq-strip {
-  background: linear-gradient(135deg, var(--blue-light), #e0e7ff);
+  background: linear-gradient(135deg, var(--blue-light), #F8B4C5);
   border-radius: var(--radius);
   padding: 32px;
   display: flex;
@@ -205,7 +194,7 @@ a { text-decoration: none; color: inherit; }
 .faq-strip p { font-size: 14px; color: var(--text-2); }
 .btn-faq {
   padding: 12px 24px;
-  background: var(--blue);
+  background: var(--rose-dark);
   color: #fff;
   border-radius: 10px;
   font-weight: 700;

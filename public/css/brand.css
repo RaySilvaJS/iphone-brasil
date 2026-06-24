@@ -1,0 +1,21 @@
+/* Identidade visual Jessi iPhones — rosa */
+:root {
+  --blue:       #E98AA6;
+  --blue-dark:  #D96B8A;
+  --blue-light: #FCE7EF;
+  --yellow:     #F8B4C5;
+  --yellow-dark:#E98AA6;
+  --rose-dark:  #5A2335;
+  --green:      #16A34A;
+  --red:        #DC2626;
+  --bg:         #FDF4F7;
+  --card:       #FFFFFF;
+  --text:       #0F172A;
+  --text-2:     #475569;
+  --muted:      #94A3B8;
+  --border:     #F3C5D0;
+  --shadow:     0 1px 3px rgba(233,138,166,.1), 0 2px 8px rgba(233,138,166,.07);
+  --shadow-md:  0 4px 16px rgba(233,138,166,.15);
+  --radius:     10px;
+  --green-bg:   #DCFCE7;
+}
