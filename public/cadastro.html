@@ -176,8 +176,8 @@ input.error-input { border-color: #DC2626 !important; }
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="index.html">jessi.<span>iphones</span></a>
-    <a class="back-link" href="login.html">
+    <a class="logo" href="/">jessi.<span>iphones</span></a>
+    <a class="back-link" href="/login.html">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Já tenho conta
     </a>
@@ -253,7 +253,7 @@ input.error-input { border-color: #DC2626 !important; }
     </form>
 
     <div class="divider">ou</div>
-    <div class="link-row">Já tem conta? <a href="login.html">Entrar agora</a></div>
+    <div class="link-row">Já tem conta? <a href="/login.html">Entrar agora</a></div>
   </div>
 </main>
 
@@ -262,7 +262,7 @@ input.error-input { border-color: #DC2626 !important; }
   const AUTH_KEY = 'user-session';
   try {
     const s = JSON.parse(localStorage.getItem(AUTH_KEY));
-    if (s && s.token) window.location.href = 'index.html';
+    if (s && s.token) window.location.href = '/';
   } catch (e) {}
 
   // CPF mask
@@ -377,7 +377,7 @@ input.error-input { border-color: #DC2626 !important; }
       successEl.style.display='block';
       document.getElementById('cadastro-form').style.display='none';
       const _redir = new URLSearchParams(window.location.search).get('redirect');
-      setTimeout(()=>{window.location.href=_redir?decodeURIComponent(_redir):'index.html';},1500);
+      setTimeout(()=>{window.location.href=_redir?decodeURIComponent(_redir):'/';},1500);
     } catch(err) {
       showError('Erro de conexão. Tente novamente.');
       setLoading(false);

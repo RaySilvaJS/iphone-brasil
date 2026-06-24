@@ -65,12 +65,12 @@ window.cleanProductText = function (text) {
         fetch('/api/auth/logout', { method: 'POST', headers: { 'X-Auth-Token': r.data.token } }).catch(function(){});
       }
       this.clearSession();
-      window.location.href = 'login.html';
+      window.location.href = '/login.html';
     },
 
     requireLogin: function (redirectBack) {
       if (!this.isLoggedIn()) {
-        var dest = 'login.html';
+        var dest = '/login.html';
         if (redirectBack) {
           dest += '?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
         }
@@ -112,10 +112,10 @@ window.cleanProductText = function (text) {
       if (session && session.token) {
         var firstName = session.nome ? session.nome.split(' ')[0] : 'Conta';
         btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' + firstName;
-        btn.onclick = function () { window.location.href = 'minha-conta.html'; };
+        btn.onclick = function () { window.location.href = '/minha-conta.html'; };
       } else {
         btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>Entrar';
-        btn.onclick = function () { window.location.href = 'login.html'; };
+        btn.onclick = function () { window.location.href = '/login.html'; };
       }
 
       // index.html — .header-actions or legacy .top

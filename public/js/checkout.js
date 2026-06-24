@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderBilling() {
     if (!authSession) {
       // Formulário inline — coleta dados antes do endereço, sem modal interruptivo
-      const loginUrl = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+      const loginUrl = '/login.html?redirect=' + encodeURIComponent(window.location.href);
       billingBody.innerHTML = `
         <p style="margin:0 0 12px;font-size:13px;color:#6B7280;">Preencha seus dados para continuar. Nenhuma senha necessária.</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ${!isGuest ? `<div class="co-billing-line"><span class="co-billing-key">E-mail</span><span class="co-billing-val">${esc(authSession.email || '')}</span></div>` : ''}
       <div class="co-billing-line"><span class="co-billing-key">WhatsApp</span><span class="co-billing-val">${esc(authSession.whatsapp || '')}</span></div>
       ${cpfRaw ? `<div class="co-billing-line"><span class="co-billing-key">CPF</span><span class="co-billing-val">${esc(cpfMask)}</span></div>` : ''}
-      ${isGuest ? `<p style="margin:8px 0 0;font-size:11px;color:#9CA3AF;">Compra como visitante · <a href="login.html" style="color:#2563EB;font-weight:600">Criar conta completa</a></p>` : ''}`;
+      ${isGuest ? `<p style="margin:8px 0 0;font-size:11px;color:#9CA3AF;">Compra como visitante · <a href="/login.html" style="color:#2563EB;font-weight:600">Criar conta completa</a></p>` : ''}`;
   }
 
   // Submete dados pessoais do guest de forma inline (sem modal)
@@ -959,10 +959,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!data.success || !data.paymentId) throw new Error(data.error || 'Erro ao gerar pagamento.');
 
         const dest = payMethod === 'cartao'
-          ? 'pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=cartao'
+          ? '/pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=cartao'
           : payMethod === 'boleto'
-          ? 'pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=boleto'
-          : 'pagamento.html?id=' + encodeURIComponent(data.paymentId);
+          ? '/pagamento.html?id=' + encodeURIComponent(data.paymentId) + '&method=boleto'
+          : '/pagamento.html?id=' + encodeURIComponent(data.paymentId);
         window.location.href = dest;
       } catch (err) {
         console.error(err);

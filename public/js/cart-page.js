@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (window.Auth && !window.Auth.isLoggedIn()) {
-      window.location.href = 'login.html?redirect=' + encodeURIComponent('checkout.html?source=cart');
+      window.location.href = '/login.html?redirect=' + encodeURIComponent('/checkout.html?source=cart');
       return;
     }
     cart.saveCart();
