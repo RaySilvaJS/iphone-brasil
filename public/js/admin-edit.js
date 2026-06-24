@@ -63,8 +63,10 @@
 
       const ov = document.createElement('div');
       ov.className = 'ae-overlay';
+      const isFeat = card.getAttribute('data-featured') === '1';
       ov.innerHTML = `
         <button class="ae-btn-edit" title="Editar">✏ Editar</button>
+        <button class="ae-btn-feat" title="${isFeat ? 'Remover destaque' : 'Destacar no topo'}" style="background:${isFeat ? '#f59e0b' : 'rgba(255,255,255,.15)'};color:#fff;">${isFeat ? '★' : '☆'}</button>
         <button class="ae-btn-dup"  title="Duplicar">⧉</button>
         <button class="ae-btn-del"  title="Arquivar">🗑</button>
       `;
@@ -72,6 +74,7 @@
       card.appendChild(ov);
 
       ov.querySelector('.ae-btn-edit').onclick = e => { e.stopPropagation(); openEditDrawer(pid); };
+      ov.querySelector('.ae-btn-feat').onclick = e => { e.stopPropagation(); toggleFeatured(pid, card, ov.querySelector('.ae-btn-feat')); };
       ov.querySelector('.ae-btn-dup').onclick  = e => { e.stopPropagation(); duplicateProd(pid); };
       ov.querySelector('.ae-btn-del').onclick  = e => { e.stopPropagation(); archiveProd(pid, card); };
     });
@@ -98,6 +101,21 @@
     if (r.success) {
       showToast('Produto arquivado.');
       card.style.opacity = '0.4';
+    } else showToast(r.error || 'Erro.', true);
+  }
+
+  async function toggleFeatured(pid, card, btn) {
+    const info = await api('GET', `/api/catalog/product/${pid}`).catch(() => null);
+    if (!info?.catalogKey) return showToast('Produto não encontrado.', true);
+    const nowFeatured = card.getAttribute('data-featured') === '1';
+    const r = await api('PATCH', `/api/admin/catalog/${info.catalogKey}/${pid}`, { featured: !nowFeatured });
+    if (r.success) {
+      card.setAttribute('data-featured', nowFeatured ? '' : '1');
+      btn.textContent = nowFeatured ? '☆' : '★';
+      btn.style.background = nowFeatured ? 'rgba(255,255,255,.15)' : '#f59e0b';
+      btn.title = nowFeatured ? 'Destacar no topo' : 'Remover destaque';
+      showToast(nowFeatured ? 'Destaque removido.' : '⭐ Produto será exibido primeiro!');
+      if (window.fetchProducts) window.fetchProducts();
     } else showToast(r.error || 'Erro.', true);
   }
 
@@ -161,6 +179,7 @@
           </div>
           <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="ae-f-promo" style="width:15px;height:15px;cursor:pointer;"> Em Promoção</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="ae-f-featured" style="width:15px;height:15px;cursor:pointer;accent-color:#f59e0b;"> ⭐ Destacar no topo</label>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="ae-f-archived" style="width:15px;height:15px;cursor:pointer;"> Arquivado</label>
           </div>
         </div>
@@ -370,7 +389,7 @@
     v('ae-f-seller', p.seller);     v('ae-f-rating', p.rating);
     v('ae-f-badge', p.promoBadge);  v('ae-f-discount', p.promoPercent || 0);
     v('ae-f-mlurl', p.mlUrl);       v('ae-f-desc', p.description);
-    v('ae-f-promo', p.isPromo);     v('ae-f-archived', p.archived);
+    v('ae-f-promo', p.isPromo);     v('ae-f-featured', p.featured);  v('ae-f-archived', p.archived);
     const delBtn = document.getElementById('ae-del');
     if (delBtn) delBtn.textContent = p.archived ? '↩ Restaurar' : '🗑 Arquivar';
   }
@@ -428,7 +447,7 @@
       rating: +g('ae-f-rating') || 0, promoBadge: g('ae-f-badge'),
       promoPercent: +g('ae-f-discount') || 0,
       mlUrl: g('ae-f-mlurl'), description: g('ae-f-desc'),
-      isPromo: g('ae-f-promo'), archived: g('ae-f-archived'),
+      isPromo: g('ae-f-promo'), featured: g('ae-f-featured'), archived: g('ae-f-archived'),
       images: productData.images || []
     };
 

@@ -356,7 +356,7 @@ const _buildProductCardHTML = (product) => {
   const precoFinal = precoOriginal * (1 - descontoHoje / 100);
   const isIphone = !!(product.name && product.name.toLowerCase().includes('iphone'));
 
-  return `<section class="olx-adcard" data-product-id="${product.id}">
+  return `<section class="olx-adcard" data-product-id="${product.id}"${product.featured ? ' data-featured="1"' : ''}>
 
   <div class="olx-adcard__media">
 
@@ -550,16 +550,8 @@ const fetchProducts = async () => {
     }
 
     products = products.filter(p => p.price && p.price > 0);
-    // Produtos com imagem customizada ou isPromo aparecem primeiro
-    products.sort((a, b) => {
-      const hasCustom = p => {
-        if (p.isPromo) return true;
-        const img = Array.isArray(p.images) && p.images[0];
-        if (!img) return false;
-        return img.startsWith('/uploads/') || img.startsWith('data:image') || (img.startsWith('http') && !img.includes('mlstatic.com'));
-      };
-      return (hasCustom(b) ? 1 : 0) - (hasCustom(a) ? 1 : 0);
-    });
+    // Produtos destacados (featured) sobem ao topo; empate mantém ordem original
+    products.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     console.log('[RENDER] Iniciando render | Produtos encontrados:', products.length);
     currentProducts = products;
     currentPage = 1;
