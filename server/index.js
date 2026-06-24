@@ -1681,7 +1681,33 @@ app.post('/api/auth/otp/verify', authRateLimit(10, 5 * 60 * 1000), (req, res) =>
 });
 
 // ── Coupon validation (pública, autenticada ou não) ───────────────────────────
-const { validateCoupon } = require('./coupons');
+const { validateCoupon, loadCoupons } = require('./coupons');
+
+// ── GET best active coupon for promotional modal ──────────────────────────────
+app.get('/api/coupons/active', (req, res) => {
+  try {
+    const now = new Date();
+    const best = loadCoupons()
+      .filter(c =>
+        c.active &&
+        (!c.startDate || new Date(c.startDate) <= now) &&
+        (!c.expiresAt  || new Date(c.expiresAt)  > now) &&
+        (!c.maxUses    || (c.usedCount || 0) < c.maxUses) &&
+        !c.firstPurchaseOnly
+      )
+      .sort((a, b) => (b.value || 0) - (a.value || 0))[0] || null;
+    if (!best) return res.json(null);
+    res.json({
+      code: best.code,
+      name: best.name || best.code,
+      type: best.type,
+      value: best.value || 0,
+      description: best.description || '',
+      minValue: best.minValue || 0,
+      paymentMethod: best.paymentMethod || null,
+    });
+  } catch { res.json(null); }
+});
 
 app.post('/api/coupons/validate', (req, res) => {
   const { code, amount, productId, category, paymentMethod, source } = req.body || {};

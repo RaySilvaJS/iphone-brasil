@@ -144,7 +144,7 @@
   };
 
   window.buyNow = async (productId, btn) => {
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+    // Fire tracking events immediately, before modal
     if (window.MetaPixel && window._buyNowProduct) {
       window.MetaPixel.lead({ productName: window._buyNowProduct.nome, value: window._buyNowProduct.preco });
     }
@@ -157,25 +157,35 @@
         body: JSON.stringify({ productName: _buyProduct.nome, amount: _buyProduct.preco })
       }).catch(() => {});
     }
-    await window.addToCart(productId);
-    // Salva o item como compra direta (lido pelo checkout.html?source=buy)
-    const cartItem = window.cart && window.cart.items && window.cart.items.find(i => String(i.id) === String(productId));
-    if (cartItem) {
-      localStorage.setItem('iphone-vendas-buy-now', JSON.stringify({ ...cartItem, quantidade: 1 }));
-    } else if (window._buyNowProduct) {
-      localStorage.setItem('iphone-vendas-buy-now', JSON.stringify({
-        id: window._buyNowProduct.id,
-        nome: window._buyNowProduct.nome,
-        preco: window._buyNowProduct.preco,
-        imagem: window._buyNowProduct.imagem,
-        quantidade: 1,
-        descontoHoje: 0,
-        brinde: null,
-        freteGratis: false,
-        precoOriginal: null,
-      }));
+
+    const proceed = async () => {
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+      await window.addToCart(productId);
+      // Salva o item como compra direta (lido pelo checkout.html?source=buy)
+      const cartItem = window.cart && window.cart.items && window.cart.items.find(i => String(i.id) === String(productId));
+      if (cartItem) {
+        localStorage.setItem('iphone-vendas-buy-now', JSON.stringify({ ...cartItem, quantidade: 1 }));
+      } else if (window._buyNowProduct) {
+        localStorage.setItem('iphone-vendas-buy-now', JSON.stringify({
+          id: window._buyNowProduct.id,
+          nome: window._buyNowProduct.nome,
+          preco: window._buyNowProduct.preco,
+          imagem: window._buyNowProduct.imagem,
+          quantidade: 1,
+          descontoHoje: 0,
+          brinde: null,
+          freteGratis: false,
+          precoOriginal: null,
+        }));
+      }
+      _showBuyLoading();
+    };
+
+    if (window.CouponModal && window.CouponModal.shouldShow() && window._buyNowProduct) {
+      window.CouponModal.show(window._buyNowProduct, proceed);
+    } else {
+      await proceed();
     }
-    _showBuyLoading();
   };
 
   // ── Loading overlay ("Preparando tudo para sua compra") ──────────────────────

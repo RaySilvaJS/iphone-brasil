@@ -202,6 +202,35 @@ function renderCartDrawer() {
 
   const total = cart.getTotal();
 
+  // Applied coupon from session (set by coupon modal)
+  let sessionCoupon = null;
+  let sessionDiscount = 0;
+  try {
+    const sc = JSON.parse(sessionStorage.getItem('jessi-coupon') || 'null');
+    if (sc && sc.code && sc.type) {
+      sessionCoupon = sc;
+      if (sc.type === 'percent' || sc.type === 'pix_extra') {
+        sessionDiscount = Math.round(total * sc.value / 100 * 100) / 100;
+      } else if (sc.type === 'fixed') {
+        sessionDiscount = Math.min(sc.value, total);
+      }
+      sessionDiscount = Math.max(0, sessionDiscount);
+    }
+  } catch {}
+  const totalFinal = Math.max(0, total - sessionDiscount);
+
+  const couponRow = sessionCoupon && sessionDiscount > 0
+    ? `<div class="summary-row" style="color:#16A34A;">
+         <span>Cupom <strong>${sessionCoupon.code}</strong></span>
+         <span>−${formatCurrency(sessionDiscount)}</span>
+       </div>`
+    : sessionCoupon && sessionCoupon.freeShipping
+    ? `<div class="summary-row" style="color:#16A34A;">
+         <span>Cupom <strong>${sessionCoupon.code}</strong></span>
+         <span>Frete grátis</span>
+       </div>`
+    : '';
+
   drawer.querySelector('.drawer-content').innerHTML = `
     <div class="cart-items">
       ${itemsHTML}
@@ -211,9 +240,10 @@ function renderCartDrawer() {
         <span>Subtotal</span>
         <span>${formatCurrency(total)}</span>
       </div>
+      ${couponRow}
       <div class="summary-row total">
         <span>Total</span>
-        <span>${formatCurrency(total)}</span>
+        <span>${formatCurrency(sessionDiscount > 0 ? totalFinal : total)}</span>
       </div>
     </div>
     <div class="cart-actions">

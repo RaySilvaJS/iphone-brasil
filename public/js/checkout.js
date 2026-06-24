@@ -783,6 +783,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Auto-apply coupon set by the promotional modal (jessi-coupon in sessionStorage)
+  (function autoApplyModalCoupon() {
+    try {
+      const sc = JSON.parse(sessionStorage.getItem('jessi-coupon') || 'null');
+      if (sc && sc.code && !appliedCouponCode && couponInput) {
+        couponInput.value = sc.code;
+        setTimeout(() => window.applyCoupon && window.applyCoupon(), 350);
+      }
+    } catch {}
+  })();
+
   // ── Build summary ─────────────────────────────────────────────────────────────
   function buildSummary(frete, prazo) {
     const pixDisc = payMethod === 'pix' ? Math.round((subtotal + insuranceAmt) * 0.05 * 100) / 100 : 0;

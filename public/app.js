@@ -773,14 +773,20 @@ async function buyNow(productId, btn) {
     window.location.href = '/login.html?redirect=' + encodeURIComponent('/product.html?id=' + productId);
     return;
   }
-  if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
-  try {
-    const product = await getProduct(productId);
-    if (product) {
-      const extras = getOrCreateCardExtras(productId);
-      product.descontoHoje = extras.descontoHoje;
-      product.brinde       = extras.brinde;
-      product.freteGratis  = extras.freteGratis;
+  let product;
+  try { product = await getProduct(productId); } catch {}
+  if (!product) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Comprar Agora'; }
+    return;
+  }
+  const extras = getOrCreateCardExtras(productId);
+  product.descontoHoje = extras.descontoHoje;
+  product.brinde       = extras.brinde;
+  product.freteGratis  = extras.freteGratis;
+
+  const proceed = () => {
+    if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
+    try {
       window.cart.addItem(product, 1);
       fetch('/api/events/checkout-visit', {
         method: 'POST',
@@ -790,9 +796,15 @@ async function buyNow(productId, btn) {
       _showTypingMessage('Produto adicionado! Indo para o carrinho...', () => {
         window.location.href = '/cart.html';
       });
+    } catch {
+      if (btn) { btn.disabled = false; btn.textContent = 'Comprar Agora'; }
     }
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Comprar Agora'; }
+  };
+
+  if (window.CouponModal && window.CouponModal.shouldShow()) {
+    window.CouponModal.show(product, proceed);
+  } else {
+    proceed();
   }
 }
 
