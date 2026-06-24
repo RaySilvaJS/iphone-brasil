@@ -550,10 +550,15 @@ const fetchProducts = async () => {
     }
 
     products = products.filter(p => p.price && p.price > 0);
-    // Produtos em promoção (isPromo ou imagem customizada via upload) aparecem primeiro
+    // Produtos com imagem customizada ou isPromo aparecem primeiro
     products.sort((a, b) => {
-      const isPromo = p => p.isPromo || (Array.isArray(p.images) && p.images[0] && p.images[0].startsWith('/uploads/'));
-      return (isPromo(b) ? 1 : 0) - (isPromo(a) ? 1 : 0);
+      const hasCustom = p => {
+        if (p.isPromo) return true;
+        const img = Array.isArray(p.images) && p.images[0];
+        if (!img) return false;
+        return img.startsWith('/uploads/') || img.startsWith('data:image') || (img.startsWith('http') && !img.includes('mlstatic.com'));
+      };
+      return (hasCustom(b) ? 1 : 0) - (hasCustom(a) ? 1 : 0);
     });
     console.log('[RENDER] Iniciando render | Produtos encontrados:', products.length);
     currentProducts = products;
