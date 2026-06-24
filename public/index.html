@@ -449,11 +449,16 @@ header {
   overflow: hidden;
   transition: box-shadow .2s, border-color .2s;
   position: relative;
-  cursor: default;
+  cursor: pointer;
 }
 .olx-adcard:hover {
   box-shadow: var(--shadow-md);
   border-color: #CBD5E1;
+}
+.olx-adcard:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-md);
 }
 
 /* IMAGEM */
@@ -878,16 +883,24 @@ header {
     gap: 5px;
     margin-top: auto;
     padding-top: 5px;
+    min-width: 0;
+    overflow: hidden;
   }
   .olx-adcard__actions .button {
-    font-size: 11px;
-    padding: 7px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 7px 3px;
     min-width: 0;
     width: 100%;
-    line-height: 1.2;
+    line-height: 1.25;
     white-space: normal;
+    word-break: break-word;
     text-align: center;
     border-radius: 6px;
+    overflow: hidden;
   }
 
   .footer-top { grid-template-columns: 1fr; gap: 24px; }
