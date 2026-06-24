@@ -10,23 +10,24 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 
 <style>
-/* ===== VARIÁVEIS MARKETPLACE ===== */
+/* ===== VARIÁVEIS MARKETPLACE — Identidade Rosa Jessi iPhones ===== */
 :root {
-  --blue:       #2563EB;
-  --blue-dark:  #1D4ED8;
-  --blue-light: #EFF6FF;
-  --yellow:     #F59E0B;
-  --yellow-dark:#D97706;
+  --blue:       #E98AA6;   /* rosa principal — botões e destaques */
+  --blue-dark:  #D96B8A;   /* rosa de destaque */
+  --blue-light: #FCE7EF;   /* rosa claro — fundos e hovers */
+  --yellow:     #F8B4C5;   /* rosa bebê — detalhes e selos */
+  --yellow-dark:#E98AA6;   /* rosa principal como escuro */
+  --rose-dark:  #5A2335;   /* rosa escuro — títulos e texto forte */
   --green:      #16A34A;
   --red:        #DC2626;
-  --bg:         #F1F5F9;
+  --bg:         #FDF4F7;
   --card:       #FFFFFF;
   --text:       #0F172A;
   --text-2:     #475569;
   --muted:      #94A3B8;
-  --border:     #E2E8F0;
-  --shadow:     0 1px 3px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.04);
-  --shadow-md:  0 4px 16px rgba(0,0,0,.10);
+  --border:     #F3C5D0;
+  --shadow:     0 1px 3px rgba(233,138,166,.1), 0 2px 8px rgba(233,138,166,.07);
+  --shadow-md:  0 4px 16px rgba(233,138,166,.15);
   --radius:     10px;
 }
 
@@ -46,14 +47,14 @@ button, input, select { font: inherit; }
 
 /* ===== ANNOUNCEMENT BAR ===== */
 .announcement-bar {
-  background: #0F172A;
-  color: #CBD5E1;
+  background: #5A2335;
+  color: #F8E8ED;
   font-size: 12px;
   padding: 7px 20px;
   text-align: center;
   letter-spacing: .01em;
 }
-.announcement-bar strong { color: var(--yellow); }
+.announcement-bar strong { color: #F8B4C5; }
 
 /* ===== HEADER ===== */
 header {
@@ -185,7 +186,7 @@ header {
   justify-content: center;
   padding: 0 3px;
   line-height: 1;
-  border: 2px solid var(--blue);
+  border: 2px solid #fff;
 }
 
 /* ===== TRUST STRIP ===== */
@@ -257,7 +258,7 @@ header {
   flex-shrink: 0;
   min-width: 80px;
 }
-.cat-item:hover { background: #f0f4ff; }
+.cat-item:hover { background: #FCE7EF; }
 .cat-item:hover .cat-item__icon { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.13); }
 .cat-item.active .cat-item__icon {
   box-shadow: 0 0 0 2.5px var(--blue), 0 4px 12px rgba(37,99,235,.25);
@@ -606,20 +607,20 @@ header {
 }
 .olx-adcard__actions .button:hover { transform: translateY(-1px); }
 
-/* [FIX - ACTION BUTTONS] Comprar #E37B00 / Carrinho #3483FA */
+/* Botões do card — identidade rosa */
 .olx-adcard__actions .button-primary {
-  background: #E37B00;
+  background: #D96B8A;
   color: #fff;
   font-size: 13px;
 }
-.olx-adcard__actions .button-primary:hover { background: #c96d00; }
+.olx-adcard__actions .button-primary:hover { background: #5A2335; }
 
 .olx-adcard__actions .button-secondary {
-  background: #3483FA;
+  background: #E98AA6;
   color: #fff;
   font-size: 13px;
 }
-.olx-adcard__actions .button-secondary:hover { background: #2b6fd4; }
+.olx-adcard__actions .button-secondary:hover { background: #D96B8A; }
 
 /* BOTÕES GERAIS */
 .button {
@@ -712,7 +713,7 @@ header {
   text-align: center;
   transition: background .2s;
 }
-.trust-card:hover { background: var(--blue-light); }
+.trust-card:hover { background: var(--blue-light); color: #5A2335; }
 .trust-card .tc-icon { font-size: 26px; line-height: 1; }
 .trust-card strong { font-size: 12px; font-weight: 700; color: var(--text); display: block; line-height: 1.3; }
 .trust-card span { font-size: 10px; color: var(--text-2); line-height: 1.3; }
@@ -961,9 +962,9 @@ header {
 .desconto-hoje-badge {
   display: inline-flex;
   align-items: center;
-  background: #FFF3CD;
-  border: 1px solid #F59E0B;
-  color: #92400E;
+  background: #FCE7EF;
+  border: 1px solid #F8B4C5;
+  color: #D96B8A;
   border-radius: 4px;
   padding: 3px 9px;
   font-size: 11px;
@@ -1196,72 +1197,121 @@ header {
 .drawer-link:hover svg { stroke: var(--blue); }
 .drawer-link svg { stroke: var(--text-2); transition: stroke .15s; }
 
-/* ===== SUPPORT WIDGET ===== */
-.support-widget {
+/* ===== BOTÃO FLUTUANTE WHATSAPP ===== */
+.wa-float-btn {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 1500;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-}
-.support-btn {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  background: #25D366;
   color: #fff;
-  border: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(37,99,235,.4);
+  box-shadow: 0 4px 20px rgba(37,211,102,.45);
   transition: transform .2s, box-shadow .2s;
+  text-decoration: none;
+  border: 3px solid #fff;
 }
-.support-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(37,99,235,.5); }
-.support-menu {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.16);
-  overflow: hidden;
-  width: 230px;
-  animation: suSlideUp .2s ease;
+.wa-float-btn:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(37,211,102,.6); }
+@media (max-width: 480px) {
+  .wa-float-btn { bottom: 16px; right: 16px; width: 52px; height: 52px; }
+  .wa-float-btn svg { width: 24px; height: 24px; }
 }
-@keyframes suSlideUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+
+/* ===== SEÇÃO SOCIAL (INSTAGRAM + WHATSAPP) ===== */
+.social-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 20px 24px 4px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
-.support-option {
+.social-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 16px;
+  padding: 18px 20px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
   text-decoration: none;
   color: var(--text);
-  border-bottom: 1px solid var(--border);
-  transition: background .15s;
+  box-shadow: var(--shadow);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
 }
-.support-option:last-child { border-bottom: none; }
-.support-option:hover { background: var(--bg); }
-.su-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+.social-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.social-card--instagram:hover { border-color: #E1306C; }
+.social-card--whatsapp:hover  { border-color: #25D366; }
+.social-card__icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.social-card--instagram .social-card__icon {
+  background: linear-gradient(45deg,#f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+}
+.social-card--whatsapp .social-card__icon { background: #25D366; }
+.social-card__text strong {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  display: block; margin-bottom: 3px;
+}
+.social-card__text span { font-size: 13px; color: var(--text-2); line-height: 1.4; }
+@media (max-width: 768px) {
+  .social-section { padding: 14px 16px 0; }
+}
+@media (max-width: 600px) {
+  .social-section { grid-template-columns: 1fr; gap: 10px; }
+  .social-card { padding: 14px 16px; }
+  .social-card__icon { width: 44px; height: 44px; border-radius: 10px; }
+  .social-card__text strong { font-size: 14px; }
+  .social-card__text span { font-size: 12px; }
+}
+
+/* ===== PAGINAÇÃO ===== */
+#pagination-wrapper { padding: 20px 0 36px; }
+.pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  gap: 6px;
+  flex-wrap: wrap;
 }
-.su-icon.green { background: #dcfce7; color: #16a34a; }
-.su-icon.blue  { background: var(--blue-light); color: var(--blue); }
-.support-option strong { font-size: 13px; font-weight: 700; display: block; line-height: 1.3; }
-.support-option span { font-size: 11px; color: var(--muted); }
+.pg-btn {
+  min-width: 42px; height: 42px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 9px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 14px;
+  transition: all .15s;
+  font-family: inherit;
+  line-height: 1;
+}
+.pg-btn:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-light);
+}
+.pg-btn.active {
+  background: var(--blue-dark);
+  color: #fff;
+  border-color: var(--blue-dark);
+}
+.pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+.pg-btn.pg-nav { font-size: 13px; padding: 0 16px; gap: 4px; }
 @media (max-width: 480px) {
-  .support-widget { bottom: 16px; right: 16px; }
-  .support-btn { width: 50px; height: 50px; }
+  .pg-btn { min-width: 36px; height: 36px; font-size: 13px; padding: 0 10px; }
+  .pg-btn.pg-nav { padding: 0 12px; }
 }
 
 /* ===== SKELETON LOADER ===== */
@@ -1355,32 +1405,48 @@ header {
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0;
   pointer-events: none;
-  transform: translateY(100%);
-  transition: transform .55s cubic-bezier(.4,0,.2,1), opacity .55s ease;
-  will-change: transform, opacity;
+  transform: translateX(100%);
+  transition: transform .55s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
   border-radius: 14px;
 }
 .banner-slide.active {
-  opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translateX(0);
   z-index: 1;
 }
-.banner-slide.leaving {
-  opacity: 0;
-  transform: translateY(-100%);
-  pointer-events: none;
-  z-index: 0;
-}
+.banner-slide.exit-left  { transform: translateX(-100%); }
+.banner-slide.exit-right { transform: translateX(100%);  }
+.banner-slide.enter-from-left { transform: translateX(-100%); }
 @media (max-width: 640px) {
   .banner-slide { border-radius: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .banner-slide { transition: opacity .2s ease; transform: none !important; }
-  .banner-slide.leaving { transform: none !important; }
 }
+
+/* ── SETAS DO CARROSSEL ── */
+.banners-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.85);
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  transition: background .2s, transform .2s;
+  backdrop-filter: blur(4px);
+  color: #5A2335;
+}
+.banners-arrow:hover { background: #fff; transform: translateY(-50%) scale(1.1); }
+.banners-arrow--prev { left: 12px; }
+.banners-arrow--next { right: 12px; }
+@media (max-width: 640px) { .banners-arrow { display: none !important; } }
 .banner-slide a,
 .banner-slide > img {
   display: block;
@@ -1631,6 +1697,12 @@ header {
 <section class="banners-section" id="banners-section" style="display:none" aria-label="Banners promocionais">
   <div class="banners-viewport" id="banners-viewport" role="region" aria-roledescription="carrossel">
     <div class="banners-track" id="banners-track"></div>
+    <button class="banners-arrow banners-arrow--prev" id="banners-prev" aria-label="Banner anterior" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="banners-arrow banners-arrow--next" id="banners-next" aria-label="Próximo banner" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
   </div>
   <div class="banners-dots" id="banners-dots" role="tablist" aria-label="Navegar entre banners"></div>
 </section>
@@ -1691,63 +1763,30 @@ header {
   </div>
 </div>
 
+<!-- SEÇÃO INSTAGRAM + WHATSAPP -->
+<div class="social-section">
+  <a href="https://www.instagram.com/jessiphones/" target="_blank" rel="noopener noreferrer" class="social-card social-card--instagram">
+    <div class="social-card__icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+    <div class="social-card__text">
+      <strong>Siga nosso Instagram</strong>
+      <span>Acompanhe ofertas, novidades e reposições</span>
+    </div>
+  </a>
+  <a href="https://wa.me/5521988631029?text=Ol%C3%A1%2C+vim+pelo+site+da+Jessi+iPhones+e+gostaria+de+tirar+uma+d%C3%BAvida." target="_blank" rel="noopener noreferrer" class="social-card social-card--whatsapp">
+    <div class="social-card__icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </div>
+    <div class="social-card__text">
+      <strong>Fale conosco no WhatsApp</strong>
+      <span>Tire dúvidas e receba atendimento rápido</span>
+    </div>
+  </a>
+</div>
+
 <!-- CONTEÚDO PRINCIPAL -->
 <div class="main-content">
-
-  <!-- SECTION TITLE -->
-  <div class="section-title">
-    <h2 id="section-title-text">iPhones</h2>
-    <span id="view-all-btn" onclick="document.getElementById('reset-filter').click()" style="cursor:pointer">Ver todos</span>
-  </div>
-
-  <!-- SEÇÃO DE RESULTADOS -->
-  <div class="results-section" id="results-section" style="display:none;">
-    <div class="results-header">
-      <div class="results-count">
-        <span class="results-count__label">Exibindo</span>
-        <span class="results-count__number" id="product-count">0</span>
-        <span class="results-count__suffix">produtos</span>
-      </div>
-      <div class="sort-container">
-        <span class="sort-label">Ordenar por:</span>
-        <div class="sort-dropdown" id="sort-dropdown">
-          <button class="sort-dropdown__trigger" id="sort-trigger">
-            <span class="sort-dropdown__trigger-text" id="sort-selected">Popularidade</span>
-            <span class="sort-dropdown__trigger-icon">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-          </button>
-          <div class="sort-dropdown__menu" id="sort-menu">
-            <button class="sort-dropdown__option selected" data-sort="popularity">
-              <span class="sort-dropdown__option-icon">✓</span><span>Popularidade</span>
-            </button>
-            <button class="sort-dropdown__option" data-sort="price-low">
-              <span class="sort-dropdown__option-icon">✓</span><span>Menor Preço</span>
-            </button>
-            <button class="sort-dropdown__option" data-sort="price-high">
-              <span class="sort-dropdown__option-icon">✓</span><span>Maior Preço</span>
-            </button>
-            <button class="sort-dropdown__option" data-sort="newest">
-              <span class="sort-dropdown__option-icon">✓</span><span>Mais Recentes</span>
-            </button>
-            <button class="sort-dropdown__option" data-sort="alphabetical">
-              <span class="sort-dropdown__option-icon">✓</span><span>Ordem Alfabética</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="results-divider"></div>
-    <div class="results-filters-info" id="filters-info">
-      <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
-        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M10 6V10L13 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span id="filters-text">Mostrando resultados relevantes</span>
-    </div>
-  </div>
 
   <!-- SKELETON LOADER — visível apenas durante fetch de catálogo não cacheado -->
   <div id="skeleton-loader">
@@ -1766,63 +1805,46 @@ header {
     <p style="padding:40px;text-align:center;opacity:.5;color:var(--text-2);">Buscando iPhones disponíveis...</p>
   </div>
 
-  <!-- SENTINEL para IntersectionObserver (auto-load ao rolar) -->
-  <div id="load-more-sentinel" style="height:1px;pointer-events:none;" aria-hidden="true"></div>
-
-  <!-- VER MAIS -->
-  <div id="load-more-wrapper" style="display:none;">
-    <div class="load-more-container">
-      <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-        <button id="load-more-btn" class="load-more-btn" type="button">
-          <span class="load-more-btn__icon">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;">
-              <path d="M10 5V15M5 10H15"/>
-            </svg>
-          </span>
-          <span id="load-more-text">Ver Mais Produtos</span>
-        </button>
-        <div class="load-more-info">
-          <svg class="load-more-info__icon" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M10 6V10L13 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span id="load-more-info-text">Clique para carregar mais produtos</span>
-        </div>
-      </div>
-    </div>
+  <!-- PAGINAÇÃO -->
+  <div id="pagination-wrapper" style="display:none;">
+    <div class="pagination" id="pagination" role="navigation" aria-label="Paginação de produtos"></div>
   </div>
+
+  <!-- Elementos legados mantidos para compatibilidade com app.js -->
+  <div id="load-more-sentinel" style="height:1px;pointer-events:none;" aria-hidden="true"></div>
+  <div id="load-more-wrapper" style="display:none;"><button id="load-more-btn" style="display:none;"></button><span id="load-more-text"></span><span id="load-more-info-text"></span></div>
 
   <!-- SEÇÃO DE CONFIANÇA -->
   <div class="trust-section">
     <h3>Por que comprar na jessi.iphones?</h3>
     <div class="trust-grid">
       <div class="trust-card">
-        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D96B8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
         <strong>Compra Segura</strong>
         <span>Ambiente 100% protegido e criptografado</span>
       </div>
       <div class="trust-card">
-        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D96B8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
         <strong>Todo o Brasil</strong>
         <span>Enviamos para todos os estados</span>
       </div>
       <div class="trust-card">
-        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg></div>
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D96B8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg></div>
         <strong>Envio Imediato</strong>
         <span>Produtos prontos para envio no mesmo dia</span>
       </div>
       <div class="trust-card">
-        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D96B8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <strong>Garantia 90 dias</strong>
         <span>Garantia de qualidade em todos os produtos</span>
       </div>
       <div class="trust-card">
-        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D96B8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <strong>Suporte WhatsApp</strong>
         <span>Atendimento rápido via WhatsApp</span>
       </div>
       <div class="trust-card">
-        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="tc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D96B8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
         <strong>Produto Original</strong>
         <span>iPhones originais Apple verificados</span>
       </div>
@@ -1935,42 +1957,17 @@ header {
 
 <script src="/pages/index-2.js"></script>
 
-<!-- SUPPORT WIDGET -->
-<div class="support-widget" id="support-widget">
-  <div class="support-menu" id="support-menu" style="display:none;">
-    <a href="https://wa.me/5521988631029?text=Oi+atendimento" target="_blank" rel="noopener" class="support-option">
-      <div class="su-icon green">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      </div>
-      <div>
-        <strong>WhatsApp</strong>
-        <span>Resposta imediata</span>
-      </div>
-    </a>
-    <a href="atendimento.html" class="support-option">
-      <div class="su-icon blue">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.66 3.38 2 2 0 0 1 3.64 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.85A16 16 0 0 0 13 14l.93-.93a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 15.36"/></svg>
-      </div>
-      <div>
-        <strong>Atendimento</strong>
-        <span>Central de atendimento</span>
-      </div>
-    </a>
-    <a href="faq.html" class="support-option">
-      <div class="su-icon blue">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </div>
-      <div>
-        <strong>Central de Ajuda</strong>
-        <span>Perguntas frequentes</span>
-      </div>
-    </a>
-  </div>
-  <button class="support-btn" onclick="toggleSupport()" aria-label="Suporte ao cliente" title="Suporte">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="su-icon-open"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="su-icon-close" style="display:none;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>
-</div>
+<!-- BOTÃO FLUTUANTE WHATSAPP -->
+<a href="https://wa.me/5521988631029?text=Ol%C3%A1%2C+vim+pelo+site+da+Jessi+iPhones+e+gostaria+de+tirar+uma+d%C3%BAvida."
+   target="_blank" rel="noopener noreferrer"
+   class="wa-float-btn"
+   id="wa-float-btn"
+   aria-label="Falar com atendimento no WhatsApp"
+   title="WhatsApp — Atendimento">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+</a>
 
 <script src="/pages/index-3.js"></script>
 <script src="/js/tracker-beacon.js"></script>
@@ -1978,12 +1975,15 @@ header {
 <script src="/js/admin-edit.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.444.0/dist/umd/lucide.min.js" defer></script>
 <script>
+/* ── CARROSSEL DE BANNERS — TRANSIÇÃO HORIZONTAL ── */
 (function () {
   'use strict';
   var section  = document.getElementById('banners-section');
   var viewport = document.getElementById('banners-viewport');
   var track    = document.getElementById('banners-track');
   var dotsEl   = document.getElementById('banners-dots');
+  var btnPrev  = document.getElementById('banners-prev');
+  var btnNext  = document.getElementById('banners-next');
   if (!section || !viewport || !track || !dotsEl) return;
 
   var banners  = [];
@@ -2046,35 +2046,66 @@ header {
       dot.setAttribute('role', 'tab');
       dot.setAttribute('aria-label', 'Banner ' + slides.length);
       dot.setAttribute('aria-selected', slides.length === 1 ? 'true' : 'false');
-      dot.addEventListener('click', function () { goTo(slides.indexOf(slide)); });
+      (function(sl) {
+        dot.addEventListener('click', function () {
+          var idx = slides.indexOf(sl);
+          goTo(idx, idx > current ? 1 : -1);
+        });
+      })(slide);
       dotsEl.appendChild(dot);
       dots.push(dot);
     });
+
+    /* Mostra setas somente se há mais de 1 banner e em desktop */
+    if (btnPrev && btnNext && slides.length > 1) {
+      btnPrev.style.display = '';
+      btnNext.style.display = '';
+    }
   }
 
-  function goTo(idx) {
+  /* goTo com direção:  1 = próximo (entra da direita), -1 = anterior (entra da esquerda) */
+  function goTo(idx, dir) {
     if (slides.length < 2) return;
     var prev = current;
     current  = ((idx % slides.length) + slides.length) % slides.length;
     if (prev === current) return;
 
-    slides[prev].classList.remove('active');
-    slides[prev].classList.add('leaving');
+    var forward = dir !== undefined ? dir > 0 : idx > prev;
+
+    /* Posiciona o slide entrante fora da tela sem transição */
+    if (!forward) {
+      slides[current].style.transition = 'none';
+      slides[current].classList.add('enter-from-left');
+      slides[current].offsetWidth; /* forçar reflow */
+      slides[current].style.transition = '';
+    }
+
+    /* Ativa o slide entrante (translateX(0)) */
+    slides[current].classList.remove('enter-from-left', 'exit-left', 'exit-right');
     slides[current].classList.add('active');
 
+    /* Saída do slide anterior */
+    slides[prev].classList.remove('active');
+    slides[prev].classList.add(forward ? 'exit-left' : 'exit-right');
+
+    /* Atualiza dots */
     dots[prev].classList.remove('active');
     dots[prev].setAttribute('aria-selected', 'false');
     dots[current].classList.add('active');
     dots[current].setAttribute('aria-selected', 'true');
 
+    /* Limpa classes de saída após a transição */
     var leaving = slides[prev];
-    function onEnd() { leaving.classList.remove('leaving'); leaving.removeEventListener('transitionend', onEnd); }
+    function onEnd() {
+      leaving.classList.remove('exit-left', 'exit-right');
+      leaving.removeEventListener('transitionend', onEnd);
+    }
     leaving.addEventListener('transitionend', onEnd);
-    // Fallback cleanup in case transitionend never fires (e.g. reduced motion)
-    setTimeout(function () { leaving.classList.remove('leaving'); }, 700);
+    setTimeout(function () { leaving.classList.remove('exit-left', 'exit-right'); }, 700);
   }
 
-  function next() { goTo(current + 1); }
+  function next() { goTo(current + 1, 1); }
+  function prev() { goTo(current - 1, -1); }
 
   function startTimer() {
     clearInterval(timer);
@@ -2087,11 +2118,15 @@ header {
     if (ms) resumeTO = setTimeout(function () { paused = false; }, ms);
   }
 
-  // Mouse
+  /* Setas desktop */
+  if (btnPrev) btnPrev.addEventListener('click', function() { prev(); pauseFor(3000); });
+  if (btnNext) btnNext.addEventListener('click', function() { next(); pauseFor(3000); });
+
+  /* Mouse hover — pausa auto-play */
   viewport.addEventListener('mouseenter', function () { pauseFor(0); });
   viewport.addEventListener('mouseleave', function () { paused = false; });
 
-  // Touch / swipe
+  /* Swipe em toque */
   var txStart = 0, tyStart = 0;
   viewport.addEventListener('touchstart', function (e) {
     txStart = e.changedTouches[0].clientX;
@@ -2102,12 +2137,12 @@ header {
     var dx = e.changedTouches[0].clientX - txStart;
     var dy = e.changedTouches[0].clientY - tyStart;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx < 0) next(); else goTo(current - 1);
+      if (dx < 0) next(); else prev();
     }
     pauseFor(2500);
   }, { passive: true });
 
-  // Rebuild on resize breakpoint flip (mobile vs desktop image)
+  /* Reconstrói ao mudar entre mobile/desktop */
   var lastMobile = isMobile();
   window.addEventListener('resize', function () {
     var m = isMobile();

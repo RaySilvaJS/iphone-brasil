@@ -211,25 +211,81 @@ const formatCurrency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 window.formatCurrency = formatCurrency;
 
-// ===== PAGINAÇÃO PROGRESSIVA =====
-const PRODUCTS_PER_PAGE = 20;
+// ===== PAGINAÇÃO REAL =====
+const PRODUCTS_PER_PAGE = 12;
 let currentPage = 1;
 let isLoadingMore = false;
-let ioAutoLoadCount = 0; // limita auto-loads do IntersectionObserver por sessão de categoria
+let ioAutoLoadCount = 0;
+let _suppressURLUpdate = false; // evita pushState durante popstate
 
-const updateLoadMoreBtn = (total, loaded) => {
-  const wrapper = document.getElementById('load-more-wrapper');
-  const textEl  = document.getElementById('load-more-text');
-  const infoEl  = document.getElementById('load-more-info-text');
-  if (!wrapper) return;
-  if (loaded < total) {
-    wrapper.style.display = '';
-    if (textEl) textEl.textContent = 'Exibir mais produtos';
-    if (infoEl) infoEl.textContent = `Exibindo ${loaded} de ${total} produtos`;
-  } else {
-    wrapper.style.display = 'none';
+const updateLoadMoreBtn = (total, loaded) => { /* legado — não usado com paginação real */ };
+
+// ===== URL ROUTING =====
+function _parseURL() {
+  const path   = location.pathname;
+  const params = new URLSearchParams(location.search);
+  if (path.startsWith('/busca')) {
+    return { mode: 'search', termo: params.get('termo') || '', pagina: Math.max(1, parseInt(params.get('pagina')) || 1) };
   }
-};
+  const m   = path.match(/\/catalogo\/([a-z]+)/);
+  const key = (m && CATALOGS[m[1]]) ? m[1] : 'iphones';
+  return { mode: 'catalog', catalogKey: key, pagina: Math.max(1, parseInt(params.get('pagina')) || 1) };
+}
+
+function _pushURL(mode, params) {
+  if (_suppressURLUpdate) return;
+  let url;
+  if (mode === 'search') {
+    url = '/busca?termo=' + encodeURIComponent(params.termo) + '&pagina=' + params.pagina;
+  } else {
+    url = '/catalogo/' + params.catalogKey + '?pagina=' + params.pagina;
+  }
+  if (location.href !== location.origin + url) {
+    history.pushState({ mode, ...params }, '', url);
+  }
+}
+
+// ===== RENDERIZAÇÃO DE PAGINAÇÃO =====
+function _renderPagination(currentPg, totalPages) {
+  const wrapper   = document.getElementById('pagination-wrapper');
+  const container = document.getElementById('pagination');
+  if (!wrapper || !container) return;
+
+  if (totalPages <= 1) { wrapper.style.display = 'none'; return; }
+  wrapper.style.display = '';
+
+  const rangeStart = Math.max(1, currentPg - 2);
+  const rangeEnd   = Math.min(totalPages, currentPg + 2);
+  let html = '';
+
+  if (currentPg > 1) {
+    html += `<button class="pg-btn pg-nav" data-page="${currentPg - 1}" aria-label="Página anterior">← Anterior</button>`;
+  }
+
+  if (rangeStart > 1) {
+    html += `<button class="pg-btn" data-page="1" aria-label="Página 1">1</button>`;
+    if (rangeStart > 2) html += `<span class="pg-btn" style="border:none;background:none;cursor:default;min-width:24px;">…</span>`;
+  }
+  for (let p = rangeStart; p <= rangeEnd; p++) {
+    html += `<button class="pg-btn${p === currentPg ? ' active' : ''}" data-page="${p}" aria-label="Página ${p}"${p === currentPg ? ' aria-current="page"' : ''}>${p}</button>`;
+  }
+  if (rangeEnd < totalPages) {
+    if (rangeEnd < totalPages - 1) html += `<span class="pg-btn" style="border:none;background:none;cursor:default;min-width:24px;">…</span>`;
+    html += `<button class="pg-btn" data-page="${totalPages}" aria-label="Página ${totalPages}">${totalPages}</button>`;
+  }
+
+  if (currentPg < totalPages) {
+    html += `<button class="pg-btn pg-nav" data-page="${currentPg + 1}" aria-label="Próxima página">Próxima →</button>`;
+  }
+
+  container.innerHTML = html;
+  container.querySelectorAll('.pg-btn[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = parseInt(btn.dataset.page);
+      if (p) fetchProducts(p);
+    });
+  });
+}
 
 function getBadges(product) {
   if (product.isNew) return '<div class="badge purple">Novo</div>';
@@ -576,17 +632,20 @@ const hideSkeleton = () => {
   }
 };
 
-const fetchProducts = async () => {
+const fetchProducts = async (targetPage) => {
   const t0 = performance.now();
   const searchQuery = filterModel ? filterModel.value.trim() : '';
+  const key  = getCurrentCatalogKey();
+  const page = Math.max(1, targetPage || 1);
 
-  const key = getCurrentCatalogKey();
-  console.log('[FETCH] Iniciando | key:', key, '| cached:', !!catalogCache[key], '| grid:', productsGrid?.id || 'NULL');
-
-  // Mostra skeleton apenas quando há fetch real (catalog não cacheado)
-  if (!searchQuery && !catalogCache[key]) {
-    showSkeleton();
+  // Atualiza URL (exceto durante popstate)
+  if (searchQuery) {
+    _pushURL('search', { termo: searchQuery, pagina: page });
+  } else {
+    _pushURL('catalog', { catalogKey: key, pagina: page });
   }
+
+  if (!searchQuery && !catalogCache[key]) showSkeleton();
 
   try {
     let products;
@@ -595,46 +654,56 @@ const fetchProducts = async () => {
       const t1 = performance.now();
       const allCatalogs = await Promise.all(Object.keys(CATALOGS).map(loadCatalog));
       const q = searchQuery.toLowerCase();
-      products = allCatalogs.flat().filter(p =>
-        (p.name || '').toLowerCase().includes(q)
-      );
+      products = allCatalogs.flat().filter(p => (p.name || '').toLowerCase().includes(q));
       console.log(`[TIMING] busca "${searchQuery}": ${(performance.now() - t1).toFixed(0)}ms — ${products.length} resultados`);
-      const titleEl = document.getElementById('section-title-text');
-      if (titleEl) titleEl.textContent = `Resultados para "${searchQuery}"`;
     } else {
       const t1 = performance.now();
       products = await loadCatalog(key);
       console.log(`[TIMING] loadCatalog(${key}): ${(performance.now() - t1).toFixed(0)}ms`);
-      const titleEl = document.getElementById('section-title-text');
-      if (titleEl) titleEl.textContent = CATALOG_LABELS[key] || 'Produtos';
     }
 
     products = products.filter(p => p.price && p.price > 0);
-    // Produtos destacados (featured) sobem ao topo; empate mantém ordem original
     products.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-    console.log('[RENDER] Iniciando render | Produtos encontrados:', products.length);
     currentProducts = products;
-    currentPage = 1;
+
+    const totalPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_PAGE));
+    const safePage   = Math.max(1, Math.min(page, totalPages));
+    currentPage      = safePage;
 
     hideSkeleton();
 
+    if (products.length === 0) {
+      if (searchQuery) {
+        productsGrid.innerHTML = `<p class="empty-state" style="padding:40px 20px;text-align:center;grid-column:1/-1;">
+          Não encontramos produtos para esta busca.<br>
+          <button onclick="if(window.filterModel)filterModel.value='';fetchProducts(1);" style="margin-top:14px;padding:10px 22px;background:#D96B8A;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">Ver todos os produtos</button>
+        </p>`;
+      } else {
+        productsGrid.innerHTML = '<p class="empty-state" style="padding:40px 20px;text-align:center;grid-column:1/-1;">Nenhum produto nesta categoria.</p>';
+      }
+      _renderPagination(1, 0);
+      return;
+    }
+
+    const start = (safePage - 1) * PRODUCTS_PER_PAGE;
+    const pageProducts = products.slice(start, start + PRODUCTS_PER_PAGE);
+
     const t2 = performance.now();
-    // onComplete é chamado após o último RAF batch — garante que updateLoadMoreBtn
-    // só aparece depois que todos os cards do primeiro render estão no DOM
-    renderProducts(products.slice(0, PRODUCTS_PER_PAGE), () => {
-      console.log(`[RENDER] Render concluído | ${Math.min(PRODUCTS_PER_PAGE, products.length)} cards | ${(performance.now() - t2).toFixed(0)}ms | total: ${(performance.now() - t0).toFixed(0)}ms`);
-      updateLoadMoreBtn(products.length, Math.min(PRODUCTS_PER_PAGE, products.length));
+    renderProducts(pageProducts, () => {
+      console.log(`[RENDER] Concluído | página ${safePage}/${totalPages} | ${pageProducts.length} cards | ${(performance.now() - t2).toFixed(0)}ms`);
+      _renderPagination(safePage, totalPages);
+      // Scroll para os produtos ao trocar de página (não na carga inicial)
+      if (page > 1 || targetPage) {
+        const grid = document.getElementById('products-grid');
+        if (grid) setTimeout(() => grid.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      }
     });
   } catch (err) {
-    console.error('[FETCH] Erro ao renderizar produtos:', {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-    });
+    console.error('[FETCH] Erro:', err.name, err.message);
     _debugLog({ type: 'catch', name: err.name, message: err.message || String(err) });
     hideSkeleton();
     if (productsGrid) {
-      productsGrid.innerHTML = '<p class="empty-state" style="color:#c53030;padding:40px 20px;text-align:center;">Erro ao carregar produtos. Verifique sua conexão e tente novamente.</p>';
+      productsGrid.innerHTML = '<p class="empty-state" style="color:#c53030;padding:40px 20px;text-align:center;grid-column:1/-1;">Erro ao carregar produtos. Verifique sua conexão e tente novamente.</p>';
     }
   }
 };
@@ -776,17 +845,14 @@ const preloadAllCatalogs = () => {
   loadNext();
 };
 
-// Listeners para os botões de categoria
+// Listeners para os botões de categoria — sempre reseta para página 1
 categoryButtons.forEach(btn => {
   btn.addEventListener("click", () => {
-    const t0 = performance.now();
     const cat = btn.dataset.catalog;
     categoryButtons.forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     if (filterModel) filterModel.value = "";
-    fetchProducts().then(() => {
-      console.log(`[CLICK→TELA] "${cat}": ${(performance.now() - t0).toFixed(0)}ms`);
-    });
+    fetchProducts(1);
   });
 });
 
@@ -832,24 +898,24 @@ chatOptions.forEach((button) => {
 if (applyFilterButton) {
   applyFilterButton.addEventListener("click", (event) => {
     event.preventDefault();
-    fetchProducts();
+    fetchProducts(1);
   });
 }
 
 if (filterModel) {
   filterModel.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") fetchProducts();
+    if (e.key === "Enter") fetchProducts(1);
   });
 }
 
 if (resetFilterButton) {
   resetFilterButton.addEventListener("click", (event) => {
     event.preventDefault();
-    filterModel.value = "";
-    filterCondition.value = "";
-    filterColor.value = "";
-    filterMaxPrice.value = "";
-    fetchProducts();
+    if (filterModel) filterModel.value = "";
+    if (filterCondition) filterCondition.value = "";
+    if (filterColor) filterColor.value = "";
+    if (filterMaxPrice) filterMaxPrice.value = "";
+    fetchProducts(1);
   });
 }
 
@@ -871,52 +937,36 @@ function _appendMoreProducts() {
 
 window.addEventListener("DOMContentLoaded", async () => {
   _initDebugPanel();
-  await fetchProducts();
+
+  // Lê URL para saber qual catálogo/página/busca carregar
+  const urlState = _parseURL();
+
+  if (urlState.mode === 'search' && urlState.termo) {
+    if (filterModel) filterModel.value = urlState.termo;
+  } else if (urlState.mode === 'catalog') {
+    const key = urlState.catalogKey;
+    categoryButtons.forEach(b => b.classList.toggle('active', b.dataset.catalog === key));
+  }
+
+  await fetchProducts(urlState.pagina);
   if (window.cart) window.cart.updateUI();
   updateCompareBadge();
   setTimeout(showChat, 5000);
-  // Reduzido de 1500ms para 800ms: inicia preload mais cedo (android primeiro)
   setTimeout(preloadAllCatalogs, 800);
 
-  // ===== LOAD MORE — usa DocumentFragment para inserção em lote =====
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener('click', () => {
-      if (isLoadingMore) return;
-      isLoadingMore = true;
-      loadMoreBtn.disabled = true;
-      loadMoreBtn.classList.add('loading');
+  // ===== NAVEGAÇÃO COM BOTÕES DO BROWSER (Voltar / Avançar) =====
+  window.addEventListener('popstate', () => {
+    const st = _parseURL();
+    _suppressURLUpdate = true;
+    if (st.mode === 'search') {
+      if (filterModel) filterModel.value = st.termo;
+    } else {
+      categoryButtons.forEach(b => b.classList.toggle('active', b.dataset.catalog === st.catalogKey));
+      if (filterModel) filterModel.value = '';
+    }
+    fetchProducts(st.pagina).finally(() => { _suppressURLUpdate = false; });
+  });
 
-      _appendMoreProducts();
-
-      loadMoreBtn.disabled = false;
-      loadMoreBtn.classList.remove('loading');
-      isLoadingMore = false;
-    });
-  }
-
-  // ===== INTERSECTION OBSERVER — auto-load ao rolar até o sentinel =====
-  // rootMargin '0px': dispara somente quando o sentinel é realmente visível (evita cascade
-  // em mobile onde '400px' causava carregar todos os 25k produtos automaticamente).
-  // ioAutoLoadCount: máximo 3 auto-loads por categoria (60 produtos); depois exige clique.
-  const MAX_IO_AUTOLOADS = 3;
-  const sentinel = document.getElementById('load-more-sentinel');
-  if (sentinel && 'IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      if (!entries[0].isIntersecting) return;
-      if (isLoadingMore) return;
-      if (ioAutoLoadCount >= MAX_IO_AUTOLOADS) return;
-      const wrapper = document.getElementById('load-more-wrapper');
-      if (!wrapper || wrapper.style.display === 'none') return;
-
-      isLoadingMore = true;
-      ioAutoLoadCount++;
-      _appendMoreProducts();
-      // Cooldown de 300ms antes de permitir outro auto-load — evita cascade em mobile
-      setTimeout(() => { isLoadingMore = false; }, 300);
-    }, { rootMargin: '0px' });
-    io.observe(sentinel);
-  }
 });
 
 function initImageAutoSlider() {
@@ -978,9 +1028,8 @@ if (searchBtn) {
     searchBtn.disabled = true;
     searchBtn.classList.add("loading");
     if (searchSpinner) searchSpinner.style.display = "inline-block";
-
     try {
-      await fetchProducts();
+      await fetchProducts(1);
     } finally {
       searchBtn.disabled = false;
       searchBtn.classList.remove("loading");

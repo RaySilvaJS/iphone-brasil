@@ -32,7 +32,7 @@
       });
       const fm = document.getElementById('filter-model');
       if (fm) fm.value = '';
-      if (window.fetchProducts) window.fetchProducts();
+      if (window.fetchProducts) window.fetchProducts(1);
     });
   });
 
