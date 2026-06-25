@@ -259,10 +259,6 @@ function proceedToCheckout() {
     showCartToast('Carrinho vazio! Adicione produtos antes de continuar.', 'warning');
     return;
   }
-  if (window.Auth && !window.Auth.isLoggedIn()) {
-    window.location.href = '/login.html?redirect=' + encodeURIComponent('/checkout.html?source=cart');
-    return;
-  }
   cart.saveCart();
   if (window.MetaPixel) {
     window.MetaPixel.initiateCheckout({
