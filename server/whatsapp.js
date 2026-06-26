@@ -268,14 +268,23 @@ async function handleBotAdminCommand(sock, groupJid, rawText) {
       '',
       '⚠️ Não envie comandos até o bot voltar.',
     ].join('\n'));
-    // Delay pequeno para garantir que a mensagem foi enviada antes do processo morrer
     setTimeout(() => {
-      const { spawn } = require('child_process');
-      const deployPath = path.join(__dirname, '..', 'deploy.sh');
+      const { execSync, spawn } = require('child_process');
+      const rootDir    = path.join(__dirname, '..');
+      const deployPath = path.join(rootDir, 'deploy.sh');
+      // Remove arquivos de dados do bot do índice git do servidor (migração única).
+      // Necessário porque o deploy antigo os deixou rastreados — o git pull aborta
+      // se encontra modificações locais em arquivos que o remoto quer deletar do índice.
+      try {
+        execSync(
+          'git rm --cached -f server/data/bot/config.json server/data/bot/conversations.json server/data/bot/logs.json',
+          { cwd: rootDir, stdio: 'pipe' }
+        );
+      } catch (_) { /* já removidos ou inexistentes — prossegue */ }
       spawn('bash', [deployPath], {
         detached: true,
         stdio: 'ignore',
-        cwd: path.join(__dirname, '..'),
+        cwd: rootDir,
       }).unref();
     }, 1500);
     return;
