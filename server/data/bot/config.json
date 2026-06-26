@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "mode": "allowlist",
+  "allowedTestPhones": [],
+  "maxRepliesPerMinute": 6,
+  "ignoreMessagesOlderThanSeconds": 60,
+  "campaignCodes": [],
+  "siteUrl": "",
+  "conversationTtlDays": 30
+}

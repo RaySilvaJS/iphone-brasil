@@ -348,7 +348,22 @@ const initWhatsApp = async () => {
     if (!message.message || message.key.fromMe) return;
 
     const jid = message.key.remoteJid;
-    if (jid !== WHATSAPP_GROUP_ID) return;
+
+    // ── Mensagens diretas de clientes → bot autônomo ──────────────────────
+    // O fluxo do grupo admin (abaixo) continua INALTERADO.
+    if (jid !== WHATSAPP_GROUP_ID) {
+      // Ignorar status@broadcast e outros grupos
+      if (jid === 'status@broadcast' || jid.endsWith('@g.us')) return;
+      // Redirecionar mensagens diretas ao bot (desligado por padrão — server/data/bot/config.json)
+      try {
+        const { handleCustomerMessage } = require('./bot/customer-handler');
+        await handleCustomerMessage(sock, message, WHATSAPP_GROUP_ID);
+      } catch (botErr) {
+        // Erros do bot nunca afetam o servidor nem o grupo admin
+        console.error('[BOT] Erro no handler de cliente:', botErr?.message || botErr);
+      }
+      return;
+    }
 
     const msgContent = message.message;
     const text = msgContent.conversation ||
