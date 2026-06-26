@@ -49,7 +49,8 @@ function norm(s) {
 function searchProducts(query, { limit = 5, catalogKey = null } = {}) {
   if (!query) return [];
   const q     = norm(query);
-  const words = q.split(' ').filter(w => w.length > 1);
+  // Inclui números de 1 dígito (ex: "8" em "iphone 8") e palavras com 2+ caracteres
+  const words = q.split(' ').filter(w => w.length > 1 || /^\d+$/.test(w));
   if (!words.length) return [];
 
   let source;
