@@ -86,6 +86,7 @@ async function handleBotAdminCommand(sock, groupJid, rawText) {
       '',
       '*Outros:*',
       '  BOT LIMITE 10 → máx respostas/min por cliente',
+      '  BOT DEPLOY → atualiza código e reinicia o servidor',
       '━━━━━━━━━━━━━━━━━━━━',
     ].join('\n'));
     return;
@@ -254,6 +255,29 @@ async function handleBotAdminCommand(sock, groupJid, rawText) {
     } else {
       await reply(`ℹ️ Campanha *${code}* não encontrada.`);
     }
+    return;
+  }
+
+  // ── BOT DEPLOY ───────────────────────────────────────────────────────────
+  if (sub === 'DEPLOY') {
+    await reply([
+      '🚀 *Deploy iniciado*',
+      '',
+      'Atualizando código do GitHub e reiniciando o servidor...',
+      'O bot volta em ~30 segundos após o WhatsApp reconectar.',
+      '',
+      '⚠️ Não envie comandos até o bot voltar.',
+    ].join('\n'));
+    // Delay pequeno para garantir que a mensagem foi enviada antes do processo morrer
+    setTimeout(() => {
+      const { spawn } = require('child_process');
+      const deployPath = path.join(__dirname, '..', 'deploy.sh');
+      spawn('bash', [deployPath], {
+        detached: true,
+        stdio: 'ignore',
+        cwd: path.join(__dirname, '..'),
+      }).unref();
+    }, 1500);
     return;
   }
 
