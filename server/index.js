@@ -1551,7 +1551,7 @@ app.patch('/api/auth/addresses/:id/principal', (req, res) => {
 
 // ── Guest Checkout — cria conta automática vinculada ao WhatsApp ─────────────
 app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
-  const { nome, whatsapp, cpf } = req.body || {};
+  const { nome, whatsapp, cpf, email } = req.body || {};
   if (!nome || !whatsapp) {
     return res.status(400).json({ error: 'Nome e WhatsApp são obrigatórios.' });
   }
@@ -1561,6 +1561,10 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
   const digits = whatsapp.replace(/\D/g, '');
   if (digits.length < 10 || digits.length > 11) {
     return res.status(400).json({ error: 'WhatsApp inválido. Informe DDD + número.' });
+  }
+  const emailClean = email ? String(email).trim().toLowerCase() : null;
+  if (emailClean && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+    return res.status(400).json({ error: 'E-mail inválido.' });
   }
   const cpfDigits = cpf ? cpf.replace(/\D/g, '') : '';
 
@@ -1578,6 +1582,10 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
     user.sessions.push(guestSession);
     user.token = guestToken;
     user.lastLogin = new Date().toISOString();
+    // Atualiza e-mail real se antes era jessi.local
+    if (emailClean && (!user.email || user.email.includes('@jessi.local'))) {
+      user.email = emailClean;
+    }
     saveUsers(users);
     return res.json({
       success: true,
@@ -1587,8 +1595,8 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
     });
   }
 
-  // Cria conta guest com e-mail fictício e senha temporária
-  const tempEmail = `guest_${digits}@jessi.local`;
+  // Cria conta guest — usa e-mail real se fornecido, senão e-mail fictício
+  const tempEmail = emailClean || `guest_${digits}@jessi.local`;
   const tempPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
   const newUser = {
     id:        uuidv4(),
@@ -1599,7 +1607,7 @@ app.post('/api/auth/guest', authRateLimit(10, 15 * 60 * 1000), (req, res) => {
     senha:     bcrypt.hashSync(tempPassword, 10),
     token:     guestToken,
     sessions:  [guestSession],
-    isGuest:   true,
+    isGuest:   !emailClean,
     createdAt: new Date().toISOString(),
   };
   users.push(newUser);

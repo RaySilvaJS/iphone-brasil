@@ -448,9 +448,12 @@ document.addEventListener('DOMContentLoaded', () => {
             style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
           <input id="billing-whatsapp" type="tel" placeholder="WhatsApp (DDD + número) *" inputmode="numeric" autocomplete="tel"
             style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
+          <div id="billing-wa-status" style="margin-top:-4px;min-height:14px;font-size:12px;display:none;"></div>
+          <input id="billing-email" type="email" placeholder="E-mail (Gmail, Hotmail...) — opcional" autocomplete="email"
+            style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
           <input id="billing-cpf" type="text" placeholder="CPF (opcional — para nota fiscal)" inputmode="numeric" maxlength="14"
             style="padding:11px 13px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;font-family:inherit;outline:none;width:100%;box-sizing:border-box;"/>
-          <p id="billing-err" style="margin:0;font-size:12px;color:#DC2626;display:none;"></p>
+          <p id="billing-err" style="margin:0;font-size:12px;display:none;"></p>
           <button id="billing-submit" onclick="submitBillingData()"
             style="background:#2563EB;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
             Confirmar dados e continuar →
@@ -467,12 +470,44 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (v.length>3) v=v.slice(0,3)+'.'+v.slice(3);
         e.target.value=v;
       });
-      if (waEl) waEl.addEventListener('input', e => {
-        let v = e.target.value.replace(/\D/g,'').slice(0,11);
-        if (v.length>7) v='('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
-        else if (v.length>2) v='('+v.slice(0,2)+') '+v.slice(2);
-        e.target.value=v;
-      });
+      if (waEl) {
+        waEl.addEventListener('input', e => {
+          let v = e.target.value.replace(/\D/g,'').slice(0,11);
+          if (v.length>7) v='('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
+          else if (v.length>2) v='('+v.slice(0,2)+') '+v.slice(2);
+          e.target.value=v;
+          // Resetar indicador ao digitar novamente
+          const st = document.getElementById('billing-wa-status');
+          if (st) st.style.display = 'none';
+          waEl.style.borderColor = '#D1D5DB';
+        });
+        waEl.addEventListener('blur', async () => {
+          const digits = waEl.value.replace(/\D/g,'');
+          const st = document.getElementById('billing-wa-status');
+          if (digits.length < 10) return;
+          if (st) { st.style.display='block'; st.style.color='#6B7280'; st.textContent='⏳ Verificando WhatsApp...'; }
+          try {
+            const r = await fetch('/api/whatsapp/validate-phone', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phone: digits }),
+            });
+            const d = await r.json();
+            if (!st) return;
+            if (d.hasWhatsApp === true) {
+              st.textContent = '✅ WhatsApp ativo neste número';
+              st.style.color  = '#16A34A';
+              waEl.style.borderColor = '#16A34A';
+            } else if (d.hasWhatsApp === false) {
+              st.textContent = '⚠️ Número sem WhatsApp — verifique ou preencha seu e-mail abaixo para contato';
+              st.style.color  = '#D97706';
+              waEl.style.borderColor = '#F59E0B';
+            } else {
+              st.style.display = 'none';
+            }
+          } catch { if (st) st.style.display = 'none'; }
+        });
+      }
       return;
     }
     const cpfRaw  = authSession.cpf || '';
@@ -490,21 +525,24 @@ document.addEventListener('DOMContentLoaded', () => {
   window.submitBillingData = async function() {
     const nome     = (document.getElementById('billing-nome')?.value     || '').trim();
     const whatsapp = (document.getElementById('billing-whatsapp')?.value || '');
+    const email    = (document.getElementById('billing-email')?.value    || '').trim().toLowerCase();
     const cpf      = (document.getElementById('billing-cpf')?.value      || '');
     const errEl    = document.getElementById('billing-err');
     const btn      = document.getElementById('billing-submit');
 
+    const showErr = (msg) => { if(errEl){errEl.textContent=msg;errEl.style.color='#DC2626';errEl.style.display='block';} };
     if (errEl) { errEl.style.display = 'none'; }
-    if (!nome || nome.length < 3)               { if(errEl){errEl.textContent='Informe o nome completo.';errEl.style.display='block';} return; }
-    if (whatsapp.replace(/\D/g,'').length < 10) { if(errEl){errEl.textContent='WhatsApp inválido.';errEl.style.display='block';} return; }
-    if (cpf && cpf.replace(/\D/g,'').length > 0 && cpf.replace(/\D/g,'').length !== 11) { if(errEl){errEl.textContent='CPF inválido.';errEl.style.display='block';} return; }
+    if (!nome || nome.length < 3)               { showErr('Informe o nome completo.'); return; }
+    if (whatsapp.replace(/\D/g,'').length < 10) { showErr('WhatsApp inválido.'); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('E-mail inválido.'); return; }
+    if (cpf && cpf.replace(/\D/g,'').length > 0 && cpf.replace(/\D/g,'').length !== 11) { showErr('CPF inválido.'); return; }
 
     if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
     try {
       const r = await fetch('/api/auth/guest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, whatsapp: whatsapp.replace(/\D/g,''), cpf: cpf.replace(/\D/g,'') }),
+        body: JSON.stringify({ nome, whatsapp: whatsapp.replace(/\D/g,''), cpf: cpf.replace(/\D/g,''), email: email || undefined }),
       });
       const d = await r.json();
       if (!d.success) {
