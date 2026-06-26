@@ -28,6 +28,238 @@ const addLog = (payment, entry) => {
   payment.logs.push({ ...entry, timestamp: new Date().toISOString() });
 };
 
+// ── Bot config — gerenciamento pelo grupo admin ───────────────────────────────
+const BOT_CONFIG_PATH = path.join(__dirname, 'data', 'bot', 'config.json');
+
+const loadBotCfg = () => {
+  try { return JSON.parse(fs.readFileSync(BOT_CONFIG_PATH, 'utf-8')); }
+  catch { return { enabled: false, mode: 'allowlist', allowedTestPhones: [], maxRepliesPerMinute: 6, ignoreMessagesOlderThanSeconds: 60, campaignCodes: [], siteUrl: '', conversationTtlDays: 30 }; }
+};
+
+const saveBotCfg = (cfg) => {
+  try {
+    const tmp = BOT_CONFIG_PATH + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2), 'utf-8');
+    fs.renameSync(tmp, BOT_CONFIG_PATH);
+  } catch (e) { console.error('[BOT-CFG] Erro ao salvar:', e.message); }
+};
+
+async function handleBotAdminCommand(sock, groupJid, rawText) {
+  const args  = rawText.trim().split(/\s+/);
+  const sub   = (args[1] || '').toUpperCase();
+  const cfg   = loadBotCfg();
+  const reply = (text) => sock.sendMessage(groupJid, { text });
+
+  // ── Menu ──────────────────────────────────────────────────────────────────
+  if (!sub || sub === 'MENU' || sub === 'AJUDA') {
+    const status = cfg.enabled
+      ? `✅ LIGADO (${cfg.mode === 'allowlist' ? 'modo teste' : 'modo público'})`
+      : '⛔ DESLIGADO';
+    await reply([
+      '🤖 *MENU DO BOT — Configuração pelo grupo admin*',
+      '',
+      `Status atual: ${status}`,
+      '',
+      '━━━━━━━━━━━━━━━━━━━━',
+      '*Liga/Desliga:*',
+      '  BOT ON → liga o bot',
+      '  BOT OFF → desliga o bot',
+      '  BOT STATUS → ver configuração completa',
+      '',
+      '*Modo de atendimento:*',
+      '  BOT MODO PUBLICO → atende todos os clientes',
+      '  BOT MODO TESTE → atende só números da lista',
+      '',
+      '*Lista de teste (modo teste):*',
+      '  BOT TESTE +5521999991234 → adiciona número',
+      '  BOT REMOVE +5521999991234 → remove número',
+      '  BOT LISTA → exibe todos os números',
+      '',
+      '*URL da loja (para links clicáveis):*',
+      '  BOT URL https://sualore.com.br',
+      '',
+      '*Campanhas de anúncio:*',
+      '  BOT CAMPANHA AD-IP15 MLB123456',
+      '  BOT CAMPANHAS → listar campanhas',
+      '  BOT REMOVECAMPANHA AD-IP15',
+      '',
+      '*Outros:*',
+      '  BOT LIMITE 10 → máx respostas/min por cliente',
+      '━━━━━━━━━━━━━━━━━━━━',
+    ].join('\n'));
+    return;
+  }
+
+  // ── BOT ON ────────────────────────────────────────────────────────────────
+  if (sub === 'ON') {
+    cfg.enabled = true;
+    saveBotCfg(cfg);
+    const modeStr = cfg.mode === 'allowlist'
+      ? `modo teste (${cfg.allowedTestPhones.length} número(s) na lista)`
+      : 'modo público (todos os clientes)';
+    await reply(`✅ *Bot ligado* — ${modeStr}\n\nEnvie BOT para ver o menu de comandos.`);
+    return;
+  }
+
+  // ── BOT OFF ───────────────────────────────────────────────────────────────
+  if (sub === 'OFF') {
+    cfg.enabled = false;
+    saveBotCfg(cfg);
+    await reply('⛔ *Bot desligado.*\n\nClientes não receberão mais respostas automáticas.');
+    return;
+  }
+
+  // ── BOT STATUS ────────────────────────────────────────────────────────────
+  if (sub === 'STATUS') {
+    const camps = (cfg.campaignCodes || []).filter(c => c.active).length;
+    await reply([
+      '🤖 *Configuração atual do bot*',
+      '━━━━━━━━━━━━━━━━━━━━',
+      `Status: ${cfg.enabled ? '✅ LIGADO' : '⛔ DESLIGADO'}`,
+      `Modo: ${cfg.mode === 'allowlist' ? 'Teste (allowlist)' : 'Público'}`,
+      `Números de teste: ${cfg.allowedTestPhones.length > 0 ? cfg.allowedTestPhones.map(p => '+' + p).join(', ') : '(vazio)'}`,
+      `URL da loja: ${cfg.siteUrl || '(não configurada)'}`,
+      `Limite/min por cliente: ${cfg.maxRepliesPerMinute}`,
+      `Campanhas ativas: ${camps}`,
+      `Ignorar msgs com >${cfg.ignoreMessagesOlderThanSeconds}s`,
+      '━━━━━━━━━━━━━━━━━━━━',
+    ].join('\n'));
+    return;
+  }
+
+  // ── BOT MODO PUBLICO / MODO TESTE ─────────────────────────────────────────
+  if (sub === 'MODO') {
+    const modo = (args[2] || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (modo === 'PUBLICO') {
+      cfg.mode = 'public';
+      saveBotCfg(cfg);
+      await reply(`🌐 *Modo público ativado.*\nO bot ${cfg.enabled ? 'responderá' : 'responderá (quando ligado)'} a todos os clientes.`);
+    } else if (modo === 'TESTE') {
+      cfg.mode = 'allowlist';
+      saveBotCfg(cfg);
+      const lista = cfg.allowedTestPhones.length > 0 ? cfg.allowedTestPhones.map(p => '+' + p).join(', ') : '(vazio — use BOT TESTE +55...)';
+      await reply(`🔒 *Modo teste ativado.*\nApenas números na lista receberão respostas.\n\nLista: ${lista}`);
+    } else {
+      await reply('Uso:\n  BOT MODO PUBLICO\n  BOT MODO TESTE');
+    }
+    return;
+  }
+
+  // ── BOT TESTE +55... ──────────────────────────────────────────────────────
+  if (sub === 'TESTE') {
+    const num = (args[2] || '').replace(/\D/g, '');
+    if (!num || num.length < 10) {
+      await reply('Uso: BOT TESTE +5521999991234\n\nDigite o número com DDI e DDD, somente dígitos.');
+      return;
+    }
+    if (cfg.allowedTestPhones.includes(num)) {
+      await reply(`ℹ️ *+${num}* já está na lista de teste.`);
+    } else {
+      cfg.allowedTestPhones.push(num);
+      saveBotCfg(cfg);
+      await reply(`✅ *+${num}* adicionado à lista de teste.\n\nLista: ${cfg.allowedTestPhones.map(p => '+' + p).join(', ')}`);
+    }
+    return;
+  }
+
+  // ── BOT REMOVE +55... ─────────────────────────────────────────────────────
+  if (sub === 'REMOVE') {
+    const num = (args[2] || '').replace(/\D/g, '');
+    if (!num) { await reply('Uso: BOT REMOVE +5521999991234'); return; }
+    const antes = cfg.allowedTestPhones.length;
+    cfg.allowedTestPhones = cfg.allowedTestPhones.filter(p => p !== num);
+    if (cfg.allowedTestPhones.length < antes) {
+      saveBotCfg(cfg);
+      const lista = cfg.allowedTestPhones.length > 0 ? cfg.allowedTestPhones.map(p => '+' + p).join(', ') : '(vazio)';
+      await reply(`✅ *+${num}* removido.\n\nLista: ${lista}`);
+    } else {
+      await reply(`ℹ️ *${num}* não estava na lista.`);
+    }
+    return;
+  }
+
+  // ── BOT LISTA ─────────────────────────────────────────────────────────────
+  if (sub === 'LISTA') {
+    if (cfg.allowedTestPhones.length === 0) {
+      await reply('Lista de teste vazia.\n\nUse: BOT TESTE +5521999991234');
+    } else {
+      await reply(`📱 *Números na lista de teste:*\n\n${cfg.allowedTestPhones.map((p, i) => `${i + 1}. +${p}`).join('\n')}`);
+    }
+    return;
+  }
+
+  // ── BOT URL https://... ───────────────────────────────────────────────────
+  if (sub === 'URL') {
+    const url = (args[2] || '').trim().replace(/\/$/, '');
+    if (!url.startsWith('http')) {
+      await reply('Uso: BOT URL https://sualore.com.br');
+      return;
+    }
+    cfg.siteUrl = url;
+    saveBotCfg(cfg);
+    await reply(`✅ URL configurada: *${url}*\nLinks de produtos usarão esta URL.`);
+    return;
+  }
+
+  // ── BOT LIMITE N ──────────────────────────────────────────────────────────
+  if (sub === 'LIMITE') {
+    const n = parseInt(args[2], 10);
+    if (!n || n < 1 || n > 60) { await reply('Uso: BOT LIMITE 10\n(valor entre 1 e 60)'); return; }
+    cfg.maxRepliesPerMinute = n;
+    saveBotCfg(cfg);
+    await reply(`✅ Limite: *${n} respostas/min* por cliente.`);
+    return;
+  }
+
+  // ── BOT CAMPANHA AD-XX MLB123 ─────────────────────────────────────────────
+  if (sub === 'CAMPANHA') {
+    const code   = (args[2] || '').toUpperCase();
+    const prodId = (args[3] || '').trim();
+    if (!code || !prodId) {
+      await reply('Uso: BOT CAMPANHA AD-IP15 MLB1027172667\n\nCódigo + ID do produto.');
+      return;
+    }
+    cfg.campaignCodes = cfg.campaignCodes || [];
+    const idx   = cfg.campaignCodes.findIndex(c => c.code === code);
+    const entry = { code, active: true, source: 'Anúncio', productId: prodId };
+    if (idx >= 0) { cfg.campaignCodes[idx] = entry; } else { cfg.campaignCodes.push(entry); }
+    saveBotCfg(cfg);
+    await reply(`✅ Campanha *${code}* → produto *${prodId}*\n\nCliente que enviar "${code}" recebe esse produto.`);
+    return;
+  }
+
+  // ── BOT CAMPANHAS ─────────────────────────────────────────────────────────
+  if (sub === 'CAMPANHAS') {
+    const camps = cfg.campaignCodes || [];
+    if (camps.length === 0) {
+      await reply('Nenhuma campanha.\n\nUse: BOT CAMPANHA AD-IP15 MLB123456');
+    } else {
+      const lines = ['📣 *Campanhas cadastradas:*', ''];
+      camps.forEach((c, i) => lines.push(`${i + 1}. *${c.code}* → ${c.productId} ${c.active ? '✅' : '⛔'}`));
+      await reply(lines.join('\n'));
+    }
+    return;
+  }
+
+  // ── BOT REMOVECAMPANHA AD-XX ──────────────────────────────────────────────
+  if (sub === 'REMOVECAMPANHA') {
+    const code = (args[2] || '').toUpperCase();
+    if (!code) { await reply('Uso: BOT REMOVECAMPANHA AD-IP15'); return; }
+    const antes = (cfg.campaignCodes || []).length;
+    cfg.campaignCodes = (cfg.campaignCodes || []).filter(c => c.code !== code);
+    if (cfg.campaignCodes.length < antes) {
+      saveBotCfg(cfg);
+      await reply(`✅ Campanha *${code}* removida.`);
+    } else {
+      await reply(`ℹ️ Campanha *${code}* não encontrada.`);
+    }
+    return;
+  }
+
+  // ── Desconhecido ──────────────────────────────────────────────────────────
+  await reply('Comando não reconhecido.\n\nEnvie *BOT* para ver o menu de comandos.');
+}
+
 // ── Estado persistente ────────────────────────────────────────────────────────
 const state = {
   status: 'disconnected',
@@ -384,6 +616,12 @@ const initWhatsApp = async () => {
 
     console.log(`[WA] Grupo | Admin: ${adminSender.split('@')[0]} | "${text.substring(0, 60)}"`);
     try { getTracker()?.record('wa_received', { from: 'group' }); } catch {}
+
+    // ── Comandos de configuração do bot ───────────────────────────────────────
+    if (upperText === 'BOT' || upperText.startsWith('BOT ')) {
+      try { await handleBotAdminCommand(sock, jid, text.trim()); } catch (e) { console.error('[BOT-CFG] Erro:', e.message); }
+      return;
+    }
 
     let allPayments = loadPayments();
     let payment     = null;
