@@ -207,6 +207,16 @@ router.post('/system/deploy', adminAuth, (req, res) => {
         exec('git clean -fd --exclude=server/data --exclude=public/data --exclude=public/uploads --exclude=.env', { cwd: ROOT }, () => resolve());
       });
 
+      // ── remove do índice arquivos que o remoto deletou do tracking ──────────
+      // server/data/bot/*.json foram removidos do git; se o servidor ainda os
+      // rastreia (deploy antigo), o git pull aborta com "would be overwritten".
+      await new Promise(resolve => {
+        exec(
+          'git rm --cached -f server/data/bot/config.json server/data/bot/conversations.json server/data/bot/logs.json',
+          { cwd: ROOT }, () => resolve()
+        );
+      });
+
       // ── git pull ──────────────────────────────────────────────────────────
       await runCmd('git pull origin main', 'git', ['pull', 'origin', 'main']);
 
