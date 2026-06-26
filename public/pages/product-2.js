@@ -290,7 +290,7 @@
   window._skipInsurance = () => {
     sessionStorage.removeItem('buy-insurance');
     document.getElementById('__insurance-modal')?.remove();
-    window.location.href = '/checkout.html?source=cart';
+    window.location.href = '/checkout.html?source=buy';
   };
 
   window._addInsurance = (gPrice, rPrice) => {
@@ -301,7 +301,7 @@
     const chosenLabel = _insSelected === 'g' ? 'Garantia estendida 12 meses' : 'Seguro Roubo + Danos 12 meses';
     sessionStorage.setItem('buy-insurance', JSON.stringify({ label: chosenLabel, price: chosenPrice }));
     document.getElementById('__insurance-modal')?.remove();
-    window.location.href = '/checkout.html?source=cart';
+    window.location.href = '/checkout.html?source=buy';
   };
 
   const getFavs = () => { try { return JSON.parse(localStorage.getItem('iphone-favs') || '[]'); } catch { return []; } };
