@@ -62,6 +62,11 @@ function detectIntent(text, context = {}) {
     return { intent: 'greeting', confidence: 'high', query: null };
   }
 
+  // ── Seleção de item da lista (1, 2 ou 3 após lista de produtos) ───────────
+  if (/^[1-3]$/.test(text.trim())) {
+    return { intent: 'select_product', confidence: 'high', query: text.trim() };
+  }
+
   // ── PIX / pagamento à vista ────────────────────────────────────────────────
   if (has(n, 'pix', 'a vista', 'à vista', 'avista', 'desconto pix', 'preco pix', 'preço pix',
     'valor pix', 'tem desconto no pix', 'pix tem desconto')) {
@@ -94,12 +99,6 @@ function detectIntent(text, context = {}) {
     return { intent: 'cheaper_option', confidence: 'high', query: context.lastProductQuery || null };
   }
 
-  // ── Produto semelhante / superior ─────────────────────────────────────────
-  if (has(n, 'semelhante', 'similar', 'parecido', 'outro modelo', 'outra opção', 'melhor modelo',
-    'superior', 'top de linha', 'pro max', 'melhor que', 'alternativa')) {
-    return { intent: 'similar_products', confidence: 'high', query: context.lastProductQuery || null };
-  }
-
   // ── Disponibilidade ────────────────────────────────────────────────────────
   if (has(n, 'tem estoque', 'tem disponivel', 'tem disponível', 'disponivel', 'disponível',
     'acabou', 'esgotado', 'ainda tem', 'tem ainda', 'em estoque')) {
@@ -130,7 +129,8 @@ function detectIntent(text, context = {}) {
     return { intent: 'ask_price', confidence: 'high', query: q || context.lastProductQuery || null };
   }
 
-  // ── Busca de produto ───────────────────────────────────────────────────────
+  // ── Busca por marca/modelo conhecida (ANTES de similar_products) ──────────
+  // Garante que "iphone 17 pro max" seja busca, não "modelo semelhante"
   if (has(n, 'iphone', 'samsung', 'xiaomi', 'motorola', 'console', 'playstation', 'ps4', 'ps5',
     'xbox', 'airpod', 'apple watch', 'macbook', 'notebook', 'ipad', 'android', 'realme',
     'redmi', 'galaxy', 'tab', 'smartwatch', 'relogio', 'relógio')) {
@@ -138,7 +138,14 @@ function detectIntent(text, context = {}) {
     return { intent: 'search_product', confidence: 'high', query: q || text };
   }
 
-  // Busca genérica com palavras de intenção
+  // ── Produto semelhante / superior ─────────────────────────────────────────
+  // 'pro max' removido — faz parte de nome de produto, não de pedido de similaridade
+  if (has(n, 'semelhante', 'similar', 'parecido', 'outro modelo', 'outra opção', 'melhor modelo',
+    'superior', 'top de linha', 'melhor que', 'alternativa')) {
+    return { intent: 'similar_products', confidence: 'high', query: context.lastProductQuery || null };
+  }
+
+  // ── Busca genérica com palavras de intenção ────────────────────────────────
   if (has(n, 'tem ', 'procuro ', 'busco ', 'quero ver ', 'tem algum', 'tem alguma', 'voce tem', 'vocês tem')) {
     const q = extractProductQuery(text);
     if (q && q.length >= 3) {

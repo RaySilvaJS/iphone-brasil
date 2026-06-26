@@ -64,10 +64,16 @@ function searchProducts(query, { limit = 5, catalogKey = null } = {}) {
     .map(p => {
       const nameN  = norm(p.name  || '');
       const modelN = norm(p.model || '');
+      const nameW  = nameN.split(' ');
+      const modelW = modelN.split(' ');
       let score = 0;
       for (const w of words) {
-        if (modelN.includes(w)) score += 3;
-        if (nameN.includes(w))  score += 2;
+        // Palavra exata pontua mais; substring só para termos >= 3 caracteres
+        // Isso evita que "8" bata em "128 GB" (bug de busca "iphone 8")
+        if (modelW.includes(w))                         score += 4;
+        else if (w.length >= 3 && modelN.includes(w))   score += 2;
+        if (nameW.includes(w))                           score += 3;
+        else if (w.length >= 3 && nameN.includes(w))    score += 1;
       }
       return { product: p, score };
     })

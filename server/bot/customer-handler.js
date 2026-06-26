@@ -262,11 +262,40 @@ async function handleCustomerMessage(sock, message, groupId) {
       ].join('\n');
       break;
 
+    case 'select_product': {
+      const idx  = parseInt(detected.query, 10) - 1;
+      const list = ctx.lastProductList || [];
+      if (!list.length) {
+        reply = 'Me diga o modelo que você procura e te mostro as opções disponíveis.';
+        break;
+      }
+      if (idx < 0 || idx >= list.length) {
+        reply = `Escolha um número entre 1 e ${list.length}.`;
+        break;
+      }
+      const p = catalog.getProductById(list[idx].id);
+      if (!p) {
+        reply = 'Produto não encontrado. Me diga o modelo e busco novamente.';
+        break;
+      }
+      newCtx.lastProductId    = p.id;
+      newCtx.lastProductName  = p.name;
+      newCtx.lastProductQuery = ctx.lastProductQuery;
+      reply = [
+        'Aqui estão os detalhes:',
+        '',
+        productCard(p, siteUrl),
+        '',
+        'Posso mostrar variações de cor/memória, opções mais baratas ou enviar o link para finalizar a compra.',
+      ].join('\n');
+      break;
+    }
+
     case 'search_product': {
       const results = catalog.searchProducts(detected.query || text, { limit: 3 });
       if (results.length === 0) {
         reply = [
-          `Não encontrei produtos com *"${detected.query || text}"* no catálogo no momento.`,
+          `Não encontrei *"${detected.query || text}"* no catálogo no momento.`,
           '',
           'Tente descrever de outra forma ou acesse o catálogo completo no site.',
         ].join('\n');
@@ -276,6 +305,8 @@ async function handleCustomerMessage(sock, message, groupId) {
       newCtx.lastProductId    = first.id;
       newCtx.lastProductName  = first.name;
       newCtx.lastProductQuery = detected.query;
+      // Salva a lista para permitir seleção por número (1, 2, 3)
+      newCtx.lastProductList  = results.map(p => ({ id: p.id, name: p.name }));
 
       if (results.length === 1) {
         reply = [
@@ -295,7 +326,7 @@ async function handleCustomerMessage(sock, message, groupId) {
             return `${i + 1}. ${avail} *${p.name}*\n   💰 ${price}\n   🔗 ${siteUrl}/product?id=${p.id}`;
           }),
           '',
-          'Quer mais detalhes de algum modelo específico?',
+          'Responda com *1*, *2* ou *3* para ver os detalhes do produto.',
         ].join('\n');
       }
       break;
