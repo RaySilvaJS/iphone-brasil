@@ -38,6 +38,7 @@ const loadBotCfg = () => {
 
 const saveBotCfg = (cfg) => {
   try {
+    fs.mkdirSync(path.dirname(BOT_CONFIG_PATH), { recursive: true });
     const tmp = BOT_CONFIG_PATH + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2), 'utf-8');
     fs.renameSync(tmp, BOT_CONFIG_PATH);

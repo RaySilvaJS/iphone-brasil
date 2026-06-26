@@ -27,6 +27,9 @@ server/data/proofs/
 server/data/analytics/
 server/data/backups/
 
+# Config e dados do bot — persistem no servidor entre deploys, NÃO sobrescrever
+server/data/bot/
+
 # Sistema
 .DS_Store
 Thumbs.db
