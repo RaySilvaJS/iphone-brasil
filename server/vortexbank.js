@@ -138,11 +138,19 @@ async function sendCode(phone) {
   const { apiId, apiHash } = getCredentials();
   if (!apiId || !apiHash) throw new Error('Configure API_ID e API_HASH antes de autenticar.');
 
-  // Disconnect existing pending client
   try { if (_pendingClient) await _pendingClient.disconnect(); } catch {}
 
+  const { Api } = loadGramJS();
   _pendingClient = await buildClient('');
-  const result   = await _pendingClient.sendCode({ apiId, apiHash }, phone);
+
+  const result = await _pendingClient.invoke(
+    new Api.auth.SendCode({
+      phoneNumber: phone,
+      apiId,
+      apiHash,
+      settings: new Api.CodeSettings({}),
+    })
+  );
   _pendingCodeHash = result.phoneCodeHash;
 
   vxLog('info', 'Código enviado com sucesso.');
@@ -156,12 +164,25 @@ async function verifyCode(phone, code) {
   if (!_pendingCodeHash) throw new Error('phoneCodeHash ausente. Reenvie o código.');
 
   vxLog('info', 'Verificando código de autenticação...');
-  const { apiId, apiHash } = getCredentials();
+  const { Api } = loadGramJS();
 
-  await _pendingClient.signIn(
-    { apiId, apiHash },
-    { phoneNumber: phone, phoneCode: () => Promise.resolve(code), phoneCodeHash: _pendingCodeHash }
-  );
+  try {
+    await _pendingClient.invoke(
+      new Api.auth.SignIn({
+        phoneNumber:   phone,
+        phoneCodeHash: _pendingCodeHash,
+        phoneCode:     code,
+      })
+    );
+  } catch (e) {
+    if (e.message?.includes('SESSION_PASSWORD_NEEDED')) {
+      throw new Error('Esta conta tem 2FA ativado. Desative a verificação em 2 etapas no Telegram e tente novamente.');
+    }
+    if (e.message?.includes('PHONE_CODE_INVALID')) {
+      throw new Error('Código inválido ou expirado. Verifique o código recebido no Telegram.');
+    }
+    throw e;
+  }
 
   const sessionStr = _pendingClient.session.save();
   saveSession(String(sessionStr));
