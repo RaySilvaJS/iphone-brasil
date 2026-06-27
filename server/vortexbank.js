@@ -391,9 +391,10 @@ async function generatePix(amount) {
     vxLog('info', 'Resposta DEPOSITAR recebida', { text: (depositMsg.message || '').slice(0, 150) });
 
     // ── Passo 3: Valor ────────────────────────────────────────────────────────
-    // toFixed(2) corrige float impreciso (8444.882... → "8444.88"),
-    // parseFloat depois remove zeros extras (11.00 → "11", 11.50 → "11.5")
-    const amountStr = String(parseFloat(parseFloat(amount).toFixed(2)));
+    // toFixed(2) corrige float impreciso; vírgula como decimal evita ambiguidade
+    // com separador de milhar (11361.86 com ponto pode ser lido como 11 pelo bot)
+    // Exemplos: 11361.86 → "11361,86" | 11.00 → "11" | 11.50 → "11,5"
+    const amountStr = String(parseFloat(parseFloat(amount).toFixed(2))).replace('.', ',');
     vxLog('info', `Passo 3: Enviando valor: "${amountStr}"`);
     // waitForPixMessage ignora mensagens intermediárias ("⏳ Aguarde...")
     // e só resolve quando chegar mensagem com o código PIX real.
