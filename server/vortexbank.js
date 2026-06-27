@@ -79,6 +79,8 @@ function getStatus() {
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let _client    = null;  // GramJS TelegramClient
+let _botPeer   = null;  // entidade do bot cacheada
+let _botId     = null;  // ID numérico do bot cacheado
 let _busy      = false;
 let _lastGen   = null;  // { at, amount, ok }
 let _lastErr   = null;  // { at, message }
@@ -126,9 +128,20 @@ async function getClient() {
   const session = getSavedSession();
   if (!session) throw new Error('Sessão não encontrada. Configure e autentique primeiro.');
   vxLog('info', 'Conectando cliente Telegram...');
-  _client = await buildClient(session);
+  _client  = await buildClient(session);
+  _botPeer = null; // reseta cache ao reconectar
+  _botId   = null;
   vxLog('info', 'Cliente conectado.');
   return _client;
+}
+
+async function getBotPeer(client) {
+  if (_botPeer && _botId) return { botPeer: _botPeer, botId: _botId };
+  vxLog('info', `Resolvendo entidade de @${BOT_USERNAME}...`);
+  _botPeer = await client.getEntity(BOT_USERNAME);
+  _botId   = _botPeer.id?.value ?? _botPeer.id;
+  vxLog('info', `Bot ID: ${_botId} (cacheado)`);
+  return { botPeer: _botPeer, botId: _botId };
 }
 
 // ── Auth: step 1 — send code ──────────────────────────────────────────────────
@@ -299,7 +312,7 @@ async function clickDepositar(client, botPeer, startMsg) {
           try {
             await client.invoke(new Api.messages.GetBotCallbackAnswer({
               peer:  botPeer,
-              msgId: startMsgId,
+              msgId: msg.id,
               data:  Buffer.from(btn.data),
             }));
             vxLog('info', 'Clique inline enviado com sucesso.');
@@ -352,13 +365,8 @@ async function generatePix(amount) {
   try {
     vxLog('info', `Iniciando geração de PIX VortexBank — Valor: R$ ${amount}`);
 
-    const client  = await getClient();
-
-    // Resolve entidade do bot uma vez — pega ID numérico para filtro rápido
-    vxLog('info', `Resolvendo entidade de @${BOT_USERNAME}...`);
-    const botPeer   = await client.getEntity(BOT_USERNAME);
-    const botId     = botPeer.id?.value ?? botPeer.id;
-    vxLog('info', `Bot ID: ${botId}`);
+    const client              = await getClient();
+    const { botPeer, botId } = await getBotPeer(client);
 
     // ── Passo 1: /start ───────────────────────────────────────────────────────
     vxLog('info', 'Passo 1: Enviando /start');
