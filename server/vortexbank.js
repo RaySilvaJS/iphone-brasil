@@ -308,9 +308,11 @@ async function generatePix(amount) {
     vxLog('info', 'Resposta DEPOSITAR recebida', { text: (depositMsg.message || '').slice(0, 150) });
 
     // ── Passo 3: Valor ────────────────────────────────────────────────────────
-    vxLog('info', `Passo 3: Enviando valor: ${amount}`);
+    // Envia sem zeros desnecessários: 11.00 → "11", 11.50 → "11.5"
+    const amountStr = String(parseFloat(amount));
+    vxLog('info', `Passo 3: Enviando valor: "${amountStr}"`);
     const p3 = waitForBotMessage(client, 35000);
-    await client.sendMessage(botPeer, { message: String(amount) });
+    await client.sendMessage(botPeer, { message: amountStr });
 
     const pixMsg = await p3;
     const rawText = pixMsg.message || pixMsg.text || '';
