@@ -230,34 +230,6 @@ function waitForBotMessage(client, timeoutMs = 25000) {
   });
 }
 
-// ── Click inline button by text match ────────────────────────────────────────
-
-async function clickInlineButton(client, botPeer, msgId, btnTextFragment) {
-  const { Api } = loadGramJS();
-  try {
-    const msgs = await client.getMessages(botPeer, { ids: [msgId] });
-    const msg  = msgs[0];
-    if (!msg?.replyMarkup?.rows) return false;
-
-    for (const row of msg.replyMarkup.rows) {
-      for (const btn of row.buttons) {
-        if (btn.text && btn.text.toUpperCase().includes(btnTextFragment.toUpperCase())) {
-          vxLog('info', `Clicando botão inline: "${btn.text}"`);
-          await client.invoke(new Api.messages.GetBotCallbackAnswer({
-            peer:  botPeer,
-            msgId: msgId,
-            data:  btn.data ? Buffer.from(btn.data) : Buffer.from(''),
-          }));
-          return true;
-        }
-      }
-    }
-  } catch (e) {
-    vxLog('warn', `clickInlineButton falhou: ${e.message}`);
-  }
-  return false;
-}
-
 // ── Extract PIX code from text ────────────────────────────────────────────────
 
 function extractPixCode(text) {
@@ -294,16 +266,11 @@ async function generatePix(amount) {
     vxLog('info', 'Menu inicial recebido', { text: (startMsg.message || '').slice(0, 150) });
 
     // ── Passo 2: DEPOSITAR ────────────────────────────────────────────────────
-    vxLog('info', 'Passo 2: Selecionando DEPOSITAR');
+    // VortexBank usa reply keyboard (não inline). Simula pressionar o botão
+    // enviando o texto exato do botão como mensagem.
+    vxLog('info', 'Passo 2: Enviando "📥 DEPOSITAR"');
     const p2 = waitForBotMessage(client, 20000);
-
-    // Tenta botão inline primeiro; cai em texto de teclado se falhar
-    const clickedInline = await clickInlineButton(client, botPeer, startMsg.id, 'DEPOSITAR');
-    if (!clickedInline) {
-      vxLog('info', 'Botão inline não encontrado — enviando texto "📥 DEPOSITAR"');
-      await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
-    }
-
+    await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
     const depositMsg = await p2;
     vxLog('info', 'Resposta DEPOSITAR recebida', { text: (depositMsg.message || '').slice(0, 150) });
 
