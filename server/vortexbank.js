@@ -379,8 +379,9 @@ async function generatePix(amount) {
     vxLog('info', 'Resposta DEPOSITAR recebida', { text: (depositMsg.message || '').slice(0, 150) });
 
     // ── Passo 3: Valor ────────────────────────────────────────────────────────
-    // Envia sem zeros desnecessários: 11.00 → "11", 11.50 → "11.5"
-    const amountStr = String(parseFloat(amount));
+    // toFixed(2) corrige float impreciso (8444.882... → "8444.88"),
+    // parseFloat depois remove zeros extras (11.00 → "11", 11.50 → "11.5")
+    const amountStr = String(parseFloat(parseFloat(amount).toFixed(2)));
     vxLog('info', `Passo 3: Enviando valor: "${amountStr}"`);
     // waitForPixMessage ignora mensagens intermediárias ("⏳ Aguarde...")
     // e só resolve quando chegar mensagem com o código PIX real.
