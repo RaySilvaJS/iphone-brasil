@@ -549,6 +549,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="nav-item" data-page="banners"><span class="ni-icon">🖼️</span> Banners</div>
     <div class="nav-item" data-page="orders"><span class="ni-icon">🛒</span> Pedidos</div>
     <div class="nav-item" data-page="financeiro"><span class="ni-icon">💰</span> Financeiro <span class="nav-badge" id="fin-badge" style="display:none">0</span></div>
+    <div class="nav-item" data-page="vortexbank"><span class="ni-icon">🧪</span> VortexBank <span style="font-size:9px;background:rgba(210,153,34,.2);color:var(--yellow);border-radius:3px;padding:1px 5px;margin-left:2px;font-weight:700">TEST</span></div>
     <div class="nav-item" data-page="analytics"><span class="ni-icon">📊</span> Analytics</div>
     <div class="nav-section">Operações</div>
     <div class="nav-item" data-page="dashboard"><span class="ni-icon">🖥️</span> Dashboard</div>
@@ -2284,6 +2285,159 @@ tbody tr:last-child td { border-bottom: none; }
 
     </div><!-- /page-msggen -->
 
+    <!-- ═══ VORTEXBANK TEST ═══ -->
+    <div class="page" id="page-vortexbank">
+      <div class="page-title">🧪 VortexBank — Pagamento em Teste</div>
+
+      <!-- Aviso de isolamento -->
+      <div style="background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.35);border-radius:8px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start">
+        <span style="font-size:20px;flex-shrink:0">⚠️</span>
+        <div style="font-size:13px;color:var(--yellow);line-height:1.6">
+          <b>Ambiente de Teste Isolado.</b> Esta integração <b>não afeta</b> o sistema de pagamento principal, pedidos, checkout, automações ou mensagens. Use apenas para testar a geração de PIX via @VortexBank_bot.
+        </div>
+      </div>
+
+      <!-- Status + Setup -->
+      <div class="grid-2">
+
+        <!-- STATUS -->
+        <div class="card">
+          <h3>Status da Conexão</h3>
+          <div id="vx-status-grid" style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:13px;align-items:center">
+            <span style="color:var(--muted)">API ID / Hash</span><span id="vx-s-creds">—</span>
+            <span style="color:var(--muted)">Sessão salva</span><span id="vx-s-session">—</span>
+            <span style="color:var(--muted)">Sistema</span><span id="vx-s-busy">—</span>
+            <span style="color:var(--muted)">Última geração</span><span id="vx-s-lastgen">—</span>
+            <span style="color:var(--muted)">Último erro</span><span id="vx-s-lasterr">—</span>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="vxLoadStatus()">↺ Atualizar</button>
+            <button class="btn btn-red" onclick="vxDisconnect()">⏏ Desconectar</button>
+          </div>
+        </div>
+
+        <!-- CONFIG API -->
+        <div class="card">
+          <h3>Configuração Telegram API</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+            Obtenha <b>API ID</b> e <b>API Hash</b> em <b>my.telegram.org</b> → App configuration.
+          </p>
+          <div style="margin-bottom:10px">
+            <label class="bn-label">API ID</label>
+            <input id="vx-api-id" class="input" style="width:100%" placeholder="Ex: 1234567" type="number">
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="bn-label">API Hash</label>
+            <input id="vx-api-hash" class="input" style="width:100%" placeholder="Ex: a1b2c3d4e5f6...">
+          </div>
+          <button class="btn btn-blue" onclick="vxSaveConfig()">💾 Salvar Credenciais</button>
+          <div id="vx-config-msg" style="font-size:12px;margin-top:8px;display:none"></div>
+        </div>
+      </div>
+
+      <!-- Autenticação -->
+      <div class="card">
+        <h3>Autenticação Telegram (conta pessoal)</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+          Necesssário apenas uma vez. Informe o número de telefone da conta que interagirá com @VortexBank_bot. O código de verificação será enviado via Telegram.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:200px">
+            <label class="bn-label">Telefone (formato internacional)</label>
+            <input id="vx-phone" class="input" style="width:100%" placeholder="+5511999999999">
+          </div>
+          <button class="btn btn-blue" onclick="vxSendCode()" id="vx-btn-send">📲 Enviar Código</button>
+        </div>
+        <div id="vx-code-section" style="display:none;margin-top:14px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:160px">
+              <label class="bn-label">Código recebido no Telegram</label>
+              <input id="vx-code" class="input" style="width:100%" placeholder="Ex: 12345" maxlength="10">
+            </div>
+            <button class="btn btn-green" onclick="vxVerifyCode()">✅ Confirmar Código</button>
+          </div>
+        </div>
+        <div id="vx-auth-msg" style="font-size:12px;margin-top:8px;display:none"></div>
+      </div>
+
+      <!-- Gerador de PIX -->
+      <div class="card">
+        <h3>Gerar PIX de Teste — @VortexBank_bot</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5">
+          Preencha o valor, clique em gerar e aguarde. O sistema enviará <code>/start</code>, selecionará <b>DEPOSITAR</b>, informará o valor e capturará o QR Code + código PIX da resposta do bot.
+        </p>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+          <div>
+            <label class="bn-label">Valor (R$)</label>
+            <input id="vx-amount" class="input" style="width:160px" placeholder="Ex: 150.00" type="number" min="0.01" step="0.01">
+          </div>
+          <button class="btn btn-blue" id="vx-btn-gen" onclick="vxGenerate()">⚡ Gerar PIX VortexBank</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="vx-loading" style="display:none;padding:20px 0;text-align:center">
+          <div style="font-size:13px;color:var(--muted);animation:vxPulse 1.5s infinite">⏳ Comunicando com @VortexBank_bot... aguarde até 45s</div>
+        </div>
+
+        <!-- Erro -->
+        <div id="vx-error" style="display:none;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:8px;padding:14px;font-size:13px;color:var(--red)"></div>
+
+        <!-- Resultado -->
+        <div id="vx-result" style="display:none">
+          <div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);border-radius:10px;padding:20px">
+
+            <!-- Header -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <span style="font-size:24px">✅</span>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:var(--green)">PIX Gerado com Sucesso</div>
+                <div style="font-size:11px;color:var(--muted)">🧪 Teste via @VortexBank_bot</div>
+              </div>
+              <div style="margin-left:auto;text-align:right">
+                <div style="font-size:22px;font-weight:700;color:var(--text)" id="vx-res-amount">R$ 0,00</div>
+                <div style="font-size:11px;color:var(--muted)" id="vx-res-time">—</div>
+              </div>
+            </div>
+
+            <!-- QR Code -->
+            <div id="vx-qr-wrap" style="display:none;text-align:center;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">QR Code PIX</div>
+              <div style="background:#fff;border-radius:10px;padding:12px;display:inline-block">
+                <img id="vx-qr-img" src="" alt="QR Code PIX" style="max-width:220px;display:block;border-radius:6px">
+              </div>
+            </div>
+
+            <!-- PIX code -->
+            <div id="vx-pix-wrap" style="display:none;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Código PIX Copia e Cola</div>
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;word-break:break-all;color:var(--text);line-height:1.5" id="vx-pix-code"></div>
+              <button class="btn btn-green" style="margin-top:8px;font-size:12px" onclick="vxCopyPix()">📋 Copiar código PIX</button>
+            </div>
+
+            <!-- Sem QR nem código -->
+            <div id="vx-nocode" style="display:none;font-size:13px;color:var(--yellow);padding:10px 0">
+              ⚠️ Bot respondeu mas sem QR Code ou código PIX identificável. Verifique os logs abaixo.
+            </div>
+
+            <!-- Mensagem bruta -->
+            <details style="margin-top:12px">
+              <summary style="font-size:11px;color:var(--muted);cursor:pointer;user-select:none">▶ Mensagem bruta recebida do bot</summary>
+              <pre id="vx-raw-msg" style="margin-top:8px;background:var(--bg3);border-radius:6px;padding:10px;font-size:11px;color:var(--muted);white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto"></pre>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs VortexBank -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="margin:0">Logs VortexBank</h3>
+          <button class="btn btn-ghost" style="font-size:11px" onclick="vxLoadLogs()">↺ Atualizar</button>
+        </div>
+        <div id="vx-logs" class="log-list" style="max-height:320px;overflow-y:auto"></div>
+      </div>
+    </div><!-- /page-vortexbank -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -2366,7 +2520,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
-const pageTitles = { site: '🌎 SITE — Central de Monitoramento', banners: '🖼️ Banners Promocionais', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', msggen: '✉️ Gerador de Mensagens WhatsApp', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados', produtos: '📱 Produtos Personalizados', cupons: '🎟️ Cupons de Desconto', wac: '📲 WhatsApp Contatos & Consentimento' };
+const pageTitles = { site: '🌎 SITE — Central de Monitoramento', banners: '🖼️ Banners Promocionais', dashboard: 'Dashboard', whatsapp: 'WhatsApp Bot', msggen: '✉️ Gerador de Mensagens WhatsApp', monitor: 'Monitoramento do Servidor', deploy: 'Deploy & Atualizações', terminal: '💻 Terminal', logs: 'Visualizador de Logs', backup: 'Backup', files: 'Gerenciador de Arquivos', security: 'Segurança', audit: 'Auditoria', alerts: 'Alertas & Notificações', orders: 'Gestão de Pedidos', catalogs: 'Gerenciador de Catálogos', analytics: 'Analytics & Estatísticas', settings: 'Configurações', clientes: 'Clientes Cadastrados', produtos: '📱 Produtos Personalizados', cupons: '🎟️ Cupons de Desconto', wac: '📲 WhatsApp Contatos & Consentimento', vortexbank: '🧪 VortexBank — Pagamento em Teste' };
 
 function toggleMobMenu() {
   document.getElementById('sidebar').classList.toggle('mob-open');
@@ -2416,6 +2570,7 @@ function loadPage(name) {
   else if (name === 'cupons') loadCupons();
   else if (name === 'msggen') loadMsgGen();
   else if (name === 'wac') loadWaContacts();
+  else if (name === 'vortexbank') vxLoadPage();
 }
 
 function refreshCurrent() { loadPage(currentPage); }
@@ -6253,6 +6408,204 @@ async function deleteBanner(id) {
 document.getElementById('banner-modal').addEventListener('click', function(e) {
   if (e.target === this) closeBannerModal();
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VORTEXBANK — Integração de teste
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Injeta CSS de animação (pulso para loading)
+(function() {
+  const s = document.createElement('style');
+  s.textContent = '@keyframes vxPulse { 0%,100%{opacity:1} 50%{opacity:.4} }';
+  document.head.appendChild(s);
+})();
+
+const _vxFmt = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const _vxDate = (iso) => iso ? new Date(iso).toLocaleString('pt-BR') : '—';
+
+function vxShow(id, vis) { document.getElementById(id).style.display = vis ? '' : 'none'; }
+function vxSetText(id, t) { document.getElementById(id).textContent = t; }
+function vxMsg(id, text, ok) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  el.textContent = text;
+}
+
+async function vxLoadPage() {
+  await vxLoadStatus();
+  await vxLoadLogs();
+}
+
+async function vxLoadStatus() {
+  try {
+    const d = await api.get('/api/admin/vortexbank/status');
+    document.getElementById('vx-s-creds').innerHTML    = d.configured  ? '<span style="color:var(--green)">✅ Configurado</span>' : '<span style="color:var(--red)">❌ Não configurado</span>';
+    document.getElementById('vx-s-session').innerHTML  = d.hasSession   ? '<span style="color:var(--green)">✅ Salva</span>'       : '<span style="color:var(--yellow)">⚠️ Nenhuma — autentique abaixo</span>';
+    document.getElementById('vx-s-busy').innerHTML     = d.busy         ? '<span style="color:var(--yellow)">⏳ Ocupado</span>'    : '<span style="color:var(--green)">✅ Disponível</span>';
+    document.getElementById('vx-s-lastgen').textContent = d.lastGen ? `${_vxFmt(d.lastGen.amount)} em ${_vxDate(d.lastGen.at)}` : '—';
+    document.getElementById('vx-s-lasterr').textContent = d.lastError ? `${d.lastError.message?.slice(0, 80)} (${_vxDate(d.lastError.at)})` : '—';
+    document.getElementById('vx-s-lasterr').style.color = d.lastError ? 'var(--red)' : 'var(--muted)';
+  } catch (e) {
+    console.warn('[VortexBank] Status error:', e);
+  }
+}
+
+async function vxSaveConfig() {
+  const apiId   = document.getElementById('vx-api-id').value.trim();
+  const apiHash = document.getElementById('vx-api-hash').value.trim();
+  if (!apiId || !apiHash) { vxMsg('vx-config-msg', 'Preencha API ID e API Hash.', false); return; }
+  try {
+    const d = await api.post('/api/admin/vortexbank/config', { apiId, apiHash });
+    vxMsg('vx-config-msg', d.ok ? '✅ Credenciais salvas!' : (d.error || 'Erro'), d.ok);
+    if (d.ok) vxLoadStatus();
+  } catch (e) { vxMsg('vx-config-msg', e.message, false); }
+}
+
+async function vxSendCode() {
+  const phone = document.getElementById('vx-phone').value.trim();
+  if (!phone) { vxMsg('vx-auth-msg', 'Informe o número de telefone.', false); return; }
+  document.getElementById('vx-btn-send').disabled = true;
+  vxMsg('vx-auth-msg', '⏳ Enviando código...', true);
+  try {
+    const d = await api.post('/api/admin/vortexbank/auth/send-code', { phone });
+    if (d.ok) {
+      vxMsg('vx-auth-msg', '✅ Código enviado! Verifique o Telegram.', true);
+      vxShow('vx-code-section', true);
+    } else {
+      vxMsg('vx-auth-msg', d.error || 'Erro ao enviar código.', false);
+    }
+  } catch (e) {
+    vxMsg('vx-auth-msg', e.message || 'Erro ao enviar código.', false);
+  } finally {
+    document.getElementById('vx-btn-send').disabled = false;
+  }
+}
+
+async function vxVerifyCode() {
+  const phone = document.getElementById('vx-phone').value.trim();
+  const code  = document.getElementById('vx-code').value.trim();
+  if (!code) { vxMsg('vx-auth-msg', 'Informe o código recebido.', false); return; }
+  vxMsg('vx-auth-msg', '⏳ Verificando...', true);
+  try {
+    const d = await api.post('/api/admin/vortexbank/auth/verify-code', { phone, code });
+    if (d.ok) {
+      vxMsg('vx-auth-msg', '✅ ' + (d.message || 'Autenticado com sucesso!'), true);
+      vxShow('vx-code-section', false);
+      vxLoadStatus();
+    } else {
+      vxMsg('vx-auth-msg', d.error || 'Código inválido.', false);
+    }
+  } catch (e) {
+    vxMsg('vx-auth-msg', e.message || 'Erro na verificação.', false);
+  }
+}
+
+async function vxGenerate() {
+  const amount = document.getElementById('vx-amount').value.trim();
+  if (!amount || parseFloat(amount) <= 0) {
+    vxShow('vx-error', true);
+    document.getElementById('vx-error').textContent = '⚠️ Informe um valor válido maior que zero.';
+    return;
+  }
+
+  // Reset UI
+  vxShow('vx-result', false);
+  vxShow('vx-error', false);
+  vxShow('vx-loading', true);
+  document.getElementById('vx-btn-gen').disabled = true;
+
+  try {
+    const d = await api.post('/api/admin/vortexbank/generate', { amount: parseFloat(amount).toFixed(2) });
+
+    if (!d.ok) throw new Error(d.error || 'Falha desconhecida.');
+
+    // Show result
+    vxShow('vx-loading', false);
+    vxShow('vx-result', true);
+
+    document.getElementById('vx-res-amount').textContent = _vxFmt(d.amount);
+    document.getElementById('vx-res-time').textContent   = '⏱ Gerado em ' + _vxDate(d.generatedAt);
+
+    // QR Code image
+    if (d.qrCodeBase64) {
+      document.getElementById('vx-qr-img').src = 'data:image/jpeg;base64,' + d.qrCodeBase64;
+      vxShow('vx-qr-wrap', true);
+      vxShow('vx-nocode', false);
+    } else {
+      vxShow('vx-qr-wrap', false);
+    }
+
+    // PIX code
+    if (d.pixCode) {
+      document.getElementById('vx-pix-code').textContent = d.pixCode;
+      vxShow('vx-pix-wrap', true);
+      vxShow('vx-nocode', false);
+    } else {
+      vxShow('vx-pix-wrap', false);
+    }
+
+    // If neither found
+    if (!d.qrCodeBase64 && !d.pixCode) {
+      vxShow('vx-nocode', true);
+    }
+
+    document.getElementById('vx-raw-msg').textContent = d.rawMessage || '(sem mensagem de texto)';
+
+  } catch (e) {
+    vxShow('vx-loading', false);
+    vxShow('vx-error', true);
+    document.getElementById('vx-error').innerHTML =
+      '<b>❌ Erro:</b> ' + (e.message || 'Falha desconhecida.') +
+      '<br><span style="font-size:11px;opacity:.8">Verifique os logs abaixo para detalhes.</span>';
+  } finally {
+    document.getElementById('vx-btn-gen').disabled = false;
+    vxLoadStatus();
+    vxLoadLogs();
+  }
+}
+
+function vxCopyPix() {
+  const code = document.getElementById('vx-pix-code').textContent;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copiado!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => {
+    prompt('Copie o código PIX abaixo:', code);
+  });
+}
+
+async function vxDisconnect() {
+  if (!confirm('Desconectar o cliente Telegram VortexBank?')) return;
+  try {
+    const d = await api.post('/api/admin/vortexbank/disconnect', {});
+    alert(d.message || 'Desconectado.');
+    vxLoadStatus();
+  } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function vxLoadLogs() {
+  try {
+    const d    = await api.get('/api/admin/vortexbank/logs');
+    const list = d.logs || [];
+    const el   = document.getElementById('vx-logs');
+    if (!list.length) { el.innerHTML = '<div class="empty-state">Nenhum log registrado.</div>'; return; }
+    const colorMap = { info: 'var(--blue)', warn: 'var(--yellow)', error: 'var(--red)' };
+    el.innerHTML = list.map(l => `
+      <div class="log-item">
+        <span class="log-ts">${new Date(l.ts).toLocaleString('pt-BR')}</span>
+        <span class="log-level" style="color:${colorMap[l.level] || 'var(--muted)'}">${(l.level||'').toUpperCase()}</span>
+        <span class="log-msg">${escHtml(l.msg)}${l.data ? '<br><span style="opacity:.6;font-size:11px">' + escHtml(l.data) + '</span>' : ''}</span>
+      </div>`).join('');
+  } catch (e) { console.warn('[VortexBank] Logs error:', e); }
+}
+
+function escHtml(t) {
+  return String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 </script>
 </body>
 </html>

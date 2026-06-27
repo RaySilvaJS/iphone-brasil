@@ -1627,6 +1627,75 @@ router.delete('/banners/:id', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// ── VORTEXBANK — Integração de pagamento para teste (isolada, apenas DevOps) ─
+// ════════════════════════════════════════════════════════════════════════════
+
+// Carregamento lazy — falha graciosamente se o módulo tiver erro
+function _vx() {
+  try { return require('./vortexbank'); }
+  catch (e) { throw new Error('Módulo VortexBank indisponível: ' + e.message); }
+}
+
+router.get('/vortexbank/status', adminAuth, (req, res) => {
+  try { res.json({ ok: true, ..._vx().getStatus() }); }
+  catch (e) { res.json({ ok: false, error: e.message, configured: false, hasSession: false, busy: false, lastGen: null, lastError: null }); }
+});
+
+router.post('/vortexbank/config', adminAuth, (req, res) => {
+  const { apiId, apiHash } = req.body || {};
+  if (!apiId || !apiHash) return res.status(400).json({ ok: false, error: 'apiId e apiHash são obrigatórios.' });
+  try {
+    _vx().saveApiConfig(apiId, apiHash);
+    audit.append('vortexbank_config', req.adminUser?.email || 'devops', req.ip, { apiId: String(apiId).slice(0, 8) + '...' });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.post('/vortexbank/auth/send-code', adminAuth, async (req, res) => {
+  const { phone } = req.body || {};
+  if (!phone) return res.status(400).json({ ok: false, error: 'Número de telefone obrigatório.' });
+  try {
+    await _vx().sendCode(phone.trim());
+    res.json({ ok: true, message: 'Código enviado via Telegram.' });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.post('/vortexbank/auth/verify-code', adminAuth, async (req, res) => {
+  const { phone, code } = req.body || {};
+  if (!phone || !code) return res.status(400).json({ ok: false, error: 'Telefone e código são obrigatórios.' });
+  try {
+    await _vx().verifyCode(phone.trim(), code.trim());
+    audit.append('vortexbank_auth', req.adminUser?.email || 'devops', req.ip, {});
+    res.json({ ok: true, message: 'Autenticado com sucesso! Sessão salva.' });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.post('/vortexbank/generate', adminAuth, async (req, res) => {
+  const { amount } = req.body || {};
+  const parsed = parseFloat(amount);
+  if (!amount || isNaN(parsed) || parsed <= 0) {
+    return res.status(400).json({ ok: false, error: 'Valor inválido. Informe um número positivo.' });
+  }
+  try {
+    const result = await _vx().generatePix(parsed.toFixed(2));
+    audit.append('vortexbank_pix', req.adminUser?.email || 'devops', req.ip, { amount: parsed });
+    res.json(result);
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.post('/vortexbank/disconnect', adminAuth, async (req, res) => {
+  try {
+    await _vx().disconnect();
+    res.json({ ok: true, message: 'Cliente desconectado.' });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.get('/vortexbank/logs', adminAuth, (req, res) => {
+  try { res.json({ ok: true, logs: _vx().getLogs() }); }
+  catch (e) { res.json({ ok: false, logs: [], error: e.message }); }
+});
+
 module.exports = router;
 module.exports.loadConfig = loadConfig;
 module.exports.loadSecurity = loadSecurity;
