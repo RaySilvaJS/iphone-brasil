@@ -2399,24 +2399,11 @@ tbody tr:last-child td { border-bottom: none; }
               </div>
             </div>
 
-            <!-- QR Code -->
-            <div id="vx-qr-wrap" style="display:none;text-align:center;margin-bottom:16px">
-              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">QR Code PIX</div>
-              <div style="background:#fff;border-radius:10px;padding:12px;display:inline-block">
-                <img id="vx-qr-img" src="" alt="QR Code PIX" style="max-width:220px;display:block;border-radius:6px">
-              </div>
-            </div>
-
-            <!-- PIX code -->
-            <div id="vx-pix-wrap" style="display:none;margin-bottom:16px">
-              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Código PIX Copia e Cola</div>
-              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;word-break:break-all;color:var(--text);line-height:1.5" id="vx-pix-code"></div>
-              <button class="btn btn-green" style="margin-top:8px;font-size:12px" onclick="vxCopyPix()">📋 Copiar código PIX</button>
-            </div>
-
-            <!-- Sem QR nem código -->
-            <div id="vx-nocode" style="display:none;font-size:13px;color:var(--yellow);padding:10px 0">
-              ⚠️ Bot respondeu mas sem QR Code ou código PIX identificável. Verifique os logs abaixo.
+                <!-- PIX Copia e Cola -->
+            <div style="margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">💠 PIX Copia e Cola</div>
+              <div style="background:var(--bg3);border:1px solid rgba(63,185,80,.3);border-radius:8px;padding:14px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;word-break:break-all;color:var(--text);line-height:1.6;user-select:all" id="vx-pix-code"></div>
+              <button class="btn btn-green" style="margin-top:10px" onclick="vxCopyPix()">📋 Copiar código PIX</button>
             </div>
 
             <!-- Mensagem bruta -->
@@ -6526,31 +6513,8 @@ async function vxGenerate() {
 
     document.getElementById('vx-res-amount').textContent = _vxFmt(d.amount);
     document.getElementById('vx-res-time').textContent   = '⏱ Gerado em ' + _vxDate(d.generatedAt);
-
-    // QR Code image
-    if (d.qrCodeBase64) {
-      document.getElementById('vx-qr-img').src = 'data:image/jpeg;base64,' + d.qrCodeBase64;
-      vxShow('vx-qr-wrap', true);
-      vxShow('vx-nocode', false);
-    } else {
-      vxShow('vx-qr-wrap', false);
-    }
-
-    // PIX code
-    if (d.pixCode) {
-      document.getElementById('vx-pix-code').textContent = d.pixCode;
-      vxShow('vx-pix-wrap', true);
-      vxShow('vx-nocode', false);
-    } else {
-      vxShow('vx-pix-wrap', false);
-    }
-
-    // If neither found
-    if (!d.qrCodeBase64 && !d.pixCode) {
-      vxShow('vx-nocode', true);
-    }
-
-    document.getElementById('vx-raw-msg').textContent = d.rawMessage || '(sem mensagem de texto)';
+    document.getElementById('vx-pix-code').textContent   = d.pixCode || '';
+    document.getElementById('vx-raw-msg').textContent    = d.rawMessage || '(sem mensagem de texto)';
 
   } catch (e) {
     vxShow('vx-loading', false);

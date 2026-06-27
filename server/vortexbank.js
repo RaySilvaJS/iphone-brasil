@@ -263,17 +263,13 @@ async function clickInlineButton(client, botPeer, msgId, btnTextFragment) {
 function extractPixCode(text) {
   if (!text) return null;
 
-  // BR Code EMV pattern (starts with 00020126 or 000201)
-  const emvMatch = text.match(/000201\S{40,}/);
-  if (emvMatch) return emvMatch[0].replace(/\s.*/, '');
+  // 1. Linha imediatamente após o label "PIX Copia e Cola:"
+  const afterLabel = text.match(/pix\s+copia\s+e\s+cola[:\s]*\n([^\n]+)/i);
+  if (afterLabel) return afterLabel[1].trim();
 
-  // Common copia e cola labels
-  const labeled = text.match(/(?:c[oó]pia[^\S\r\n]*e[^\S\r\n]*cola|pix|c[oó]digo)[:\s*\n]*([A-Za-z0-9.+\-_/=]{30,})/i);
-  if (labeled) return labeled[1].trim();
-
-  // Long alphanumeric block (common for PIX codes)
-  const longBlock = text.match(/\b([A-Za-z0-9+/=]{50,})\b/);
-  if (longBlock) return longBlock[1];
+  // 2. Qualquer linha que começa com 000201 (EMV BR Code)
+  const emvLine = text.match(/^(000201[^\n]+)$/m);
+  if (emvLine) return emvLine[1].trim();
 
   return null;
 }
@@ -320,42 +316,26 @@ async function generatePix(amount) {
     const rawText = pixMsg.message || pixMsg.text || '';
     vxLog('info', 'Resposta com PIX recebida', { hasMedia: !!(pixMsg.media), textLen: rawText.length });
 
-    // ── Extração de dados ─────────────────────────────────────────────────────
-    let qrCodeBase64 = null;
-    const pixCode    = extractPixCode(rawText);
+    // ── Extração do código PIX ────────────────────────────────────────────────
+    const pixCode = extractPixCode(rawText);
+    vxLog('info', `Código PIX extraído: ${pixCode ? pixCode.slice(0, 50) + '...' : 'NÃO ENCONTRADO'}`);
 
-    if (pixMsg.media) {
-      vxLog('info', 'Baixando imagem do QR Code...');
-      try {
-        const buf = await client.downloadMedia(pixMsg, { workers: 1 });
-        if (buf) {
-          qrCodeBase64 = Buffer.isBuffer(buf)
-            ? buf.toString('base64')
-            : Buffer.from(buf).toString('base64');
-          vxLog('info', `QR Code baixado (${Math.round(qrCodeBase64.length * 0.75 / 1024)}KB)`);
-        }
-      } catch (e) {
-        vxLog('warn', `Erro ao baixar QR Code: ${e.message}`);
-      }
-    }
-
-    if (!pixCode && !qrCodeBase64) {
+    if (!pixCode) {
       const preview = rawText.slice(0, 300);
-      vxLog('error', 'PIX não encontrado na resposta', { preview });
-      throw new Error(`Resposta do bot não contém QR Code nem código PIX. Texto recebido: "${preview}"`);
+      vxLog('error', 'Código PIX não encontrado na resposta', { preview });
+      throw new Error(`Bot não retornou código PIX reconhecível. Resposta: "${preview}"`);
     }
 
     const result = {
-      ok:           true,
-      amount:       parseFloat(amount),
-      pixCode:      pixCode || null,
-      qrCodeBase64: qrCodeBase64 || null,
-      rawMessage:   rawText,
-      generatedAt:  new Date().toISOString(),
+      ok:          true,
+      amount:      parseFloat(amount),
+      pixCode,
+      rawMessage:  rawText,
+      generatedAt: new Date().toISOString(),
     };
 
     _lastGen = { at: result.generatedAt, amount: result.amount, ok: true };
-    vxLog('info', `PIX gerado — QR: ${!!qrCodeBase64}, código: ${!!pixCode}`);
+    vxLog('info', `PIX gerado — código: ${pixCode.slice(0, 30)}...`);
     return result;
 
   } catch (err) {
