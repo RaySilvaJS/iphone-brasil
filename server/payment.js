@@ -114,20 +114,26 @@ router.post('/generate', async (req, res) => {
   const isBoleto = paymentMethod === 'boleto';
 
   if (!isCartao && !isBoleto) {
-    // 1ª tentativa: VortexBank (PIX dinâmico com valor exato)
-    try {
-      const vx = require('./vortexbank');
-      const vxStatus = vx.getStatus();
-      if (vxStatus.configured && vxStatus.hasSession) {
-        const vxResult = await vx.generatePix(amount);
-        pixCode = vxResult.pixCode;
-        console.log(`[PIX] VortexBank gerou PIX para ${shortId} (${amount})`);
+    // Acima de R$ 5.000 vai direto para o PIX estático (VortexBank tem limites)
+    const useVortex = amount <= 5000;
+
+    if (useVortex) {
+      try {
+        const vx = require('./vortexbank');
+        const vxStatus = vx.getStatus();
+        if (vxStatus.configured && vxStatus.hasSession) {
+          const vxResult = await vx.generatePix(amount);
+          pixCode = vxResult.pixCode;
+          console.log(`[PIX] VortexBank gerou PIX para ${shortId} (${amount})`);
+        }
+      } catch (e) {
+        console.warn(`[PIX] VortexBank falhou (${e.message}) — usando PIX estático como fallback`);
       }
-    } catch (e) {
-      console.warn(`[PIX] VortexBank falhou (${e.message}) — usando PIX estático como fallback`);
+    } else {
+      console.log(`[PIX] Valor R$ ${amount} acima de R$ 5.000 — usando PIX estático direto`);
     }
 
-    // Fallback: PIX estático pela chave configurada no admin
+    // PIX estático: usado como fallback (VortexBank falhou) ou direto (valor > 5k)
     if (!pixCode && pixCfg.pixKey) {
       try {
         pixCode = generatePix({
