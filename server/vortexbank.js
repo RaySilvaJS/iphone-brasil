@@ -195,16 +195,12 @@ async function verifyCode(phone, code) {
   return true;
 }
 
-// ── Wait for next message from the bot ───────────────────────────────────────
-// Handler SÍNCRONO — async handlers no GramJS podem causar unhandled rejections
-// que derrubam o processo se event.message vier undefined em algum evento.
+// ── Aguarda próxima mensagem do bot (qualquer) ───────────────────────────────
 
 function waitForBotMessage(client, botNumericId, timeoutMs = 25000) {
   const { NewMessage } = loadGramJS();
-
   return new Promise((resolve, reject) => {
     let done = false;
-
     const timer = setTimeout(() => {
       if (done) return;
       done = true;
@@ -217,14 +213,54 @@ function waitForBotMessage(client, botNumericId, timeoutMs = 25000) {
       try {
         const msg = event?.message;
         if (!msg || msg.out) return;
-        // Compara pelo ID numérico do bot (evita lookup async no handler)
         const peerId = msg.peerId?.userId?.value ?? msg.peerId?.userId;
         if (!peerId || String(peerId) !== String(botNumericId)) return;
         done = true;
         clearTimeout(timer);
         try { client.removeEventHandler(handler, filter); } catch {}
         resolve(msg);
-      } catch { /* ignora erros de parsing do evento */ }
+      } catch {}
+    };
+
+    const filter = new NewMessage({});
+    client.addEventHandler(handler, filter);
+  });
+}
+
+// ── Aguarda mensagem do bot que contenha código PIX ──────────────────────────
+// O bot pode enviar "⏳ Aguarde..." antes do PIX real — continua esperando.
+
+function waitForPixMessage(client, botNumericId, timeoutMs = 45000) {
+  const { NewMessage } = loadGramJS();
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      try { client.removeEventHandler(handler, filter); } catch {}
+      reject(new Error(`Timeout: PIX não chegou em ${timeoutMs / 1000}s`));
+    }, timeoutMs);
+
+    const handler = (event) => {
+      if (done) return;
+      try {
+        const msg = event?.message;
+        if (!msg || msg.out) return;
+        const peerId = msg.peerId?.userId?.value ?? msg.peerId?.userId;
+        if (!peerId || String(peerId) !== String(botNumericId)) return;
+
+        const text = msg.message || msg.text || '';
+        vxLog('info', `Mensagem do bot recebida: "${text.slice(0, 80)}"`);
+
+        // Só resolve se a mensagem tiver o código PIX
+        if (extractPixCode(text)) {
+          done = true;
+          clearTimeout(timer);
+          try { client.removeEventHandler(handler, filter); } catch {}
+          resolve(msg);
+        }
+        // Se não tiver PIX (ex: "⏳ Aguarde..."), ignora e continua esperando
+      } catch {}
     };
 
     const filter = new NewMessage({});
@@ -338,7 +374,9 @@ async function generatePix(amount) {
     // Envia sem zeros desnecessários: 11.00 → "11", 11.50 → "11.5"
     const amountStr = String(parseFloat(amount));
     vxLog('info', `Passo 3: Enviando valor: "${amountStr}"`);
-    const p3 = waitForBotMessage(client, botId, 35000);
+    // waitForPixMessage ignora mensagens intermediárias ("⏳ Aguarde...")
+    // e só resolve quando chegar mensagem com o código PIX real.
+    const p3 = waitForPixMessage(client, botId, 45000);
     await client.sendMessage(botPeer, { message: amountStr });
 
     const pixMsg = await p3;
