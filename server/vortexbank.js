@@ -196,8 +196,10 @@ async function verifyCode(phone, code) {
 }
 
 // ── Wait for next message from the bot ───────────────────────────────────────
+// Handler SÍNCRONO — async handlers no GramJS podem causar unhandled rejections
+// que derrubam o processo se event.message vier undefined em algum evento.
 
-function waitForBotMessage(client, timeoutMs = 25000) {
+function waitForBotMessage(client, botNumericId, timeoutMs = 25000) {
   const { NewMessage } = loadGramJS();
 
   return new Promise((resolve, reject) => {
@@ -210,19 +212,19 @@ function waitForBotMessage(client, timeoutMs = 25000) {
       reject(new Error(`Timeout: @${BOT_USERNAME} não respondeu em ${timeoutMs / 1000}s`));
     }, timeoutMs);
 
-    const handler = async (event) => {
+    const handler = (event) => {
       if (done) return;
-      const msg = event.message;
-      if (msg.out) return; // ignore own messages
       try {
-        const entity = await client.getEntity(msg.peerId).catch(() => null);
-        const username = entity?.username || '';
-        if (username.toLowerCase() !== BOT_USERNAME.toLowerCase()) return;
+        const msg = event?.message;
+        if (!msg || msg.out) return;
+        // Compara pelo ID numérico do bot (evita lookup async no handler)
+        const peerId = msg.peerId?.userId?.value ?? msg.peerId?.userId;
+        if (!peerId || String(peerId) !== String(botNumericId)) return;
         done = true;
         clearTimeout(timer);
         try { client.removeEventHandler(handler, filter); } catch {}
         resolve(msg);
-      } catch { /* ignore parse errors */ }
+      } catch { /* ignora erros de parsing do evento */ }
     };
 
     const filter = new NewMessage({});
@@ -256,11 +258,16 @@ async function generatePix(amount) {
     vxLog('info', `Iniciando geração de PIX VortexBank — Valor: R$ ${amount}`);
 
     const client  = await getClient();
-    const botPeer = await client.getEntity(BOT_USERNAME);
+
+    // Resolve entidade do bot uma vez — pega ID numérico para filtro rápido
+    vxLog('info', `Resolvendo entidade de @${BOT_USERNAME}...`);
+    const botPeer   = await client.getEntity(BOT_USERNAME);
+    const botId     = botPeer.id?.value ?? botPeer.id;
+    vxLog('info', `Bot ID: ${botId}`);
 
     // ── Passo 1: /start ───────────────────────────────────────────────────────
     vxLog('info', 'Passo 1: Enviando /start');
-    const p1 = waitForBotMessage(client, 20000);
+    const p1 = waitForBotMessage(client, botId, 20000);
     await client.sendMessage(botPeer, { message: '/start' });
     const startMsg = await p1;
     vxLog('info', 'Menu inicial recebido', { text: (startMsg.message || '').slice(0, 150) });
@@ -269,7 +276,7 @@ async function generatePix(amount) {
     // VortexBank usa reply keyboard (não inline). Simula pressionar o botão
     // enviando o texto exato do botão como mensagem.
     vxLog('info', 'Passo 2: Enviando "📥 DEPOSITAR"');
-    const p2 = waitForBotMessage(client, 20000);
+    const p2 = waitForBotMessage(client, botId, 20000);
     await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
     const depositMsg = await p2;
     vxLog('info', 'Resposta DEPOSITAR recebida', { text: (depositMsg.message || '').slice(0, 150) });
@@ -278,7 +285,7 @@ async function generatePix(amount) {
     // Envia sem zeros desnecessários: 11.00 → "11", 11.50 → "11.5"
     const amountStr = String(parseFloat(amount));
     vxLog('info', `Passo 3: Enviando valor: "${amountStr}"`);
-    const p3 = waitForBotMessage(client, 35000);
+    const p3 = waitForBotMessage(client, botId, 35000);
     await client.sendMessage(botPeer, { message: amountStr });
 
     const pixMsg = await p3;

@@ -6505,6 +6505,7 @@ async function vxGenerate() {
   try {
     const d = await api.post('/api/admin/vortexbank/generate', { amount: parseFloat(amount).toFixed(2) });
 
+    if (!d) throw new Error('Sem resposta do servidor. O processo pode ter sido reiniciado durante a operação.');
     if (!d.ok) throw new Error(d.error || 'Falha desconhecida.');
 
     // Show result
