@@ -232,6 +232,60 @@ function waitForBotMessage(client, botNumericId, timeoutMs = 25000) {
   });
 }
 
+// ── Detecta e aciona botão DEPOSITAR (inline ou teclado) ─────────────────────
+// Retorna 'inline' | 'keyboard' | 'text' conforme o que foi feito.
+// Se inline: invoke GetBotCallbackAnswer mas NÃO envia texto (evita duplo-disparo).
+// Se teclado: envia o texto exato do botão.
+
+async function clickDepositar(client, botPeer, startMsgId) {
+  const { Api } = loadGramJS();
+  try {
+    const msgs = await client.getMessages(botPeer, { ids: [startMsgId] });
+    const msg  = msgs[0];
+    if (!msg?.replyMarkup?.rows) {
+      vxLog('warn', 'Mensagem /start sem replyMarkup — tentando texto');
+      await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
+      return 'text';
+    }
+
+    for (const row of msg.replyMarkup.rows) {
+      for (const btn of row.buttons) {
+        if (!(btn.text || '').toUpperCase().includes('DEPOSITAR')) continue;
+
+        if (btn.data !== undefined && btn.data !== null) {
+          // Botão inline (tem callback data)
+          vxLog('info', `Botão inline encontrado: "${btn.text}" — invocando GetBotCallbackAnswer`);
+          try {
+            await client.invoke(new Api.messages.GetBotCallbackAnswer({
+              peer:  botPeer,
+              msgId: startMsgId,
+              data:  Buffer.from(btn.data),
+            }));
+            vxLog('info', 'Clique inline enviado com sucesso.');
+          } catch (e) {
+            // Erro de parsing da resposta é comum; o clique foi recebido pelo bot
+            vxLog('warn', `GetBotCallbackAnswer: ${e.message} (clique provavelmente recebido)`);
+          }
+          return 'inline'; // NÃO envia texto — evita duplo-disparo
+
+        } else {
+          // Botão de teclado de resposta (sem callback data)
+          vxLog('info', `Botão teclado encontrado: "${btn.text}" — enviando como texto`);
+          await client.sendMessage(botPeer, { message: btn.text });
+          return 'keyboard';
+        }
+      }
+    }
+  } catch (e) {
+    vxLog('warn', `clickDepositar falhou: ${e.message} — usando texto como fallback`);
+  }
+
+  // Fallback final
+  vxLog('info', 'Fallback: enviando "📥 DEPOSITAR" como texto');
+  await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
+  return 'text';
+}
+
 // ── Extract PIX code from text ────────────────────────────────────────────────
 
 function extractPixCode(text) {
@@ -273,11 +327,10 @@ async function generatePix(amount) {
     vxLog('info', 'Menu inicial recebido', { text: (startMsg.message || '').slice(0, 150) });
 
     // ── Passo 2: DEPOSITAR ────────────────────────────────────────────────────
-    // VortexBank usa reply keyboard (não inline). Simula pressionar o botão
-    // enviando o texto exato do botão como mensagem.
-    vxLog('info', 'Passo 2: Enviando "📥 DEPOSITAR"');
-    const p2 = waitForBotMessage(client, botId, 20000);
-    await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
+    vxLog('info', 'Passo 2: Acionando DEPOSITAR');
+    const p2 = waitForBotMessage(client, botId, 25000);
+    const clickType = await clickDepositar(client, botPeer, startMsg.id);
+    vxLog('info', `DEPOSITAR acionado via: ${clickType}`);
     const depositMsg = await p2;
     vxLog('info', 'Resposta DEPOSITAR recebida', { text: (depositMsg.message || '').slice(0, 150) });
 
