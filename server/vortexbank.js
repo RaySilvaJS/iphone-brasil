@@ -265,14 +265,26 @@ function waitForPixMessage(client, botNumericId, timeoutMs = 45000) {
         const text = msg.message || msg.text || '';
         vxLog('info', `Mensagem do bot recebida: "${text.slice(0, 80)}"`);
 
-        // Só resolve se a mensagem tiver o código PIX
+        // Resolve se tiver código PIX
         if (extractPixCode(text)) {
           done = true;
           clearTimeout(timer);
           try { client.removeEventHandler(handler, filter); } catch {}
           resolve(msg);
+          return;
         }
-        // Se não tiver PIX (ex: "⏳ Aguarde..."), ignora e continua esperando
+
+        // Falha rápido se o bot enviar mensagem de erro (evita esperar 45s de timeout)
+        const isError = /❌|não foi possível|tente novamente|erro interno|falha ao|serviço indisponível/i.test(text);
+        if (isError) {
+          done = true;
+          clearTimeout(timer);
+          try { client.removeEventHandler(handler, filter); } catch {}
+          reject(new Error(`Bot retornou erro: ${text.slice(0, 120)}`));
+          return;
+        }
+
+        // Mensagens de loading (⏳ Aguarde...) são ignoradas — continua esperando
       } catch {}
     };
 
