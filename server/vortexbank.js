@@ -273,11 +273,11 @@ function waitForPixMessage(client, botNumericId, timeoutMs = 45000) {
 // Se inline: invoke GetBotCallbackAnswer mas NÃO envia texto (evita duplo-disparo).
 // Se teclado: envia o texto exato do botão.
 
-async function clickDepositar(client, botPeer, startMsgId) {
+async function clickDepositar(client, botPeer, startMsg) {
   const { Api } = loadGramJS();
   try {
-    const msgs = await client.getMessages(botPeer, { ids: [startMsgId] });
-    const msg  = msgs[0];
+    // Usa startMsg diretamente — sem round-trip de rede para rebuscar por ID
+    const msg = startMsg;
     if (!msg?.replyMarkup?.rows) {
       vxLog('warn', 'Mensagem /start sem replyMarkup — tentando texto');
       await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
@@ -365,7 +365,7 @@ async function generatePix(amount) {
     // ── Passo 2: DEPOSITAR ────────────────────────────────────────────────────
     vxLog('info', 'Passo 2: Acionando DEPOSITAR');
     const p2 = waitForBotMessage(client, botId, 25000);
-    const clickType = await clickDepositar(client, botPeer, startMsg.id);
+    const clickType = await clickDepositar(client, botPeer, startMsg);
     vxLog('info', `DEPOSITAR acionado via: ${clickType}`);
     const depositMsg = await p2;
     vxLog('info', 'Resposta DEPOSITAR recebida', { text: (depositMsg.message || '').slice(0, 150) });
