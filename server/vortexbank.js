@@ -276,8 +276,13 @@ function waitForPixMessage(client, botNumericId, timeoutMs = 45000) {
 async function clickDepositar(client, botPeer, startMsg) {
   const { Api } = loadGramJS();
   try {
-    // Usa startMsg diretamente — sem round-trip de rede para rebuscar por ID
-    const msg = startMsg;
+    // GramJS nem sempre popula replyMarkup no evento — se não vier, busca a msg completa
+    let msg = startMsg;
+    if (!msg?.replyMarkup?.rows) {
+      vxLog('info', 'replyMarkup ausente no evento — buscando mensagem completa por ID...');
+      const fetched = await client.getMessages(botPeer, { ids: [startMsg.id] });
+      msg = fetched[0];
+    }
     if (!msg?.replyMarkup?.rows) {
       vxLog('warn', 'Mensagem /start sem replyMarkup — tentando texto');
       await client.sendMessage(botPeer, { message: '📥 DEPOSITAR' });
