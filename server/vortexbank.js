@@ -307,20 +307,15 @@ async function clickDepositar(client, botPeer, startMsg) {
         if (!(btn.text || '').toUpperCase().includes('DEPOSITAR')) continue;
 
         if (btn.data !== undefined && btn.data !== null) {
-          // Botão inline (tem callback data)
-          vxLog('info', `Botão inline encontrado: "${btn.text}" — invocando GetBotCallbackAnswer`);
-          try {
-            await client.invoke(new Api.messages.GetBotCallbackAnswer({
-              peer:  botPeer,
-              msgId: msg.id,
-              data:  Buffer.from(btn.data),
-            }));
-            vxLog('info', 'Clique inline enviado com sucesso.');
-          } catch (e) {
-            // Erro de parsing da resposta é comum; o clique foi recebido pelo bot
-            vxLog('warn', `GetBotCallbackAnswer: ${e.message} (clique provavelmente recebido)`);
-          }
-          return 'inline'; // NÃO envia texto — evita duplo-disparo
+          // Botão inline — dispara sem await: p2 já escuta a resposta do bot,
+          // não precisa esperar a confirmação do callback pelo Telegram (~1-3s)
+          vxLog('info', `Botão inline encontrado: "${btn.text}" — disparando clique (fire & forget)`);
+          client.invoke(new Api.messages.GetBotCallbackAnswer({
+            peer:  botPeer,
+            msgId: msg.id,
+            data:  Buffer.from(btn.data),
+          })).catch(e => vxLog('warn', `GetBotCallbackAnswer: ${e.message}`));
+          return 'inline';
 
         } else {
           // Botão de teclado de resposta (sem callback data)
