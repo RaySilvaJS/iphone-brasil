@@ -106,24 +106,41 @@ router.post('/generate', async (req, res) => {
   const paymentId = uuidv4();
   const shortId   = generateShortId(payments);
 
-  // ── Gera PIX automático se a chave estiver configurada (apenas PIX) ─────
+  // ── Gera PIX: VortexBank (dinâmico) com fallback para PIX estático ────────
   const cfg    = loadConfig();
   const pixCfg = cfg.pixConfig || {};
   let pixCode  = null;
   const isCartao = paymentMethod === 'cartao';
   const isBoleto = paymentMethod === 'boleto';
 
-  if (!isCartao && !isBoleto && pixCfg.pixKey) {
+  if (!isCartao && !isBoleto) {
+    // 1ª tentativa: VortexBank (PIX dinâmico com valor exato)
     try {
-      pixCode = generatePix({
-        key:  pixCfg.pixKey,
-        name: (pixCfg.receiverName || 'Jessi iPhones').substring(0, 25),
-        city: (pixCfg.receiverCity || 'Rio de Janeiro').substring(0, 15),
-        amount,
-        txid: shortId,
-      });
+      const vx = require('./vortexbank');
+      const vxStatus = vx.getStatus();
+      if (vxStatus.configured && vxStatus.hasSession) {
+        const vxResult = await vx.generatePix(amount);
+        pixCode = vxResult.pixCode;
+        console.log(`[PIX] VortexBank gerou PIX para ${shortId} (${amount})`);
+      }
     } catch (e) {
-      console.error('[PIX] Erro ao gerar código:', e.message);
+      console.warn(`[PIX] VortexBank falhou (${e.message}) — usando PIX estático como fallback`);
+    }
+
+    // Fallback: PIX estático pela chave configurada no admin
+    if (!pixCode && pixCfg.pixKey) {
+      try {
+        pixCode = generatePix({
+          key:  pixCfg.pixKey,
+          name: (pixCfg.receiverName || 'Jessi iPhones').substring(0, 25),
+          city: (pixCfg.receiverCity || 'Rio de Janeiro').substring(0, 15),
+          amount,
+          txid: shortId,
+        });
+        console.log(`[PIX] PIX estático gerado para ${shortId}`);
+      } catch (e) {
+        console.error('[PIX] Erro ao gerar código estático:', e.message);
+      }
     }
   }
 
