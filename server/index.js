@@ -148,8 +148,11 @@ app.use(express.json({ limit: '25mb' }));
 // Admin API (before maintenance middleware so panel always works)
 app.use('/api/admin', adminRouter);
 
-// Devops panel route
-app.get('/devops', (req, res) => res.sendFile(path.join(publicPath, 'devops', 'index.html')));
+// Devops panel route — sem cache para garantir versão sempre atualizada
+app.get('/devops', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(publicPath, 'devops', 'index.html'));
+});
 
 // Maintenance mode middleware
 app.use((req, res, next) => {
