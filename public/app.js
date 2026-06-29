@@ -769,10 +769,6 @@ async function addToCart(productId, btn) {
 }
 
 async function buyNow(productId, btn) {
-  if (window.Auth && !window.Auth.isLoggedIn()) {
-    window.location.href = '/login.html?redirect=' + encodeURIComponent('/product.html?id=' + productId);
-    return;
-  }
   let product;
   try { product = await getProduct(productId); } catch {}
   if (!product) {
