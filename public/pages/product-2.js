@@ -181,11 +181,7 @@
       _showBuyLoading();
     };
 
-    if (window.CouponModal && window.CouponModal.shouldShow() && window._buyNowProduct) {
-      window.CouponModal.show(window._buyNowProduct, proceed);
-    } else {
-      await proceed();
-    }
+    await proceed();
   };
 
   // ── Loading overlay ("Preparando tudo para sua compra") ──────────────────────

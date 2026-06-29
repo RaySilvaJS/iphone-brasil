@@ -801,11 +801,7 @@ async function buyNow(productId, btn) {
     }
   };
 
-  if (window.CouponModal && window.CouponModal.shouldShow()) {
-    window.CouponModal.show(product, proceed);
-  } else {
-    proceed();
-  }
+  proceed();
 }
 
 
