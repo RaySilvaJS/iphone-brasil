@@ -1692,6 +1692,11 @@ app.post('/api/auth/otp/verify', authRateLimit(10, 5 * 60 * 1000), (req, res) =>
 const { validateCoupon, loadCoupons } = require('./coupons');
 
 // ── GET best active coupon for promotional modal ──────────────────────────────
+app.get('/api/payment-methods', (req, res) => {
+  const pm = loadConfig().paymentMethods || {};
+  res.json({ card: pm.card === true, boleto: pm.boleto === true });
+});
+
 app.get('/api/coupons/active', (req, res) => {
   try {
     const now = new Date();

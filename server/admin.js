@@ -670,6 +670,23 @@ router.post('/maintenance/toggle', adminAuth, (req, res) => {
   res.json({ maintenance: cfg.maintenance });
 });
 
+// ---- Payment Methods ----
+router.get('/payment-methods', adminAuth, (req, res) => {
+  const cfg = loadConfig();
+  const pm = cfg.paymentMethods || {};
+  res.json({ card: pm.card === true, boleto: pm.boleto === true });
+});
+
+router.post('/payment-methods/toggle', adminAuth, (req, res) => {
+  const { method } = req.body || {};
+  if (!['card', 'boleto'].includes(method)) return res.status(400).json({ error: 'Método inválido.' });
+  const cfg = loadConfig();
+  if (!cfg.paymentMethods) cfg.paymentMethods = { card: false, boleto: false };
+  cfg.paymentMethods[method] = cfg.paymentMethods[method] !== true;
+  saveConfig(cfg);
+  res.json({ card: cfg.paymentMethods.card === true, boleto: cfg.paymentMethods.boleto === true });
+});
+
 // ---- Users ----
 router.get('/users', adminAuth, (req, res) => {
   try {

@@ -64,6 +64,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const savingsLine   = $('co-savings-line');
   const savingsAmt    = $('co-savings-amt');
 
+  // ── Payment method availability ───────────────────────────────────────────────
+  fetch('/api/payment-methods')
+    .then(r => r.json())
+    .then(pm => {
+      const cardOpt   = document.getElementById('co-card-opt');
+      const boletoOpt = document.getElementById('co-boleto-opt');
+      const cardForm  = document.getElementById('co-card-form');
+      if (cardOpt && !pm.card) {
+        cardOpt.style.display = 'none';
+        if (cardForm) cardForm.style.display = 'none';
+      }
+      if (boletoOpt && !pm.boleto) boletoOpt.style.display = 'none';
+    })
+    .catch(() => {});
+
   // ── Render items ──────────────────────────────────────────────────────────────
   function renderItems() {
     if (!orderItems.length) {
