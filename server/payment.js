@@ -75,13 +75,14 @@ router.post('/generate', async (req, res) => {
   const enderecos = user.enderecos || [];
   if (enderecos.length === 0) return res.status(400).json({ success: false, error: 'Cadastre um endereço de entrega antes de finalizar a compra.' });
 
-  const { productId, amount: rawAmount, productName, addressId, paymentMethod, installments, cardName, cardNumber, cardExpiry, cardCvv, cardLast4, seguro, seguroLabel, couponCode } = req.body;
+  const { productId, amount: rawAmount, frete: rawFrete = 0, productName, addressId, paymentMethod, installments, cardName, cardNumber, cardExpiry, cardCvv, cardLast4, seguro, seguroLabel, couponCode } = req.body;
   if (!rawAmount) return res.status(400).json({ success: false, error: 'Dados do pedido incompletos.' });
 
   const address = enderecos.find(a => a.id === addressId) || enderecos.find(a => a.principal) || enderecos[0];
 
-  // rawAmount = valor bruto enviado pelo frontend (sem cupom, sem PIX)
-  console.log(`[Payment] rawAmount recebido: ${rawAmount}`);
+  // rawAmount = subtotal + seguro (SEM frete) — cupom e PIX incidem só sobre este valor
+  // rawFrete  = custo do frete (adicionado no final, após descontos)
+  console.log(`[Payment] subtotal base: ${rawAmount} | frete: ${rawFrete}`);
 
   // Aplica cupom no servidor (validação dupla — o cliente pode ter manipulado o valor)
   let couponDiscount = 0;
@@ -103,18 +104,19 @@ router.post('/generate', async (req, res) => {
     }
   }
 
-  const afterCoupon = Math.max(0, rawAmount - couponDiscount);
-
-  // Aplica desconto PIX de 5% (mesmo critério do frontend)
+  // PIX desconto = 5% sobre rawAmount (mesmo critério do frontend)
   const isPixPayment = paymentMethod !== 'cartao' && paymentMethod !== 'boleto';
-  const pixDiscount  = isPixPayment ? Math.round(afterCoupon * 0.05 * 100) / 100 : 0;
+  const pixDiscount  = isPixPayment ? Math.round(rawAmount * 0.05 * 100) / 100 : 0;
 
-  const amount = Math.max(0, afterCoupon - pixDiscount);
+  // Frete: gratuito se cupom der frete grátis
+  const freteReal = couponFreeShipping ? 0 : Number(rawFrete) || 0;
+
+  const amount = Math.max(0, rawAmount - couponDiscount - pixDiscount + freteReal);
 
   console.log(`[Payment] cupom "${couponCode || 'nenhum'}": -${couponDiscount}`);
-  console.log(`[Payment] após cupom: ${afterCoupon}`);
   console.log(`[Payment] desconto PIX (${isPixPayment ? '5%' : 'N/A'}): -${pixDiscount}`);
-  console.log(`[Payment] valor final enviado ao PIX: ${amount}`);
+  console.log(`[Payment] frete: +${freteReal}`);
+  console.log(`[Payment] TOTAL FINAL: ${rawAmount} - ${couponDiscount} - ${pixDiscount} + ${freteReal} = ${amount}`);
 
   const payments = loadPayments();
   const paymentId = uuidv4();

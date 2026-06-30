@@ -1026,20 +1026,21 @@ document.addEventListener('DOMContentLoaded', () => {
         installments: parseInt($('card-installments')?.value || '1', 10),
       } : null;
 
-      // Envia valor BRUTO (sem descontos) — o servidor aplica cupom e PIX
-      const baseAmount = summary.subtotal + (summary.seguro || 0) + (summary.frete || 0);
-      console.log('[Checkout] Preço original (subtotal):', summary.subtotal);
+      // Envia subtotal bruto + frete separados — servidor calcula cupom e PIX corretamente
+      const baseAmount = summary.subtotal + (summary.seguro || 0); // SEM frete
+      console.log('[Checkout] Subtotal (base):', summary.subtotal);
       console.log('[Checkout] Seguro:', summary.seguro || 0);
       console.log('[Checkout] Frete:', summary.frete || 0);
-      console.log('[Checkout] Base enviada ao servidor:', baseAmount);
-      console.log('[Checkout] Cupom:', appliedCouponCode, '| Desconto cupom:', summary.descontoCupom);
-      console.log('[Checkout] Desconto PIX:', summary.descontoPix);
+      console.log('[Checkout] Base enviada (sem frete):', baseAmount);
+      console.log('[Checkout] Cupom:', appliedCouponCode, '| Desconto exibido:', summary.descontoCupom);
+      console.log('[Checkout] Desconto PIX exibido:', summary.descontoPix);
       console.log('[Checkout] Total exibido ao cliente:', summary.total_final);
 
       const payload = {
         productId:     summary.produto.length === 1 ? summary.produto[0].id : null,
         productName:   summary.produto.map(p => p.nome).join(', '),
         amount:        baseAmount,
+        frete:         summary.frete || 0,
         userId:        authSession ? authSession.id : null,
         addressId:     selectedAddressId,
         paymentMethod: payMethod,
