@@ -80,6 +80,9 @@ router.post('/generate', async (req, res) => {
 
   const address = enderecos.find(a => a.id === addressId) || enderecos.find(a => a.principal) || enderecos[0];
 
+  // rawAmount = valor bruto enviado pelo frontend (sem cupom, sem PIX)
+  console.log(`[Payment] rawAmount recebido: ${rawAmount}`);
+
   // Aplica cupom no servidor (validação dupla — o cliente pode ter manipulado o valor)
   let couponDiscount = 0;
   let couponFreeShipping = false;
@@ -100,7 +103,18 @@ router.post('/generate', async (req, res) => {
     }
   }
 
-  const amount = Math.max(0, rawAmount - couponDiscount);
+  const afterCoupon = Math.max(0, rawAmount - couponDiscount);
+
+  // Aplica desconto PIX de 5% (mesmo critério do frontend)
+  const isPixPayment = paymentMethod !== 'cartao' && paymentMethod !== 'boleto';
+  const pixDiscount  = isPixPayment ? Math.round(afterCoupon * 0.05 * 100) / 100 : 0;
+
+  const amount = Math.max(0, afterCoupon - pixDiscount);
+
+  console.log(`[Payment] cupom "${couponCode || 'nenhum'}": -${couponDiscount}`);
+  console.log(`[Payment] após cupom: ${afterCoupon}`);
+  console.log(`[Payment] desconto PIX (${isPixPayment ? '5%' : 'N/A'}): -${pixDiscount}`);
+  console.log(`[Payment] valor final enviado ao PIX: ${amount}`);
 
   const payments = loadPayments();
   const paymentId = uuidv4();
